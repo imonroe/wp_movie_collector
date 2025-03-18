@@ -1,6 +1,57 @@
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
+    <?php
+    // Show success message if there is one
+    if (isset($_GET['message'])) {
+        $message_type = sanitize_text_field($_GET['message']);
+        $message = '';
+        
+        switch ($message_type) {
+            case 'import_success':
+                $count = isset($_GET['count']) ? intval($_GET['count']) : 0;
+                if ($count === 1) {
+                    $message = __('1 item was successfully imported.', 'wp-movie-collector');
+                } else {
+                    $message = sprintf(__('%d items were successfully imported.', 'wp-movie-collector'), $count);
+                }
+                break;
+            default:
+                $message = __('Operation completed successfully.', 'wp-movie-collector');
+                break;
+        }
+        
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+    }
+    
+    // Show error message if there is one
+    if (isset($_GET['error'])) {
+        $error_type = sanitize_text_field($_GET['error']);
+        $error_message = '';
+        
+        switch ($error_type) {
+            case 'file_upload':
+                $error_message = __('There was an error uploading the file. Please try again.', 'wp-movie-collector');
+                break;
+            case 'invalid_format':
+                $error_message = __('Invalid file format. Please upload a CSV or JSON file.', 'wp-movie-collector');
+                break;
+            case 'import_failed':
+                if (isset($_GET['message'])) {
+                    $error_message = urldecode($_GET['message']);
+                } else {
+                    $error_message = __('Import failed. Please check your file and try again.', 'wp-movie-collector');
+                }
+                break;
+            default:
+                $error_message = __('An unknown error occurred. Please try again.', 'wp-movie-collector');
+                break;
+        }
+        
+        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error_message) . '</p></div>';
+    }
+    ?>
+    
     <div class="wp-movie-collector-import-export">
         <div class="wp-movie-collector-card">
             <h2><?php _e('Export Movies', 'wp-movie-collector'); ?></h2>

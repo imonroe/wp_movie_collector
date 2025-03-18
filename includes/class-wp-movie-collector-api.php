@@ -25,6 +25,15 @@ class WP_Movie_Collector_API {
      * @var      string    $omdb_api_key    The OMDb API key.
      */
     private $omdb_api_key;
+    
+    /**
+     * The UPC Database API key.
+     *
+     * @since    1.0.0
+     * @access   private
+     * @var      string    $upc_api_key    The UPC Database API key.
+     */
+    private $upc_api_key;
 
     /**
      * Initialize the class and set its properties.
@@ -34,6 +43,7 @@ class WP_Movie_Collector_API {
     public function __construct() {
         $this->tmdb_api_key = get_option('wp_movie_collector_tmdb_api_key');
         $this->omdb_api_key = get_option('wp_movie_collector_omdb_api_key');
+        $this->upc_api_key = get_option('wp_movie_collector_upc_api_key');
     }
 
     /**
@@ -46,7 +56,15 @@ class WP_Movie_Collector_API {
      */
     public function search_movie_by_title($title, $year = null) {
         if (empty($this->tmdb_api_key)) {
-            return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
+            return new WP_Error('no_api_key', __('TMDb API key is not set. Please set it in the settings page.', 'wp-movie-collector'));
+        }
+        
+        // Check the cache first
+        $cache_key = 'wp_movie_search_' . md5($title . '_' . $year);
+        $cached_results = get_transient($cache_key);
+        
+        if (false !== $cached_results) {
+            return $cached_results;
         }
 
         $args = array(
@@ -60,19 +78,54 @@ class WP_Movie_Collector_API {
         $url = add_query_arg($args, 'https://api.themoviedb.org/3/search/movie');
         $url = add_query_arg('api_key', $this->tmdb_api_key, $url);
 
-        $response = wp_remote_get($url);
+        $response = wp_remote_get($url, array('timeout' => 15));
 
         if (is_wp_error($response)) {
-            return $response;
+            // If there's a connection error, try the fallback
+            $fallback_results = $this->fallback_to_omdb($title, $year);
+            
+            // If fallback also fails, return the original error
+            if (is_wp_error($fallback_results)) {
+                return $response;
+            }
+            
+            // Cache the fallback results
+            set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            
+            return $fallback_results;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        
+        // If TMDb API returns an error, try the fallback
+        if ($response_code !== 200) {
+            $fallback_results = $this->fallback_to_omdb($title, $year);
+            
+            // Cache the fallback results if successful
+            if (!is_wp_error($fallback_results)) {
+                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            }
+            
+            return $fallback_results;
         }
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
         if (empty($data['results'])) {
-            return $this->fallback_to_omdb($title, $year);
+            $fallback_results = $this->fallback_to_omdb($title, $year);
+            
+            // Cache the fallback results if successful
+            if (!is_wp_error($fallback_results)) {
+                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            }
+            
+            return $fallback_results;
         }
-
+        
+        // Cache the successful results
+        set_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
+        
         return $data['results'];
     }
 
@@ -210,18 +263,312 @@ class WP_Movie_Collector_API {
     }
 
     /**
-     * Look up movie by barcode using external API.
+     * Look up movie by barcode using UPC Database API and other sources.
      *
      * @since    1.0.0
      * @param    string    $barcode    The movie barcode.
      * @return   array|WP_Error       The movie details or error.
      */
     public function lookup_by_barcode($barcode) {
-        // This is a placeholder for barcode lookup functionality
-        // In a real implementation, you would use a barcode lookup service
+        // First, check if we have UPC Database API key
+        if (empty($this->upc_api_key)) {
+            return new WP_Error(
+                'no_api_key', 
+                __('UPC Database API key is not set. Please set it in the settings page.', 'wp-movie-collector')
+            );
+        }
         
-        // For now, we'll return a fake response
-        return new WP_Error('not_implemented', __('Barcode lookup is not implemented yet.', 'wp-movie-collector'));
+        // Sanitize the barcode
+        $barcode = preg_replace('/[^0-9]/', '', $barcode);
+        
+        // If barcode is empty after sanitization, return error
+        if (empty($barcode)) {
+            return new WP_Error('invalid_barcode', __('Invalid barcode format.', 'wp-movie-collector'));
+        }
+        
+        // Check the cache first
+        $cache_key = 'wp_movie_barcode_' . $barcode;
+        $cached_result = get_transient($cache_key);
+        
+        if (false !== $cached_result) {
+            return $cached_result;
+        }
+        
+        // Make request to UPC Database API
+        $url = "https://api.upcdatabase.org/product/{$barcode}";
+        $args = array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $this->upc_api_key,
+                'Accept' => 'application/json',
+            ),
+            'timeout' => 15
+        );
+        
+        $response = wp_remote_get($url, $args);
+        
+        // Check for WP error
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        
+        // Get response code
+        $response_code = wp_remote_retrieve_response_code($response);
+        
+        // If response code is not 200, try OpenLibrary as fallback (for books/DVDs with ISBN)
+        if ($response_code !== 200) {
+            return $this->fallback_to_open_library($barcode);
+        }
+        
+        // Get response body
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        // Check if we got a valid response
+        if (empty($data) || !isset($data['title'])) {
+            return $this->fallback_to_open_library($barcode);
+        }
+        
+        // Check if it's a movie or video title (check description, title, or category)
+        $is_movie = false;
+        
+        // Look for keywords in title, description, or category that indicate it's a movie
+        $movie_keywords = array(
+            'DVD', 'Blu-ray', 'Blu ray', 'BluRay', '4K', 'UHD', 'Ultra HD', 
+            'movie', 'film', 'video', 'series', 'season', 'disc', 'disk', 
+            'box set', 'boxset', 'collection', 'trilogy', 'director', 'cut'
+        );
+        
+        foreach ($movie_keywords as $keyword) {
+            if (
+                (isset($data['title']) && stripos($data['title'], $keyword) !== false) ||
+                (isset($data['description']) && stripos($data['description'], $keyword) !== false) ||
+                (isset($data['category']) && stripos($data['category'], $keyword) !== false)
+            ) {
+                $is_movie = true;
+                break;
+            }
+        }
+        
+        // If it doesn't look like a movie, try to search for the title on TMDb
+        if (!$is_movie) {
+            if (isset($data['title'])) {
+                $search_result = $this->search_movie_by_title($data['title']);
+                
+                if (!is_wp_error($search_result) && !empty($search_result)) {
+                    // Get the first match
+                    $movie_id = $search_result[0]['id'];
+                    return $this->get_movie_details($movie_id);
+                }
+            }
+            
+            // If no movie found, return the UPC data as-is
+            return $this->format_upc_data($data);
+        }
+        
+        // Format the data from UPC Database
+        $result = $this->format_upc_data($data);
+        
+        // Cache the successful result for 7 days
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        
+        return $result;
+    }
+    
+    /**
+     * Format data from UPC Database API.
+     *
+     * @since    1.0.0
+     * @param    array    $data    The raw data from UPC Database.
+     * @return   array            The formatted movie data.
+     */
+    private function format_upc_data($data) {
+        $movie = array(
+            'title' => isset($data['title']) ? $data['title'] : '',
+            'barcode' => isset($data['barcode']) ? $data['barcode'] : '',
+            'api_source' => 'UPC Database',
+        );
+        
+        // Try to extract year from title if it's in parentheses
+        if (isset($data['title']) && preg_match('/\((\d{4})\)/', $data['title'], $matches)) {
+            $movie['release_year'] = $matches[1];
+            
+            // Remove the year from the title
+            $movie['title'] = trim(str_replace('(' . $matches[1] . ')', '', $data['title']));
+        }
+        
+        // Extract description if available
+        if (isset($data['description'])) {
+            $movie['description'] = $data['description'];
+        }
+        
+        // Extract cover image URL if available
+        if (isset($data['image'])) {
+            $movie['cover_image_url'] = $data['image'];
+        }
+        
+        // Try to extract studio/publisher
+        if (isset($data['brand']) || isset($data['manufacturer'])) {
+            $movie['studio'] = isset($data['brand']) ? $data['brand'] : $data['manufacturer'];
+        }
+        
+        return $movie;
+    }
+    
+    /**
+     * Fallback to Open Library for ISBN lookup.
+     *
+     * @since    1.0.0
+     * @param    string    $barcode    The barcode/ISBN.
+     * @return   array|WP_Error       The movie/book details or error.
+     */
+    private function fallback_to_open_library($barcode) {
+        // Try looking up as ISBN (for books/DVDs that might have ISBN)
+        $url = "https://openlibrary.org/api/books?bibkeys=ISBN:{$barcode}&format=json&jscmd=data";
+        
+        $response = wp_remote_get($url);
+        
+        // Check for WP error
+        if (is_wp_error($response)) {
+            return $response;
+        }
+        
+        // Get response code
+        $response_code = wp_remote_retrieve_response_code($response);
+        
+        // If response code is not 200, return error
+        if ($response_code !== 200) {
+            return new WP_Error(
+                'api_error', 
+                __('No product found with this barcode.', 'wp-movie-collector')
+            );
+        }
+        
+        // Get response body
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        // Check if we got a valid response
+        if (empty($data) || empty($data["ISBN:{$barcode}"])) {
+            // Last resort - search for an exact barcode match on TMDb
+            return $this->search_tmdb_by_external_id($barcode);
+        }
+        
+        // Format the data from Open Library
+        $book_data = $data["ISBN:{$barcode}"];
+        
+        $movie = array(
+            'title' => $book_data['title'],
+            'barcode' => $barcode,
+            'api_source' => 'Open Library',
+        );
+        
+        // Try to extract year from publish date
+        if (isset($book_data['publish_date']) && preg_match('/(\d{4})/', $book_data['publish_date'], $matches)) {
+            $movie['release_year'] = $matches[1];
+        }
+        
+        // Extract cover image URL if available
+        if (isset($book_data['cover']) && isset($book_data['cover']['large'])) {
+            $movie['cover_image_url'] = $book_data['cover']['large'];
+        }
+        
+        // Extract description if available
+        if (isset($book_data['description'])) {
+            if (is_array($book_data['description'])) {
+                $movie['description'] = isset($book_data['description']['value']) 
+                    ? $book_data['description']['value'] 
+                    : '';
+            } else {
+                $movie['description'] = $book_data['description'];
+            }
+        }
+        
+        // Extract authors
+        if (isset($book_data['authors']) && is_array($book_data['authors'])) {
+            $authors = array();
+            foreach ($book_data['authors'] as $author) {
+                $authors[] = $author['name'];
+            }
+            $movie['director'] = implode(', ', $authors);
+        }
+        
+        // Extract publisher as studio
+        if (isset($book_data['publishers']) && is_array($book_data['publishers'])) {
+            $publishers = array();
+            foreach ($book_data['publishers'] as $publisher) {
+                $publishers[] = $publisher['name'];
+            }
+            $movie['studio'] = implode(', ', $publishers);
+        }
+        
+        // Cache the ISBN result for 7 days
+        set_transient('wp_movie_barcode_' . $barcode, $movie, DAY_IN_SECONDS * 7);
+        
+        return $movie;
+    }
+    
+    /**
+     * Search TMDb by external ID (last resort for barcode lookup).
+     *
+     * @since    1.0.0
+     * @param    string    $external_id    The external ID (barcode/UPC/EAN).
+     * @return   array|WP_Error           The movie details or error.
+     */
+    private function search_tmdb_by_external_id($external_id) {
+        if (empty($this->tmdb_api_key)) {
+            return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
+        }
+        
+        // We'll try to search by external IDs supported by TMDb
+        $external_sources = array('imdb_id', 'freebase_mid', 'freebase_id', 'tvdb_id', 'tvrage_id');
+        
+        foreach ($external_sources as $source) {
+            $url = "https://api.themoviedb.org/3/find/{$external_id}?api_key={$this->tmdb_api_key}&external_source={$source}";
+            
+            $response = wp_remote_get($url);
+            
+            if (is_wp_error($response)) {
+                continue;
+            }
+            
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+            
+            // Check if we got movie results
+            if (!empty($data['movie_results'])) {
+                $movie_id = $data['movie_results'][0]['id'];
+                return $this->get_movie_details($movie_id);
+            }
+            
+            // Check if we got TV results
+            if (!empty($data['tv_results'])) {
+                $tv_data = $data['tv_results'][0];
+                
+                $movie = array(
+                    'title' => $tv_data['name'],
+                    'release_year' => substr($tv_data['first_air_date'], 0, 4),
+                    'description' => $tv_data['overview'],
+                    'cover_image_url' => !empty($tv_data['poster_path']) 
+                        ? 'https://image.tmdb.org/t/p/w500' . $tv_data['poster_path'] 
+                        : '',
+                    'barcode' => $external_id,
+                    'api_source' => 'TMDb',
+                );
+                
+                return $movie;
+            }
+        }
+        
+        // If we get here, we couldn't find anything
+        $error = new WP_Error(
+            'not_found', 
+            __('No movie found with this barcode.', 'wp-movie-collector')
+        );
+        
+        // Cache the error result for a shorter time (1 hour)
+        set_transient('wp_movie_barcode_' . $external_id, $error, HOUR_IN_SECONDS);
+        
+        return $error;
     }
 
     /**

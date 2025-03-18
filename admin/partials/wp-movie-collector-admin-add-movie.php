@@ -1,6 +1,44 @@
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
+    <?php
+    // Show error message if there is one
+    if (isset($_GET['error'])) {
+        $error_type = sanitize_text_field($_GET['error']);
+        
+        if ($error_type === 'validation') {
+            // Get validation errors from transient
+            $errors = get_transient('wp_movie_collector_form_errors');
+            if ($errors && is_array($errors)) {
+                echo '<div class="notice notice-error is-dismissible">';
+                echo '<p><strong>' . __('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
+                echo '<ul>';
+                foreach ($errors as $error) {
+                    echo '<li>' . esc_html($error) . '</li>';
+                }
+                echo '</ul>';
+                echo '</div>';
+                
+                // Delete the transient
+                delete_transient('wp_movie_collector_form_errors');
+            }
+        } else {
+            $error_message = '';
+            
+            switch ($error_type) {
+                case 'db_error':
+                    $error_message = __('There was an error saving the movie to the database. Please try again.', 'wp-movie-collector');
+                    break;
+                default:
+                    $error_message = __('An unknown error occurred. Please try again.', 'wp-movie-collector');
+                    break;
+            }
+            
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error_message) . '</p></div>';
+        }
+    }
+    ?>
+    
     <div class="wp-movie-collector-form">
         <div class="wp-movie-collector-barcode-scanner">
             <h3><?php _e('Scan Barcode', 'wp-movie-collector'); ?></h3>
@@ -100,8 +138,15 @@
             </div>
             
             <div class="form-group">
-                <label for="movie-cover-image-url"><?php _e('Cover Image URL', 'wp-movie-collector'); ?></label>
-                <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text">
+                <label for="movie-cover-image"><?php _e('Cover Image', 'wp-movie-collector'); ?></label>
+                <div class="wp-movie-collector-image-upload-container">
+                    <div class="image-preview"></div>
+                    <input type="hidden" id="movie-cover-image-id" name="movie[cover_image_id]" class="image-id-field">
+                    <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text image-url-field" placeholder="<?php _e('Image URL or upload', 'wp-movie-collector'); ?>">
+                    <button type="button" class="button wp-movie-collector-upload-image-button"><?php _e('Upload Image', 'wp-movie-collector'); ?></button>
+                    <button type="button" class="button wp-movie-collector-remove-image-button" style="display:none;"><?php _e('Remove Image', 'wp-movie-collector'); ?></button>
+                    <p class="description"><?php _e('Upload an image or enter a URL for the movie cover.', 'wp-movie-collector'); ?></p>
+                </div>
             </div>
             
             <div class="form-group">
@@ -258,7 +303,19 @@ jQuery(document).ready(function($) {
         $('#movie-actors').val(movie.actors || '');
         $('#movie-genre').val(movie.genre || '');
         $('#movie-description').val(movie.description || '');
+        
+        // Handle cover image
         $('#movie-cover-image-url').val(movie.cover_image_url || '');
+        if (movie.cover_image_id) {
+            $('#movie-cover-image-id').val(movie.cover_image_id);
+        }
+        
+        // Display cover image preview if URL exists
+        if (movie.cover_image_url) {
+            $('#movie-cover-image-url').siblings('.image-preview').html('<img src="' + movie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
+        }
+        
         $('#movie-api-source').val(movie.api_source || '');
     }
 });

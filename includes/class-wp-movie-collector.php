@@ -24,9 +24,25 @@ class WP_Movie_Collector {
      */
     public function __construct() {
         $this->load_dependencies();
+        $this->maybe_update();
         $this->define_admin_hooks();
         $this->define_public_hooks();
         $this->define_post_types();
+    }
+    
+    /**
+     * Check and perform plugin updates if needed.
+     *
+     * @since    1.0.0
+     * @access   private
+     */
+    private function maybe_update() {
+        $current_version = get_option('wp_movie_collector_version', '0.0.0');
+        
+        if (version_compare($current_version, WP_MOVIE_COLLECTOR_VERSION, '<')) {
+            require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-activator.php';
+            WP_Movie_Collector_Activator::update();
+        }
     }
 
     /**
@@ -71,6 +87,15 @@ class WP_Movie_Collector {
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
         $this->loader->add_action('admin_menu', $plugin_admin, 'add_plugin_admin_menu');
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');
+        
+        // Process form submissions
+        $this->loader->add_action('admin_init', $plugin_admin, 'process_add_movie_form');
+        $this->loader->add_action('admin_init', $plugin_admin, 'process_add_box_set_form');
+        
+        // Register import/export handlers
+        $this->loader->add_action('admin_post_wp_movie_collector_export_movies', $plugin_admin, 'process_export_movies');
+        $this->loader->add_action('admin_post_wp_movie_collector_import_movies', $plugin_admin, 'process_import_movies');
+        $this->loader->add_action('admin_post_wp_movie_collector_download_csv_template', $plugin_admin, 'download_csv_template');
         
         // Register AJAX handlers
         $this->loader->add_action('wp_ajax_wp_movie_collector_barcode_lookup', $plugin_admin, 'ajax_barcode_lookup');

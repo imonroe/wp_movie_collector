@@ -178,6 +178,33 @@
     background: #f9f9f9;
 }
 
+/* Image Upload */
+.wp-movie-collector-image-upload-container {
+    margin-bottom: 10px;
+}
+
+.wp-movie-collector-image-upload-container .image-preview {
+    margin-bottom: 10px;
+    min-height: 30px;
+}
+
+.wp-movie-collector-image-upload-container .image-preview img {
+    max-width: 150px;
+    max-height: 150px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+}
+
+.wp-movie-collector-image-upload-container .image-url-field {
+    margin-bottom: 5px;
+}
+
+.wp-movie-collector-image-upload-container .wp-movie-collector-upload-image-button,
+.wp-movie-collector-image-upload-container .wp-movie-collector-remove-image-button {
+    margin-right: 5px;
+}
+
 /* Box Set display */
 .wp-movie-collector-box-set {
     margin-top: 20px;

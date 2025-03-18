@@ -1,6 +1,25 @@
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
+    <?php
+    // Show success message if there is one
+    if (isset($_GET['message'])) {
+        $message_type = sanitize_text_field($_GET['message']);
+        $message = '';
+        
+        switch ($message_type) {
+            case 'movie_added':
+                $message = __('Movie added successfully!', 'wp-movie-collector');
+                break;
+            default:
+                $message = __('Operation completed successfully.', 'wp-movie-collector');
+                break;
+        }
+        
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+    }
+    ?>
+    
     <div class="wp-movie-collector-dashboard">
         <div class="wp-movie-collector-stats">
             <?php

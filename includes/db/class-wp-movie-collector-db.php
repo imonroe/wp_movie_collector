@@ -78,6 +78,39 @@ class WP_Movie_Collector_DB {
     }
 
     /**
+     * Update database tables structure.
+     *
+     * @since    1.0.0
+     */
+    public function update_tables() {
+        global $wpdb;
+        
+        // Check if cover_image_id column exists in movies table
+        $movies_table = $this->get_movies_table();
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $movies_table LIKE 'cover_image_id'");
+        
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $movies_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)");
+        }
+        
+        // Check if cover_image_id column exists in box sets table
+        $box_sets_table = $this->get_box_sets_table();
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $box_sets_table LIKE 'cover_image_id'");
+        
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $box_sets_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)");
+        }
+        
+        // Check if display_order column exists in relationships table
+        $relationships_table = $this->get_relationships_table();
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $relationships_table LIKE 'display_order'");
+        
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $relationships_table ADD COLUMN display_order int(11) DEFAULT 0");
+        }
+    }
+    
+    /**
      * Create the database tables.
      *
      * @since    1.0.0
@@ -99,6 +132,7 @@ class WP_Movie_Collector_DB {
             genre varchar(255) NOT NULL,
             special_features text,
             cover_image_url text,
+            cover_image_id bigint(20),
             description text,
             acquisition_date date,
             box_set_id bigint(20),
@@ -110,7 +144,8 @@ class WP_Movie_Collector_DB {
             KEY barcode (barcode),
             KEY release_year (release_year),
             KEY format (format),
-            KEY box_set_id (box_set_id)
+            KEY box_set_id (box_set_id),
+            KEY cover_image_id (cover_image_id)
         ) $charset_collate;
 
         CREATE TABLE $this->box_sets_table (
@@ -121,6 +156,7 @@ class WP_Movie_Collector_DB {
             region_code varchar(10) NOT NULL,
             barcode varchar(50) NOT NULL,
             cover_image_url text,
+            cover_image_id bigint(20),
             description text,
             acquisition_date date,
             special_features text,
@@ -131,7 +167,8 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format)
+            KEY format (format),
+            KEY cover_image_id (cover_image_id)
         ) $charset_collate;
 
         CREATE TABLE $this->relationships_table (

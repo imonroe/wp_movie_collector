@@ -3,6 +3,78 @@
  */
 (function($) {
     'use strict';
+    
+    /**
+     * Initialize media uploader
+     */
+    function setupMediaUploader() {
+        // Movie cover image upload
+        let movieImageFrame;
+        $('.wp-movie-collector-upload-image-button').on('click', function(e) {
+            e.preventDefault();
+            
+            const button = $(this);
+            const imageIdField = button.siblings('.image-id-field');
+            const imageUrlField = button.siblings('.image-url-field');
+            const imagePreview = button.siblings('.image-preview');
+            
+            // If the frame already exists, reopen it
+            if (movieImageFrame) {
+                movieImageFrame.open();
+                return;
+            }
+            
+            // Create the media frame
+            movieImageFrame = wp.media({
+                title: wp_movie_collector_admin.messages.select_image || 'Select or Upload Image',
+                button: {
+                    text: wp_movie_collector_admin.messages.use_image || 'Use this image'
+                },
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+            
+            // When an image is selected, run a callback
+            movieImageFrame.on('select', function() {
+                const attachment = movieImageFrame.state().get('selection').first().toJSON();
+                
+                // Set the field values
+                imageIdField.val(attachment.id);
+                imageUrlField.val(attachment.url);
+                
+                // Update preview
+                imagePreview.html('<img src="' + attachment.url + '" alt="" style="max-width:150px;max-height:150px;" />');
+                
+                // Show the remove button
+                button.siblings('.wp-movie-collector-remove-image-button').show();
+            });
+            
+            // Finally, open the modal
+            movieImageFrame.open();
+        });
+        
+        // Remove image button
+        $('.wp-movie-collector-remove-image-button').on('click', function(e) {
+            e.preventDefault();
+            
+            const button = $(this);
+            const imageIdField = button.siblings('.image-id-field');
+            const imageUrlField = button.siblings('.image-url-field');
+            const imagePreview = button.siblings('.image-preview');
+            
+            // Clear the fields
+            imageIdField.val('');
+            imageUrlField.val('');
+            
+            // Clear preview
+            imagePreview.html('');
+            
+            // Hide remove button
+            button.hide();
+        });
+    }
 
     /**
      * Handle barcode input events
@@ -144,6 +216,7 @@
 
         // Common functionality
         setupMovieManagement();
+        setupMediaUploader(); // Always set up the media uploader
 
         // Page-specific functionality
         if (currentPage === 'add-movie') {

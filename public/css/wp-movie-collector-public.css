@@ -1,0 +1,235 @@
+/**
+ * Public-facing styles for WP Movie Collector
+ */
+
+/* Movie Collection Container */
+.wp-movie-collector-container {
+    margin: 20px 0;
+}
+
+/* Filters */
+.wp-movie-collector-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.wp-movie-collector-filters form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.wp-movie-collector-filters .filter-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.wp-movie-collector-filters .filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.wp-movie-collector-filters .filter-group select,
+.wp-movie-collector-filters .filter-group input {
+    width: 100%;
+}
+
+.wp-movie-collector-filters .filter-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 5px;
+}
+
+/* Search Bar */
+.wp-movie-collector-search {
+    margin-bottom: 20px;
+}
+
+.wp-movie-collector-search form {
+    display: flex;
+    gap: 10px;
+}
+
+.wp-movie-collector-search input[type="text"] {
+    flex: 1;
+}
+
+/* Movie Grid Layout */
+.wp-movie-collector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.wp-movie-collector-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wp-movie-collector-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.wp-movie-collector-item-image {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2/3;
+    background-color: #f0f0f0;
+}
+
+.wp-movie-collector-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.wp-movie-collector-item-format {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.wp-movie-collector-item-content {
+    padding: 12px;
+}
+
+.wp-movie-collector-item-title {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.wp-movie-collector-item-meta {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.wp-movie-collector-item-meta span {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+/* Single Movie View */
+.wp-movie-collector-single {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.wp-movie-collector-single-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.wp-movie-collector-single-image {
+    flex: 0 0 300px;
+}
+
+.wp-movie-collector-single-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.wp-movie-collector-single-details {
+    flex: 1;
+}
+
+.wp-movie-collector-single-title {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.wp-movie-collector-single-meta {
+    margin-bottom: 15px;
+}
+
+.wp-movie-collector-single-meta-item {
+    margin-bottom: 8px;
+}
+
+.wp-movie-collector-single-meta-label {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.wp-movie-collector-single-description {
+    margin-top: 20px;
+    line-height: 1.6;
+}
+
+.wp-movie-collector-single-box-set {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Box Set View */
+.wp-movie-collector-box-set-movies {
+    margin-top: 30px;
+}
+
+.wp-movie-collector-box-set-movies h3 {
+    margin-bottom: 15px;
+}
+
+/* Pagination */
+.wp-movie-collector-pagination {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.wp-movie-collector-pagination .page-numbers {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 0 3px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
+.wp-movie-collector-pagination .page-numbers.current {
+    background-color: #f7f7f7;
+    font-weight: bold;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .wp-movie-collector-filters form {
+        flex-direction: column;
+    }
+    
+    .wp-movie-collector-filters .filter-group,
+    .wp-movie-collector-filters .filter-actions {
+        width: 100%;
+    }
+    
+    .wp-movie-collector-single-header {
+        flex-direction: column;
+    }
+    
+    .wp-movie-collector-single-image {
+        margin-bottom: 20px;
+        flex: 0 0 auto;
+        max-width: 250px;
+    }
+}

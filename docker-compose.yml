@@ -1,0 +1,58 @@
+services:
+  # WordPress service
+  wordpress:
+    image: wordpress:latest
+    container_name: wp_movie_collector_wordpress
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./:/var/www/html/wp-content/plugins/wp-movie-collector
+    networks:
+      - wp_network
+
+  # Database service
+  db:
+    image: mysql:5.7
+    container_name: wp_movie_collector_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - wp_network
+
+  # PHPMyAdmin service (optional but useful for database management)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: wp_movie_collector_phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    networks:
+      - wp_network
+
+volumes:
+  wordpress_data:
+  db_data:
+
+networks:
+  wp_network:

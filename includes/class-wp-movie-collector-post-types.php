@@ -35,7 +35,7 @@ class WP_Movie_Collector_Post_Types {
             'public'              => true,
             'publicly_queryable'  => true,
             'show_ui'             => true,
-            'show_in_menu'        => true,
+            'show_in_menu'        => 'wp-movie-collector', // Show under our main menu instead of as a top-level menu
             'query_var'           => true,
             'rewrite'             => array('slug' => 'movie'),
             'capability_type'     => 'post',
@@ -68,7 +68,7 @@ class WP_Movie_Collector_Post_Types {
             'public'              => true,
             'publicly_queryable'  => true,
             'show_ui'             => true,
-            'show_in_menu'        => true,
+            'show_in_menu'        => 'wp-movie-collector', // Show under our main menu instead of as a top-level menu
             'query_var'           => true,
             'rewrite'             => array('slug' => 'box-set'),
             'capability_type'     => 'post',
@@ -104,6 +104,7 @@ class WP_Movie_Collector_Post_Types {
             ),
             'hierarchical'      => true,
             'show_ui'           => true,
+            'show_in_menu'      => false, // Hide from top-level menu
             'show_admin_column' => true,
             'query_var'         => true,
             'rewrite'           => array('slug' => 'genre'),
@@ -127,6 +128,7 @@ class WP_Movie_Collector_Post_Types {
             ),
             'hierarchical'      => true,
             'show_ui'           => true,
+            'show_in_menu'      => false, // Hide from top-level menu
             'show_admin_column' => true,
             'query_var'         => true,
             'rewrite'           => array('slug' => 'director'),
@@ -150,6 +152,7 @@ class WP_Movie_Collector_Post_Types {
             ),
             'hierarchical'      => true,
             'show_ui'           => true,
+            'show_in_menu'      => false, // Hide from top-level menu
             'show_admin_column' => true,
             'query_var'         => true,
             'rewrite'           => array('slug' => 'studio'),
@@ -173,6 +176,7 @@ class WP_Movie_Collector_Post_Types {
             ),
             'hierarchical'      => false,
             'show_ui'           => true,
+            'show_in_menu'      => false, // Hide from top-level menu
             'show_admin_column' => true,
             'query_var'         => true,
             'rewrite'           => array('slug' => 'actor'),

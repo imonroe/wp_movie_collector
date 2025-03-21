@@ -208,6 +208,160 @@
     }
 
     /**
+     * Fill movie form with data
+     */
+    function fillMovieForm(movie) {
+        $('#movie-title').val(movie.title || '');
+        $('#movie-release-year').val(movie.release_year || '');
+        $('#movie-barcode').val(movie.barcode || '');
+        $('#movie-director').val(movie.director || '');
+        $('#movie-studio').val(movie.studio || '');
+        $('#movie-actors').val(movie.actors || '');
+        $('#movie-genre').val(movie.genre || '');
+        $('#movie-description').val(movie.description || '');
+        
+        // Handle cover image
+        $('#movie-cover-image-url').val(movie.cover_image_url || '');
+        if (movie.cover_image_id) {
+            $('#movie-cover-image-id').val(movie.cover_image_id);
+        }
+        
+        // Display cover image preview if URL exists
+        if (movie.cover_image_url) {
+            $('#movie-cover-image-url').siblings('.image-preview').html('<img src="' + movie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
+        }
+        
+        $('#movie-api-source').val(movie.api_source || '');
+        
+        // If we got a title from the barcode lookup but have limited metadata, 
+        // automatically search for more details from TMDB
+        if (movie.api_source === 'BarcodeLookup' && movie.title && 
+            (!movie.director || !movie.actors || !movie.description || movie.description.length < 50)) {
+            searchTMDBForMoreDetails(movie.title, movie.release_year);
+        }
+    }
+    
+    /**
+     * Search TMDB for more details about the movie
+     */
+    function searchTMDBForMoreDetails(title, year) {
+        $('#wp-movie-collector-search-results').html('<p>Searching for additional movie details...</p>');
+        
+        $.ajax({
+            url: wp_movie_collector_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'wp_movie_collector_movie_search',
+                title: title,
+                year: year,
+                nonce: wp_movie_collector_admin.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.length > 0) {
+                    // Get details for the first match
+                    var movieId = response.data[0].id;
+                    
+                    $('#wp-movie-collector-search-results').html('<p>Found match, retrieving full details...</p>');
+                    
+                    $.ajax({
+                        url: wp_movie_collector_admin.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'wp_movie_collector_get_movie_details',
+                            movie_id: movieId,
+                            nonce: wp_movie_collector_admin.nonce
+                        },
+                        success: function(detailsResponse) {
+                            if (detailsResponse.success) {
+                                var tmdbMovie = detailsResponse.data;
+                                
+                                // Preserve the barcode from the original data
+                                var barcode = $('#movie-barcode').val();
+                                
+                                // Fill form with detailed movie info from TMDB
+                                fillMovieFormWithTMDBData(tmdbMovie, barcode);
+                                
+                                $('#wp-movie-collector-search-results').html(
+                                    '<p class="success">Successfully retrieved additional movie details from TMDB!</p>'
+                                );
+                            } else {
+                                $('#wp-movie-collector-search-results').html(
+                                    '<p class="error">Error retrieving full movie details.</p>'
+                                );
+                            }
+                        },
+                        error: function() {
+                            $('#wp-movie-collector-search-results').html(
+                                '<p class="error">Error connecting to server.</p>'
+                            );
+                        }
+                    });
+                } else {
+                    $('#wp-movie-collector-search-results').html(
+                        '<p class="error">No additional movie details found.</p>'
+                    );
+                }
+            },
+            error: function() {
+                $('#wp-movie-collector-search-results').html(
+                    '<p class="error">Error searching for additional movie details.</p>'
+                );
+            }
+        });
+    }
+    
+    /**
+     * Fill the form with TMDB data while preserving some original values
+     */
+    function fillMovieFormWithTMDBData(tmdbMovie, barcode) {
+        // Don't override title if we already have one
+        if (!$('#movie-title').val() && tmdbMovie.title) {
+            $('#movie-title').val(tmdbMovie.title);
+        }
+        
+        // Don't override release year if we already have one
+        if (!$('#movie-release-year').val() && tmdbMovie.release_year) {
+            $('#movie-release-year').val(tmdbMovie.release_year);
+        }
+        
+        // Always preserve the barcode
+        $('#movie-barcode').val(barcode);
+        
+        // Fill in the remaining data, favoring TMDB's more detailed information
+        if (tmdbMovie.director) {
+            $('#movie-director').val(tmdbMovie.director);
+        }
+        
+        if (tmdbMovie.studio) {
+            $('#movie-studio').val(tmdbMovie.studio);
+        }
+        
+        if (tmdbMovie.actors) {
+            $('#movie-actors').val(tmdbMovie.actors);
+        }
+        
+        if (tmdbMovie.genre) {
+            $('#movie-genre').val(tmdbMovie.genre);
+        }
+        
+        if (tmdbMovie.description) {
+            $('#movie-description').val(tmdbMovie.description);
+        }
+        
+        // Handle cover image - prefer TMDB's higher quality images
+        if (tmdbMovie.cover_image_url) {
+            $('#movie-cover-image-url').val(tmdbMovie.cover_image_url);
+            $('#movie-cover-image-url').siblings('.image-preview')
+                .html('<img src="' + tmdbMovie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
+        }
+        
+        // Update API source to indicate we now have TMDB data
+        $('#movie-api-source').val('TMDb (auto-enhanced)');
+    }
+
+    /**
      * Document ready handler
      */
     $(function() {

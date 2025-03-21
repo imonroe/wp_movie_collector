@@ -209,7 +209,7 @@ public function add_plugin_admin_menu() {
     public function register_settings() {
         register_setting('wp_movie_collector_settings', 'wp_movie_collector_tmdb_api_key');
         register_setting('wp_movie_collector_settings', 'wp_movie_collector_omdb_api_key');
-        register_setting('wp_movie_collector_settings', 'wp_movie_collector_upc_api_key');
+        register_setting('wp_movie_collector_settings', 'wp_movie_collector_barcode_api_key');
 
         add_settings_section(
             'wp_movie_collector_api_settings',
@@ -608,14 +608,14 @@ public function add_plugin_admin_menu() {
     }
 
     /**
-     * UPC Database API key field callback.
+     * BarcodeLookup API key field callback.
      *
      * @since    1.0.0
      */
     public function upc_api_key_callback() {
-        $api_key = get_option('wp_movie_collector_upc_api_key');
-        echo '<input type="text" name="wp_movie_collector_upc_api_key" value="' . esc_attr($api_key) . '" class="regular-text" />';
-        echo '<p class="description">' . __('Get your API key from <a href="https://upcdatabase.org/signup" target="_blank">UPC Database</a>.', 'wp-movie-collector') . '</p>';
+        $api_key = get_option('wp_movie_collector_barcode_api_key');
+        echo '<input type="text" name="wp_movie_collector_barcode_api_key" value="' . esc_attr($api_key) . '" class="regular-text" />';
+        echo '<p class="description">' . __('Get your API key from <a href="https://barcodelookup.com/api" target="_blank">BarcodeLookup</a>.', 'wp-movie-collector') . '</p>';
     }
 
     /**

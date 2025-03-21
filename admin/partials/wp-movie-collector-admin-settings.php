@@ -29,12 +29,12 @@
                 </td>
             </tr>
             <tr>
-                <th scope="row"><label for="wp_movie_collector_upc_api_key"><?php _e('UPC Database API Key', 'wp-movie-collector'); ?></label></th>
+                <th scope="row"><label for="wp_movie_collector_barcode_api_key"><?php _e('BarcodeLookup API Key', 'wp-movie-collector'); ?></label></th>
                 <td>
-                    <input type="text" id="wp_movie_collector_upc_api_key" name="wp_movie_collector_upc_api_key" 
-                           value="<?php echo esc_attr(get_option('wp_movie_collector_upc_api_key')); ?>" class="regular-text">
+                    <input type="text" id="wp_movie_collector_barcode_api_key" name="wp_movie_collector_barcode_api_key" 
+                           value="<?php echo esc_attr(get_option('wp_movie_collector_barcode_api_key')); ?>" class="regular-text">
                     <p class="description">
-                        <?php _e('Enter your UPC Database API key. You can get one from <a href="https://upcdatabase.org/signup" target="_blank">UPC Database</a>.', 'wp-movie-collector'); ?>
+                        <?php _e('Enter your BarcodeLookup API key. You can get one from <a href="https://barcodelookup.com/api" target="_blank">BarcodeLookup</a>.', 'wp-movie-collector'); ?>
                     </p>
                 </td>
             </tr>

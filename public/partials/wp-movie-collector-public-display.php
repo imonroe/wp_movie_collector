@@ -11,22 +11,30 @@ $per_page = isset($atts['per_page']) ? intval($atts['per_page']) : 12;
 $paged = get_query_var('paged') ? get_query_var('paged') : 1;
 
 // Get filter values from URL
-$filter_format = isset($_GET['format']) ? sanitize_text_field($_GET['format']) : '';
-$filter_genre = isset($_GET['genre']) ? sanitize_text_field($_GET['genre']) : '';
-$filter_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
-$filter_director = isset($_GET['director']) ? sanitize_text_field($_GET['director']) : '';
-$filter_studio = isset($_GET['studio']) ? sanitize_text_field($_GET['studio']) : '';
-$search_term = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
+$filter_format = isset($_GET['format']) ? sanitize_text_field(wp_unslash($_GET['format'])) : '';
+$filter_genre = isset($_GET['genre']) ? sanitize_text_field(wp_unslash($_GET['genre'])) : '';
+$raw_year = (isset($_GET['year']) && is_scalar($_GET['year'])) ? absint(wp_unslash($_GET['year'])) : 0;
+$filter_year = ($raw_year >= 1900 && $raw_year <= intval(date('Y')) + 1) ? $raw_year : 0;
+$filter_director = isset($_GET['director']) ? sanitize_text_field(wp_unslash($_GET['director'])) : '';
+$filter_studio = isset($_GET['studio']) ? sanitize_text_field(wp_unslash($_GET['studio'])) : '';
+$search_term = isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '';
 
 // Initialize DB
 $db = new WP_Movie_Collector_DB();
 
 // Build search criteria
+// Whitelist orderby/order to prevent SQL injection
+$allowed_orderby = array('title', 'release_year', 'id', 'created_at', 'acquisition_date', 'format', 'director');
+$allowed_order = array('ASC', 'DESC');
+
+$raw_orderby = isset($_GET['orderby']) ? sanitize_key(wp_unslash($_GET['orderby'])) : 'title';
+$raw_order = isset($_GET['order']) ? sanitize_text_field(wp_unslash($_GET['order'])) : 'ASC';
+
 $criteria = array(
     'per_page' => $per_page,
     'page' => $paged,
-    'orderby' => isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'title',
-    'order' => isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'ASC',
+    'orderby' => in_array($raw_orderby, $allowed_orderby, true) ? $raw_orderby : 'title',
+    'order' => in_array(strtoupper($raw_order), $allowed_order, true) ? strtoupper($raw_order) : 'ASC',
 );
 
 if (!empty($filter_format)) {

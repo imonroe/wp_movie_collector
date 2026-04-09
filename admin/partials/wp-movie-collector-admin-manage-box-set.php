@@ -1,10 +1,15 @@
+<?php
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+}
+?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-    
+
     <?php
     // Show success message if there is one
     if (isset($_GET['message'])) {
-        $message_type = sanitize_text_field($_GET['message']);
+        $message_type = sanitize_text_field(wp_unslash($_GET['message']));
         $message = '';
         
         switch ($message_type) {
@@ -27,7 +32,7 @@
     
     // Show error message if there is one
     if (isset($_GET['error'])) {
-        $error_type = sanitize_text_field($_GET['error']);
+        $error_type = sanitize_text_field(wp_unslash($_GET['error']));
         $error_message = '';
         
         switch ($error_type) {
@@ -63,13 +68,13 @@
     <div class="wp-movie-collector-box-set-details">
         <h2><?php echo esc_html($box_set['title']); ?> (<?php echo esc_html($box_set['release_year']); ?>)</h2>
         <p>
-            <strong><?php _e('Format:', 'wp-movie-collector'); ?></strong> <?php echo esc_html($box_set['format']); ?> |
-            <strong><?php _e('Region:', 'wp-movie-collector'); ?></strong> <?php echo esc_html($box_set['region_code']); ?>
+            <strong><?php esc_html_e('Format:', 'wp-movie-collector'); ?></strong> <?php echo esc_html($box_set['format']); ?> |
+            <strong><?php esc_html_e('Region:', 'wp-movie-collector'); ?></strong> <?php echo esc_html($box_set['region_code']); ?>
         </p>
         
         <?php if (!empty($box_set['description'])): ?>
         <div class="wp-movie-collector-description">
-            <h3><?php _e('Description', 'wp-movie-collector'); ?></h3>
+            <h3><?php esc_html_e('Description', 'wp-movie-collector'); ?></h3>
             <p><?php echo esc_html($box_set['description']); ?></p>
         </div>
         <?php endif; ?>
@@ -77,14 +82,14 @@
     
     <div class="wp-movie-collector-tabs">
         <ul class="wp-movie-collector-tabs-nav">
-            <li class="active"><a href="#current-movies"><?php _e('Current Movies', 'wp-movie-collector'); ?></a></li>
-            <li><a href="#add-movies"><?php _e('Add Movies', 'wp-movie-collector'); ?></a></li>
+            <li class="active"><a href="#current-movies"><?php esc_html_e('Current Movies', 'wp-movie-collector'); ?></a></li>
+            <li><a href="#add-movies"><?php esc_html_e('Add Movies', 'wp-movie-collector'); ?></a></li>
         </ul>
         
         <div class="wp-movie-collector-tab-content">
             <!-- Current Movies Tab -->
             <div id="current-movies" class="wp-movie-collector-tab-pane active">
-                <h3><?php _e('Movies in this Box Set', 'wp-movie-collector'); ?></h3>
+                <h3><?php esc_html_e('Movies in this Box Set', 'wp-movie-collector'); ?></h3>
                 
                 <?php
                 // Get movies in this box set
@@ -102,11 +107,11 @@
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th width="20"><?php _e('Order', 'wp-movie-collector'); ?></th>
-                                <th><?php _e('Title', 'wp-movie-collector'); ?></th>
-                                <th><?php _e('Release Year', 'wp-movie-collector'); ?></th>
-                                <th><?php _e('Format', 'wp-movie-collector'); ?></th>
-                                <th><?php _e('Actions', 'wp-movie-collector'); ?></th>
+                                <th width="20"><?php esc_html_e('Order', 'wp-movie-collector'); ?></th>
+                                <th><?php esc_html_e('Title', 'wp-movie-collector'); ?></th>
+                                <th><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></th>
+                                <th><?php esc_html_e('Format', 'wp-movie-collector'); ?></th>
+                                <th><?php esc_html_e('Actions', 'wp-movie-collector'); ?></th>
                             </tr>
                         </thead>
                         <tbody id="sortable-movies">
@@ -120,8 +125,8 @@
                                 <td><?php echo esc_html($movie['release_year']); ?></td>
                                 <td><?php echo esc_html($movie['format']); ?></td>
                                 <td>
-                                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_remove_movie&box_set_id=' . $box_set_id . '&movie_id=' . $movie['id']), 'wp_movie_collector_remove_movie_' . $movie['id'], 'wp_movie_collector_nonce'); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e('Are you sure you want to remove this movie from the box set?', 'wp-movie-collector'); ?>')">
-                                        <?php _e('Remove', 'wp-movie-collector'); ?>
+                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_remove_movie&box_set_id=' . intval($box_set_id) . '&movie_id=' . intval($movie['id'])), 'wp_movie_collector_remove_movie_' . intval($movie['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js(__('Are you sure you want to remove this movie from the box set?', 'wp-movie-collector')); ?>')">
+                                        <?php esc_html_e('Remove', 'wp-movie-collector'); ?>
                                     </a>
                                 </td>
                             </tr>
@@ -131,7 +136,7 @@
                     
                     <p class="submit">
                         <button type="submit" class="button button-primary">
-                            <?php _e('Save Order', 'wp-movie-collector'); ?>
+                            <?php esc_html_e('Save Order', 'wp-movie-collector'); ?>
                         </button>
                     </p>
                 </form>
@@ -142,11 +147,11 @@
             
             <!-- Add Movies Tab -->
             <div id="add-movies" class="wp-movie-collector-tab-pane">
-                <h3><?php _e('Add Movies to Box Set', 'wp-movie-collector'); ?></h3>
+                <h3><?php esc_html_e('Add Movies to Box Set', 'wp-movie-collector'); ?></h3>
                 
                 <div class="wp-movie-collector-search">
                     <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_attr_e('Search movies by title...', 'wp-movie-collector'); ?>">
-                    <button type="button" id="wp-movie-collector-search-movies" class="button"><?php _e('Search', 'wp-movie-collector'); ?></button>
+                    <button type="button" id="wp-movie-collector-search-movies" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
                 </div>
                 
                 <div id="wp-movie-collector-search-results">
@@ -154,7 +159,7 @@
                 </div>
                 
                 <div class="wp-movie-collector-movies-list">
-                    <h4><?php _e('Available Movies', 'wp-movie-collector'); ?></h4>
+                    <h4><?php esc_html_e('Available Movies', 'wp-movie-collector'); ?></h4>
                     
                     <?php
                     // Get movies not in this box set
@@ -189,9 +194,9 @@
                             <thead>
                                 <tr>
                                     <th width="20"><input type="checkbox" id="select-all-movies"></th>
-                                    <th><?php _e('Title', 'wp-movie-collector'); ?></th>
-                                    <th><?php _e('Release Year', 'wp-movie-collector'); ?></th>
-                                    <th><?php _e('Format', 'wp-movie-collector'); ?></th>
+                                    <th><?php esc_html_e('Title', 'wp-movie-collector'); ?></th>
+                                    <th><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></th>
+                                    <th><?php esc_html_e('Format', 'wp-movie-collector'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -208,7 +213,7 @@
                         
                         <p class="submit">
                             <button type="submit" class="button button-primary">
-                                <?php _e('Add Selected Movies to Box Set', 'wp-movie-collector'); ?>
+                                <?php esc_html_e('Add Selected Movies to Box Set', 'wp-movie-collector'); ?>
                             </button>
                         </p>
                     </form>
@@ -221,7 +226,7 @@
     </div>
     
     <p>
-        <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-box-sets'); ?>" class="button"><?php _e('Back to Box Sets', 'wp-movie-collector'); ?></a>
+        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-dashboard')); ?>" class="button"><?php esc_html_e('Back to Dashboard', 'wp-movie-collector'); ?></a>
     </p>
 </div>
 
@@ -330,7 +335,7 @@ jQuery(document).ready(function($) {
         
         var boxSetId = <?php echo esc_js($box_set_id); ?>;
         
-        $('#wp-movie-collector-search-results').html('<p><?php _e('Searching...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching...', 'wp-movie-collector') . '</p>'); ?>);
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -343,31 +348,31 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
-                    var resultsHtml = '<h4><?php _e('Search Results', 'wp-movie-collector'); ?></h4>';
+                    var resultsHtml = '<h4>' + <?php echo wp_json_encode(esc_html__('Search Results', 'wp-movie-collector')); ?> + '</h4>';
                     resultsHtml += '<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">';
                     resultsHtml += '<input type="hidden" name="action" value="wp_movie_collector_add_movies_to_box_set">';
                     resultsHtml += '<input type="hidden" name="box_set_id" value="' + boxSetId + '">';
-                    resultsHtml += '<?php wp_nonce_field('wp_movie_collector_add_movies', 'wp_movie_collector_nonce'); ?>';
+                    resultsHtml += <?php echo wp_json_encode(wp_nonce_field('wp_movie_collector_add_movies', 'wp_movie_collector_nonce', true, false)); ?>;
                     
                     resultsHtml += '<table class="wp-list-table widefat fixed striped">';
                     resultsHtml += '<thead><tr>';
                     resultsHtml += '<th width="20"><input type="checkbox" id="select-all-search-results"></th>';
-                    resultsHtml += '<th><?php _e('Title', 'wp-movie-collector'); ?></th>';
-                    resultsHtml += '<th><?php _e('Release Year', 'wp-movie-collector'); ?></th>';
-                    resultsHtml += '<th><?php _e('Format', 'wp-movie-collector'); ?></th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Title', 'wp-movie-collector')); ?> + '</th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Release Year', 'wp-movie-collector')); ?> + '</th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Format', 'wp-movie-collector')); ?> + '</th>';
                     resultsHtml += '</tr></thead><tbody>';
                     
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<tr>';
-                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + movie.id + '"></td>';
-                        resultsHtml += '<td>' + movie.title + '</td>';
-                        resultsHtml += '<td>' + movie.release_year + '</td>';
-                        resultsHtml += '<td>' + movie.format + '</td>';
+                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + parseInt(movie.id, 10) + '"></td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.title) + '</td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.release_year) + '</td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.format) + '</td>';
                         resultsHtml += '</tr>';
                     });
                     
                     resultsHtml += '</tbody></table>';
-                    resultsHtml += '<p class="submit"><button type="submit" class="button button-primary"><?php _e('Add Selected Movies to Box Set', 'wp-movie-collector'); ?></button></p>';
+                    resultsHtml += '<p class="submit"><button type="submit" class="button button-primary">' + <?php echo wp_json_encode(esc_html__('Add Selected Movies to Box Set', 'wp-movie-collector')); ?> + '</button></p>';
                     resultsHtml += '</form>';
                     
                     $('#wp-movie-collector-search-results').html(resultsHtml);
@@ -377,11 +382,11 @@ jQuery(document).ready(function($) {
                         $(this).closest('form').find('input[name="movie_ids[]"]').prop('checked', $(this).prop('checked'));
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html('<p><?php _e('No movies found matching your search.', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('No movies found matching your search.', 'wp-movie-collector') . '</p>'); ?>);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html('<p class="error"><?php _e('Error searching for movies. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for movies. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
             }
         });
     });

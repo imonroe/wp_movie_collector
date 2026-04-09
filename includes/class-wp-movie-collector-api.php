@@ -615,6 +615,10 @@ class WP_Movie_Collector_API {
         // Normalize the IMDb ID once for both cache key and API request
         $imdb_id = sanitize_key(trim($imdb_id));
 
+        if (empty($imdb_id) || !preg_match('/^tt\d{7,}$/', $imdb_id)) {
+            return new WP_Error('invalid_imdb_id', __('Invalid IMDb ID.', 'wp-movie-collector'));
+        }
+
         $cache_key = self::make_cache_key('wp_movie_imdb_', $imdb_id);
         if (!$bypass_cache) {
             $cached_result = get_transient($cache_key);

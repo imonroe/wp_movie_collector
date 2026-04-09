@@ -123,7 +123,11 @@ class ApiCacheTest extends TestCase {
 	 * @return string The file contents.
 	 */
 	private function read_api_source(): string {
-		$path   = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php';
+		$path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php';
+
+		$this->assertFileExists( $path, "API class source file does not exist at {$path}" );
+		$this->assertIsReadable( $path, "API class source file is not readable at {$path}" );
+
 		$source = file_get_contents( $path );
 
 		$this->assertIsString( $source, "Failed to read API class source at {$path}" );

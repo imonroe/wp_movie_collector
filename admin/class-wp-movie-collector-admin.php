@@ -98,6 +98,16 @@ public function add_plugin_admin_menu() {
         $submenu['wp-movie-collector-dashboard'][0][0] = __('Dashboard', 'wp-movie-collector');
     }
 
+    // All Movies submenu
+    add_submenu_page(
+        'wp-movie-collector-dashboard',
+        __('All Movies', 'wp-movie-collector'),
+        __('All Movies', 'wp-movie-collector'),
+        'manage_options',
+        'wp-movie-collector-movies',
+        array($this, 'display_plugin_admin_movies')
+    );
+
     // Add New Movie submenu
     add_submenu_page(
         'wp-movie-collector-dashboard',
@@ -138,6 +148,16 @@ public function add_plugin_admin_menu() {
         array($this, 'display_plugin_admin_settings')
     );
 
+    // Hidden submenu page for editing a movie (accessible via URL but not shown in menu)
+    add_submenu_page(
+        null,
+        __('Edit Movie', 'wp-movie-collector'),
+        __('Edit Movie', 'wp-movie-collector'),
+        'manage_options',
+        'wp-movie-collector-edit-movie',
+        array($this, 'display_plugin_admin_edit_movie')
+    );
+
     // Remove "All Box Sets" if it still appears
     add_action('admin_menu', function() {
         remove_submenu_page('wp-movie-collector-dashboard', 'edit.php?post_type=box_set');
@@ -156,12 +176,30 @@ public function add_plugin_admin_menu() {
     }
 
     /**
+     * Display the all movies list page.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_admin_movies() {
+        include_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'admin/partials/wp-movie-collector-admin-movies.php';
+    }
+
+    /**
      * Display the add movie page.
      *
      * @since    1.0.0
      */
     public function display_plugin_admin_add_movie() {
         include_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'admin/partials/wp-movie-collector-admin-add-movie.php';
+    }
+
+    /**
+     * Display the edit movie page.
+     *
+     * @since    1.0.0
+     */
+    public function display_plugin_admin_edit_movie() {
+        include_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'admin/partials/wp-movie-collector-admin-edit-movie.php';
     }
 
     /**
@@ -344,13 +382,118 @@ public function add_plugin_admin_menu() {
     }
 
     /**
+     * Process the edit movie form submission.
+     *
+     * @since    1.0.0
+     */
+    public function process_edit_movie_form() {
+        // Check if form is submitted
+        if ( ! isset( $_POST['wp_movie_collector_edit_movie_submit'] ) ) {
+            return;
+        }
+
+        // Check nonce
+        if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_edit_movie' ) ) {
+            wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        // Check user capabilities
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        // Get movie ID
+        $movie_id = isset( $_POST['movie_id'] ) ? intval( $_POST['movie_id'] ) : 0;
+        if ( ! $movie_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            exit;
+        }
+
+        // Verify movie exists
+        $db             = new WP_Movie_Collector_DB();
+        $existing_movie = $db->get_movie( $movie_id );
+        if ( ! $existing_movie ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            exit;
+        }
+
+        // Validate and sanitize movie data
+        $movie = $this->validate_and_sanitize_movie_data( $_POST['movie'], $movie_id );
+
+        // Update the movie in the database
+        $result = $db->update_movie( $movie_id, $movie );
+
+        if ( $result ) {
+            // Handle box set relationship changes
+            // First remove existing relationships for this movie
+            global $wpdb;
+            $wpdb->delete( $db->get_relationships_table(), array( 'movie_id' => $movie_id ) );
+
+            // Add new relationship if a box set is selected
+            if ( ! empty( $movie['box_set_id'] ) ) {
+                $db->add_movie_to_box_set( $movie_id, $movie['box_set_id'] );
+            }
+
+            wp_safe_redirect( add_query_arg( 'message', 'movie_updated', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            exit;
+        } else {
+            wp_safe_redirect( add_query_arg( 'error', 'db_error', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+            exit;
+        }
+    }
+
+    /**
+     * Process deleting a movie.
+     *
+     * @since    1.0.0
+     */
+    public function process_delete_movie() {
+        // Check if this is a delete movie request
+        if ( ! isset( $_GET['action'] ) || sanitize_text_field( wp_unslash( $_GET['action'] ) ) !== 'wp_movie_collector_delete_movie' ) {
+            return;
+        }
+
+        // Get movie ID
+        $movie_id = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
+
+        // Check nonce
+        if ( ! isset( $_GET['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_GET['wp_movie_collector_nonce'] ), 'wp_movie_collector_delete_movie_' . $movie_id ) ) {
+            wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        // Check user capabilities
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        if ( ! $movie_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            exit;
+        }
+
+        // Get database instance
+        $db = new WP_Movie_Collector_DB();
+
+        // Delete the movie (this also removes relationships)
+        $result = $db->delete_movie( $movie_id );
+
+        if ( $result ) {
+            wp_safe_redirect( add_query_arg( 'message', 'movie_deleted', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+        } else {
+            wp_safe_redirect( add_query_arg( 'error', 'delete_failed', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+        }
+        exit;
+    }
+
+    /**
      * Validate and sanitize movie form data.
      *
      * @since    1.0.0
-     * @param    array    $movie    The raw movie data from the form.
-     * @return   array              The validated and sanitized movie data.
+     * @param    array    $movie       The raw movie data from the form.
+     * @param    int      $movie_id    Optional movie ID for edit context.
+     * @return   array                 The validated and sanitized movie data.
      */
-    private function validate_and_sanitize_movie_data($movie) {
+    private function validate_and_sanitize_movie_data( $movie, $movie_id = 0 ) {
         $sanitized = array();
         $errors = array();
 
@@ -473,7 +616,11 @@ public function add_plugin_admin_menu() {
         if (!empty($errors)) {
             // Store errors in transient
             set_transient('wp_movie_collector_form_errors', $errors, 60 * 5); // 5 minutes expiration
-            wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-add-movie')));
+            if ( $movie_id ) {
+                wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id)));
+            } else {
+                wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-add-movie')));
+            }
             exit;
         }
 

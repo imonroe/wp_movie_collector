@@ -602,6 +602,57 @@ class WP_Movie_Collector_DB {
     }
 
     /**
+     * Count movies matching search criteria.
+     *
+     * @since    1.0.0
+     * @param    array    $criteria    The search criteria.
+     * @return   int                   The count of matching movies.
+     */
+    public function count_movies($criteria = array()) {
+        global $wpdb;
+
+        $where = array();
+        $values = array();
+
+        if (!empty($criteria['title'])) {
+            $where[] = "title LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($criteria['title']) . '%';
+        }
+
+        if (!empty($criteria['year'])) {
+            $where[] = "release_year = %d";
+            $values[] = $criteria['year'];
+        }
+
+        if (!empty($criteria['format'])) {
+            $where[] = "format = %s";
+            $values[] = $criteria['format'];
+        }
+
+        if (!empty($criteria['director'])) {
+            $where[] = "director LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($criteria['director']) . '%';
+        }
+
+        if (!empty($criteria['genre'])) {
+            $where[] = "genre LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($criteria['genre']) . '%';
+        }
+
+        $sql = "SELECT COUNT(*) FROM $this->movies_table";
+
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(" AND ", $where);
+        }
+
+        if (!empty($values)) {
+            $sql = $wpdb->prepare($sql, $values);
+        }
+
+        return (int) $wpdb->get_var($sql);
+    }
+
+    /**
      * Search box sets by criteria.
      *
      * @since    1.0.0

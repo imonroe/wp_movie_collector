@@ -91,6 +91,8 @@ class WP_Movie_Collector {
         
         // Process form submissions
         $this->loader->add_action('admin_init', $plugin_admin, 'process_add_movie_form');
+        $this->loader->add_action('admin_init', $plugin_admin, 'process_edit_movie_form');
+        $this->loader->add_action('admin_init', $plugin_admin, 'process_delete_movie');
         $this->loader->add_action('admin_init', $plugin_admin, 'process_add_box_set_form');
         
         // Register import/export handlers

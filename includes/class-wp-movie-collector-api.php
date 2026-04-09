@@ -612,7 +612,10 @@ class WP_Movie_Collector_API {
             return new WP_Error('no_api_key', __('OMDb API key is not set.', 'wp-movie-collector'));
         }
 
-        $cache_key = self::make_cache_key('wp_movie_imdb_', sanitize_key($imdb_id));
+        // Normalize the IMDb ID once for both cache key and API request
+        $imdb_id = sanitize_key(trim($imdb_id));
+
+        $cache_key = self::make_cache_key('wp_movie_imdb_', $imdb_id);
         if (!$bypass_cache) {
             $cached_result = get_transient($cache_key);
             if (false !== $cached_result) {

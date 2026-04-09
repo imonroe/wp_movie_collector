@@ -850,7 +850,7 @@ public function add_plugin_admin_menu() {
         $success = true;
 
         // Add display_order column if it doesn't exist
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$relationship_table}` LIKE %s", 'display_order'));
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$relationship_table}` WHERE Field = %s", 'display_order'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE `{$relationship_table}` ADD COLUMN display_order INT DEFAULT 0");
         }

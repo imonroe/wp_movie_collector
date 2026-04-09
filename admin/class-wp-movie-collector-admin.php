@@ -430,7 +430,7 @@ public function add_plugin_admin_menu() {
             $movie['cover_image_id'] = 0;
         }
         if ( ! isset( $movie['acquisition_date'] ) ) {
-            $movie['acquisition_date'] = '';
+            $movie['acquisition_date'] = null;
         }
 
         global $wpdb;
@@ -504,10 +504,14 @@ public function add_plugin_admin_menu() {
         // Delete the movie (this also removes relationships)
         $result = $db->delete_movie( $movie_id );
 
+        // Redirect back to the originating page when provided, falling back to All Movies.
+        $default_redirect = admin_url( 'admin.php?page=wp-movie-collector-movies' );
+        $redirect_to      = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( sanitize_url( wp_unslash( $_POST['redirect_to'] ) ), $default_redirect ) : $default_redirect;
+
         if ( $result ) {
-            wp_safe_redirect( add_query_arg( 'message', 'movie_deleted', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            wp_safe_redirect( add_query_arg( 'message', 'movie_deleted', $redirect_to ) );
         } else {
-            wp_safe_redirect( add_query_arg( 'error', 'delete_failed', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            wp_safe_redirect( add_query_arg( 'error', 'delete_failed', $redirect_to ) );
         }
         exit;
     }
@@ -642,7 +646,7 @@ public function add_plugin_admin_menu() {
         // If there are validation errors, redirect back with error message
         if (!empty($errors)) {
             // Store errors in transient
-            set_transient('wp_movie_collector_form_errors', $errors, 60 * 5); // 5 minutes expiration
+            set_transient('wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5); // 5 minutes expiration
             if ( $movie_id ) {
                 wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id)));
             } else {
@@ -759,7 +763,7 @@ public function add_plugin_admin_menu() {
         // If there are validation errors, redirect back with error message
         if (!empty($errors)) {
             // Store errors in transient
-            set_transient('wp_movie_collector_form_errors', $errors, 60 * 5); // 5 minutes expiration
+            set_transient('wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5); // 5 minutes expiration
             wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-add-box-set')));
             exit;
         }

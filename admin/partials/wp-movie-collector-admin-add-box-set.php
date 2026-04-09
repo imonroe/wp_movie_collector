@@ -13,7 +13,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
         
         if ($error_type === 'validation') {
             // Get validation errors from transient
-            $errors = get_transient('wp_movie_collector_form_errors');
+            $errors = get_transient('wp_movie_collector_form_errors_' . get_current_user_id());
             if ($errors && is_array($errors)) {
                 echo '<div class="notice notice-error is-dismissible">';
                 echo '<p><strong>' . __('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
@@ -25,7 +25,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 echo '</div>';
                 
                 // Delete the transient
-                delete_transient('wp_movie_collector_form_errors');
+                delete_transient('wp_movie_collector_form_errors_' . get_current_user_id());
             }
         } else {
             $error_message = '';

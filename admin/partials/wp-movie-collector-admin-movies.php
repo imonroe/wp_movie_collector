@@ -241,10 +241,11 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 									<?php esc_html_e( 'Edit', 'wp-movie-collector' ); ?>
 								</a> |
 							</span>
-							<span class="trash">
+							<div class="trash" style="display:inline;">
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
 									<input type="hidden" name="action" value="wp_movie_collector_delete_movie">
 									<input type="hidden" name="id" value="<?php echo intval( $movie['id'] ); ?>">
+									<input type="hidden" name="redirect_to" value="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-movies' ) ); ?>">
 									<?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ); ?>
 									<button type="submit"
 										class="button-link submitdelete"
@@ -252,7 +253,7 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 										<?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?>
 									</button>
 								</form>
-							</span>
+							</div>
 						</div>
 					</td>
 					<td data-colname="<?php esc_attr_e( 'Year', 'wp-movie-collector' ); ?>"><?php echo esc_html( $movie['release_year'] ); ?></td>

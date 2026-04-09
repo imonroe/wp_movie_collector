@@ -27,7 +27,7 @@ if ( ! $movie ) {
 		$error_type = sanitize_text_field( wp_unslash( $_GET['error'] ) );
 
 		if ( $error_type === 'validation' ) {
-			$errors = get_transient( 'wp_movie_collector_form_errors' );
+			$errors = get_transient( 'wp_movie_collector_form_errors_' . get_current_user_id() );
 			if ( $errors && is_array( $errors ) ) {
 				echo '<div class="notice notice-error is-dismissible">';
 				echo '<p><strong>' . esc_html__( 'Please fix the following errors:', 'wp-movie-collector' ) . '</strong></p>';
@@ -37,7 +37,7 @@ if ( ! $movie ) {
 				}
 				echo '</ul>';
 				echo '</div>';
-				delete_transient( 'wp_movie_collector_form_errors' );
+				delete_transient( 'wp_movie_collector_form_errors_' . get_current_user_id() );
 			}
 		} else {
 			$error_message = '';
@@ -229,6 +229,7 @@ if ( ! $movie ) {
 			onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');">
 			<input type="hidden" name="action" value="wp_movie_collector_delete_movie">
 			<input type="hidden" name="id" value="<?php echo intval( $movie_id ); ?>">
+			<input type="hidden" name="redirect_to" value="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-movies' ) ); ?>">
 			<?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie_id ), 'wp_movie_collector_nonce' ); ?>
 			<button type="submit" class="button button-link-delete" style="color:#b32d2e;">
 				<?php esc_html_e( 'Delete Movie', 'wp-movie-collector' ); ?>

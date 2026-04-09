@@ -2,7 +2,7 @@
     "name": "imonroe/wp-movie-collector",
     "description": "A WordPress plugin for collecting and managing your movie collection.",
     "type": "wordpress-plugin",
-    "license": "GPL-2.0-or-later",
+    "license": "MIT",
     "authors": [
         {
             "name": "Ian Monroe",

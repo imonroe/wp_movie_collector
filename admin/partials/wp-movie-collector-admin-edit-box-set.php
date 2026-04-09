@@ -132,7 +132,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     </div>
     
     <p>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-box-sets')); ?>" class="button"><?php esc_html_e('Back to Box Sets', 'wp-movie-collector'); ?></a>
+        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-dashboard')); ?>" class="button"><?php esc_html_e('Back to Dashboard', 'wp-movie-collector'); ?></a>
         <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . intval($box_set_id))); ?>" class="button"><?php esc_html_e('Manage Movies in Box Set', 'wp-movie-collector'); ?></a>
     </p>
 </div>

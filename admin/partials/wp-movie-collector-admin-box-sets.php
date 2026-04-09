@@ -68,7 +68,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                     <td><?php echo intval($movie_count); ?></td>
                     <td>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-edit-box-set&id=' . intval($box_set['id']))); ?>" class="button button-small"><?php esc_html_e('Edit', 'wp-movie-collector'); ?></a>
-                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_delete_box_set&id=' . intval($box_set['id'])), 'wp_movie_collector_delete_box_set_' . intval($box_set['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e('Are you sure you want to delete this box set?', 'wp-movie-collector'); ?>')"><?php esc_html_e('Delete', 'wp-movie-collector'); ?></a>
+                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_delete_box_set&id=' . intval($box_set['id'])), 'wp_movie_collector_delete_box_set_' . intval($box_set['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js(__('Are you sure you want to delete this box set?', 'wp-movie-collector')); ?>')"><?php esc_html_e('Delete', 'wp-movie-collector'); ?></a>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . intval($box_set['id']))); ?>" class="button button-small"><?php esc_html_e('Manage Movies', 'wp-movie-collector'); ?></a>
                     </td>
                 </tr>

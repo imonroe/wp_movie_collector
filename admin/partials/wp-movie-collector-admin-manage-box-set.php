@@ -125,7 +125,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                                 <td><?php echo esc_html($movie['release_year']); ?></td>
                                 <td><?php echo esc_html($movie['format']); ?></td>
                                 <td>
-                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_remove_movie&box_set_id=' . intval($box_set_id) . '&movie_id=' . intval($movie['id'])), 'wp_movie_collector_remove_movie_' . intval($movie['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e('Are you sure you want to remove this movie from the box set?', 'wp-movie-collector'); ?>')">
+                                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_remove_movie&box_set_id=' . intval($box_set_id) . '&movie_id=' . intval($movie['id'])), 'wp_movie_collector_remove_movie_' . intval($movie['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js(__('Are you sure you want to remove this movie from the box set?', 'wp-movie-collector')); ?>')">
                                         <?php esc_html_e('Remove', 'wp-movie-collector'); ?>
                                     </a>
                                 </td>
@@ -226,7 +226,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     </div>
     
     <p>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-box-sets')); ?>" class="button"><?php esc_html_e('Back to Box Sets', 'wp-movie-collector'); ?></a>
+        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-dashboard')); ?>" class="button"><?php esc_html_e('Back to Dashboard', 'wp-movie-collector'); ?></a>
     </p>
 </div>
 

@@ -9,7 +9,7 @@
         "dev": "webpack --mode=development",
         "lint:js": "eslint src/ admin/js/ public/js/",
         "lint:js:fix": "eslint src/ admin/js/ public/js/ --fix",
-        "lint:css": "stylelint '**/*.css' --ignore-path .gitignore",
+        "lint:css": "stylelint \"**/*.css\" --ignore-path .gitignore",
         "test": "jest --passWithNoTests"
     },
     "devDependencies": {

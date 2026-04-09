@@ -32,3 +32,10 @@ if ( ! defined( 'WP_MOVIE_COLLECTOR_PLUGIN_URL' ) ) {
 	define( 'WP_MOVIE_COLLECTOR_PLUGIN_URL', 'http://example.com/wp-content/plugins/wp-movie-collector/' );
 }
 
+// Polyfill WordPress functions used in unit-testable code.
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( $url, $component );
+	}
+}
+

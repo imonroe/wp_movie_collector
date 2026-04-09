@@ -1557,4 +1557,36 @@ public function add_plugin_admin_menu() {
         wp_safe_redirect(add_query_arg('cache_cleared', '1', $redirect_url));
         exit;
     }
+
+    /**
+     * Display admin notices when API issues are detected.
+     *
+     * Shows a warning banner when one or more external API providers
+     * have tripped the circuit breaker due to repeated failures.
+     *
+     * @since    1.0.0
+     */
+    public function display_api_issue_notices() {
+        if ( ! class_exists( 'WP_Movie_Collector_API_Client' ) ) {
+            return;
+        }
+
+        $issues = WP_Movie_Collector_API_Client::get_api_issues();
+
+        if ( empty( $issues ) ) {
+            return;
+        }
+
+        $providers = array_keys( $issues );
+        $list      = implode( ', ', array_map( 'strtoupper', $providers ) );
+
+        printf(
+            '<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+            sprintf(
+                /* translators: %s: comma-separated list of API provider names */
+                esc_html__( 'WP Movie Collector: The following API services are experiencing issues and have been temporarily paused: %s. They will be retried automatically after a cooldown period.', 'wp-movie-collector' ),
+                esc_html( $list )
+            )
+        );
+    }
 }

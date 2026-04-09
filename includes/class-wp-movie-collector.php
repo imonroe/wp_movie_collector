@@ -68,6 +68,7 @@ class WP_Movie_Collector {
         require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-post-types.php';
 
         // The class responsible for API integrations
+        require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api-client.php';
         require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php';
 
         $this->loader = new WP_Movie_Collector_Loader();
@@ -102,6 +103,9 @@ class WP_Movie_Collector {
         $this->loader->add_action('wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search');
         $this->loader->add_action('wp_ajax_wp_movie_collector_get_movie_details', $plugin_admin, 'ajax_get_movie_details');
         $this->loader->add_action('wp_ajax_wp_movie_collector_clear_api_cache', $plugin_admin, 'ajax_clear_api_cache');
+
+        // Admin notices for API issues
+        $this->loader->add_action('admin_notices', $plugin_admin, 'display_api_issue_notices');
     }
 
     /**

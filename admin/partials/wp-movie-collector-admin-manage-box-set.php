@@ -9,7 +9,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     <?php
     // Show success message if there is one
     if (isset($_GET['message'])) {
-        $message_type = sanitize_text_field($_GET['message']);
+        $message_type = sanitize_text_field(wp_unslash($_GET['message']));
         $message = '';
         
         switch ($message_type) {
@@ -32,7 +32,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     
     // Show error message if there is one
     if (isset($_GET['error'])) {
-        $error_type = sanitize_text_field($_GET['error']);
+        $error_type = sanitize_text_field(wp_unslash($_GET['error']));
         $error_message = '';
         
         switch ($error_type) {
@@ -326,13 +326,6 @@ jQuery(document).ready(function($) {
         $('input[name="movie_ids[]"]').prop('checked', $(this).prop('checked'));
     });
     
-    // Escape HTML entities to prevent XSS when inserting dynamic text into DOM
-    function escHtml(str) {
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-    }
-
     // Movie search functionality
     $('#wp-movie-collector-search-movies').on('click', function() {
         var searchQuery = $('#wp-movie-collector-movie-search').val();
@@ -372,9 +365,9 @@ jQuery(document).ready(function($) {
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<tr>';
                         resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + parseInt(movie.id, 10) + '"></td>';
-                        resultsHtml += '<td>' + escHtml(movie.title) + '</td>';
-                        resultsHtml += '<td>' + escHtml(movie.release_year) + '</td>';
-                        resultsHtml += '<td>' + escHtml(movie.format) + '</td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.title) + '</td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.release_year) + '</td>';
+                        resultsHtml += '<td>' + wpMovieCollectorEscHtml(movie.format) + '</td>';
                         resultsHtml += '</tr>';
                     });
                     

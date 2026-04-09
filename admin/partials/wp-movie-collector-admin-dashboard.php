@@ -9,7 +9,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     <?php
     // Show success message if there is one
     if (isset($_GET['message'])) {
-        $message_type = sanitize_text_field($_GET['message']);
+        $message_type = sanitize_text_field(wp_unslash($_GET['message']));
         $message = '';
         
         switch ($message_type) {

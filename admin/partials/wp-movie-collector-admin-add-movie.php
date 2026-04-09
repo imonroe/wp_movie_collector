@@ -9,7 +9,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
     <?php
     // Show error message if there is one
     if (isset($_GET['error'])) {
-        $error_type = sanitize_text_field($_GET['error']);
+        $error_type = sanitize_text_field(wp_unslash($_GET['error']));
         
         if ($error_type === 'validation') {
             // Get validation errors from transient
@@ -202,13 +202,6 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 <script>
 jQuery(document).ready(function($) {
-    // Escape HTML entities to prevent XSS when inserting dynamic text into DOM
-    function escHtml(str) {
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-    }
-
     // Barcode lookup
     $('#wp-movie-collector-lookup-barcode').on('click', function() {
         var barcode = $('#wp-movie-collector-barcode').val();
@@ -276,7 +269,7 @@ jQuery(document).ready(function($) {
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<li>';
                         resultsHtml += '<a href="#" class="wp-movie-collector-select-movie" data-movie-id="' + parseInt(movie.id, 10) + '">';
-                        resultsHtml += escHtml(movie.title) + ' (' + escHtml(movie.release_year) + ')';
+                        resultsHtml += wpMovieCollectorEscHtml(movie.title) + ' (' + wpMovieCollectorEscHtml(movie.release_year) + ')';
                         resultsHtml += '</a>';
                         resultsHtml += '</li>';
                     });

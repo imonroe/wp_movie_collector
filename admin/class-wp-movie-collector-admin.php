@@ -70,6 +70,9 @@ class WP_Movie_Collector_Admin {
             )
         );
         wp_localize_script('wp-movie-collector-admin', 'wp_movie_collector_admin', $localize_data);
+
+        // Add shared escHtml helper for safe DOM text insertion
+        wp_add_inline_script('wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s));return d.innerHTML;}', 'before');
     }
 
 /**
@@ -1014,6 +1017,13 @@ public function add_plugin_admin_menu() {
         // Check if file was uploaded
         if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
             wp_redirect(add_query_arg('error', 'file_upload', admin_url('admin.php?page=wp-movie-collector-import-export')));
+            exit;
+        }
+
+        // Enforce maximum file size (use WordPress upload limit or 5MB, whichever is smaller)
+        $max_size = min(wp_max_upload_size(), 5 * MB_IN_BYTES);
+        if ($_FILES['import_file']['size'] > $max_size) {
+            wp_redirect(add_query_arg('error', 'file_too_large', admin_url('admin.php?page=wp-movie-collector-import-export')));
             exit;
         }
 

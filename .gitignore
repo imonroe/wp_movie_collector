@@ -35,3 +35,6 @@ debug.log
 
 # Source maps
 *.map
+
+# PHPUnit cache
+.phpunit.result.cache

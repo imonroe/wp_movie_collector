@@ -1,0 +1,44 @@
+const path = require( 'path' );
+const MiniCssExtractPlugin = require( 'mini-css-extract-plugin' );
+const CssMinimizerPlugin = require( 'css-minimizer-webpack-plugin' );
+
+module.exports = ( env, argv ) => {
+	const isProduction = argv.mode === 'production';
+
+	return {
+		entry: {
+			'admin/js/wp-movie-collector-admin': './src/admin/js/admin.js',
+			'admin/css/wp-movie-collector-admin': './src/admin/css/admin.css',
+			'public/js/wp-movie-collector-public': './src/public/js/public.js',
+			'public/css/wp-movie-collector-public': './src/public/css/public.css',
+		},
+		output: {
+			path: path.resolve( __dirname, 'dist' ),
+			filename: '[name]' + ( isProduction ? '.min.js' : '.js' ),
+			clean: true,
+		},
+		module: {
+			rules: [
+				{
+					test: /\.css$/,
+					use: [
+						MiniCssExtractPlugin.loader,
+						'css-loader',
+					],
+				},
+			],
+		},
+		plugins: [
+			new MiniCssExtractPlugin( {
+				filename: '[name]' + ( isProduction ? '.min.css' : '.css' ),
+			} ),
+		],
+		optimization: {
+			minimizer: [
+				'...',
+				new CssMinimizerPlugin(),
+			],
+		},
+		devtool: isProduction ? false : 'source-map',
+	};
+};

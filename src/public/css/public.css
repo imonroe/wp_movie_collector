@@ -1,0 +1,6 @@
+/**
+ * Public styles entry point for WP Movie Collector
+ *
+ * Imports the main public stylesheet for bundling/minification.
+ */
+@import '../../../public/css/wp-movie-collector-public.css';

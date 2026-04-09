@@ -1,0 +1,6 @@
+/**
+ * Admin styles entry point for WP Movie Collector
+ *
+ * Imports the main admin stylesheet for bundling/minification.
+ */
+@import '../../../admin/css/wp-movie-collector-admin.css';

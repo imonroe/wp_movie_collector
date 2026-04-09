@@ -23,7 +23,11 @@ class WP_Movie_Collector_Admin {
      * @since    1.0.0
      */
     public function enqueue_styles() {
-        wp_enqueue_style('wp-movie-collector-admin', WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css', array(), WP_MOVIE_COLLECTOR_VERSION, 'all');
+        $suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+        $css_url = $suffix
+            ? WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/css/wp-movie-collector-admin' . $suffix . '.css'
+            : WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css';
+        wp_enqueue_style('wp-movie-collector-admin', $css_url, array(), WP_MOVIE_COLLECTOR_VERSION, 'all');
     }
 
     /**
@@ -39,7 +43,11 @@ class WP_Movie_Collector_Admin {
         wp_enqueue_script('jquery-ui-sortable');
 
         // Custom admin script
-        wp_enqueue_script('wp-movie-collector-admin', WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js', array('jquery', 'jquery-ui-sortable'), WP_MOVIE_COLLECTOR_VERSION, false);
+        $suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+        $js_url = $suffix
+            ? WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/js/wp-movie-collector-admin' . $suffix . '.js'
+            : WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js';
+        wp_enqueue_script('wp-movie-collector-admin', $js_url, array('jquery', 'jquery-ui-sortable'), WP_MOVIE_COLLECTOR_VERSION, false);
 
         // Localize the script with new data
         $localize_data = array(

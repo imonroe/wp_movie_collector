@@ -12,7 +12,6 @@ namespace WP_Movie_Collector\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
-use ReflectionMethod;
 
 /**
  * API cache unit tests.

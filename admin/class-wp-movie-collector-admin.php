@@ -1540,7 +1540,7 @@ public function add_plugin_admin_menu() {
      * @since    1.0.0
      */
     public function ajax_clear_api_cache() {
-        if (!isset($_GET['wp_movie_collector_nonce']) || !wp_verify_nonce($_GET['wp_movie_collector_nonce'], 'wp_movie_collector_clear_cache')) {
+        if (!isset($_POST['wp_movie_collector_nonce']) || !wp_verify_nonce($_POST['wp_movie_collector_nonce'], 'wp_movie_collector_clear_cache')) {
             wp_die(__('Security check failed.', 'wp-movie-collector'));
         }
 

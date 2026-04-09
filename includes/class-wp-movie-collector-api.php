@@ -332,7 +332,7 @@ class WP_Movie_Collector_API {
 
         // If response code is not 200, try OpenLibrary as fallback (for books/DVDs with ISBN)
         if ($response_code !== 200) {
-            return $this->fallback_to_open_library($barcode);
+            return $this->fallback_to_open_library($barcode, $bypass_cache);
         }
 
         // Get response body
@@ -341,7 +341,7 @@ class WP_Movie_Collector_API {
 
         // Check if we got a valid response with products
         if (empty($data) || !isset($data['products']) || empty($data['products'])) {
-            return $this->fallback_to_open_library($barcode);
+            return $this->fallback_to_open_library($barcode, $bypass_cache);
         }
 
         // Get the first product
@@ -371,12 +371,12 @@ class WP_Movie_Collector_API {
         // If it doesn't look like a movie, try to search for the title on TMDb
         if (!$is_movie) {
             if (isset($product['title'])) {
-                $search_result = $this->search_movie_by_title($product['title']);
+                $search_result = $this->search_movie_by_title($product['title'], null, $bypass_cache);
 
                 if (!is_wp_error($search_result) && !empty($search_result)) {
                     // Get the first match
                     $movie_id = $search_result[0]['id'];
-                    return $this->get_movie_details($movie_id);
+                    return $this->get_movie_details($movie_id, $bypass_cache);
                 }
             }
 
@@ -441,10 +441,11 @@ class WP_Movie_Collector_API {
      * Fallback to Open Library for ISBN lookup.
      *
      * @since    1.0.0
-     * @param    string    $barcode    The barcode/ISBN.
-     * @return   array|WP_Error       The movie/book details or error.
+     * @param    string    $barcode       The barcode/ISBN.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The movie/book details or error.
      */
-    private function fallback_to_open_library($barcode) {
+    private function fallback_to_open_library($barcode, $bypass_cache = false) {
         // Try looking up as ISBN (for books/DVDs that might have ISBN)
         $url = "https://openlibrary.org/api/books?bibkeys=ISBN:{$barcode}&format=json&jscmd=data";
 
@@ -473,7 +474,7 @@ class WP_Movie_Collector_API {
         // Check if we got a valid response
         if (empty($data) || empty($data["ISBN:{$barcode}"])) {
             // Last resort - search for an exact barcode match on TMDb
-            return $this->search_tmdb_by_external_id($barcode);
+            return $this->search_tmdb_by_external_id($barcode, $bypass_cache);
         }
 
         // Format the data from Open Library
@@ -533,10 +534,11 @@ class WP_Movie_Collector_API {
      * Search TMDb by external ID (last resort for barcode lookup).
      *
      * @since    1.0.0
-     * @param    string    $external_id    The external ID (barcode/UPC/EAN).
+     * @param    string    $external_id   The external ID (barcode/UPC/EAN).
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
      * @return   array|WP_Error           The movie details or error.
      */
-    private function search_tmdb_by_external_id($external_id) {
+    private function search_tmdb_by_external_id($external_id, $bypass_cache = false) {
         if (empty($this->tmdb_api_key)) {
             return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
         }
@@ -559,7 +561,7 @@ class WP_Movie_Collector_API {
             // Check if we got movie results
             if (!empty($data['movie_results'])) {
                 $movie_id = $data['movie_results'][0]['id'];
-                return $this->get_movie_details($movie_id);
+                return $this->get_movie_details($movie_id, $bypass_cache);
             }
 
             // Check if we got TV results
@@ -686,10 +688,12 @@ class WP_Movie_Collector_API {
         $deleted = 0;
 
         foreach ($prefixes as $prefix) {
+            $like_pattern = $wpdb->esc_like($prefix) . '%';
+
             $transients = $wpdb->get_col(
                 $wpdb->prepare(
                     "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-                    $prefix . '%'
+                    $like_pattern
                 )
             );
 

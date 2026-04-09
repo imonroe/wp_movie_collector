@@ -6,7 +6,7 @@
             <p><?php printf(
                 /* translators: %d: number of cached items cleared */
                 __('API cache cleared successfully. %d cached items removed.', 'wp-movie-collector'),
-                intval($_GET['cache_cleared'])
+                absint($_GET['cache_cleared'])
             ); ?></p>
         </div>
     <?php endif; ?>
@@ -113,11 +113,15 @@
             <tr>
                 <th scope="row"><?php _e('Clear API Cache', 'wp-movie-collector'); ?></th>
                 <td>
-                    <p>
-                        <a href="<?php echo wp_nonce_url(admin_url('admin-ajax.php?action=wp_movie_collector_clear_api_cache'), 'wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>" class="button" id="wp-movie-collector-clear-cache">
-                            <?php _e('Clear API Cache', 'wp-movie-collector'); ?>
-                        </a>
-                    </p>
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
+                        <?php wp_nonce_field('wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>
+                        <input type="hidden" name="action" value="wp_movie_collector_clear_api_cache">
+                        <p>
+                            <button type="submit" class="button" id="wp-movie-collector-clear-cache">
+                                <?php _e('Clear API Cache', 'wp-movie-collector'); ?>
+                            </button>
+                        </p>
+                    </form>
                     <p class="description">
                         <?php _e('This will clear all cached API responses (movie searches, details, and barcode lookups).', 'wp-movie-collector'); ?>
                     </p>

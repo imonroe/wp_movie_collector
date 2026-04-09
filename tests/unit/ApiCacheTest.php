@@ -118,12 +118,24 @@ class ApiCacheTest extends TestCase {
 	}
 
 	/**
+	 * Read the API class source file, asserting it exists and is readable.
+	 *
+	 * @return string The file contents.
+	 */
+	private function read_api_source(): string {
+		$path   = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php';
+		$source = file_get_contents( $path );
+
+		$this->assertIsString( $source, "Failed to read API class source at {$path}" );
+
+		return $source;
+	}
+
+	/**
 	 * Test that the API class source contains expected cache key prefixes.
 	 */
 	public function test_cache_key_prefixes_used(): void {
-		$source = file_get_contents(
-			WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php'
-		);
+		$source = $this->read_api_source();
 
 		$this->assertStringContainsString( 'wp_movie_search_', $source );
 		$this->assertStringContainsString( 'wp_movie_details_', $source );
@@ -135,9 +147,7 @@ class ApiCacheTest extends TestCase {
 	 * Test that debug error_log calls have been removed from the API class.
 	 */
 	public function test_no_debug_error_log_calls(): void {
-		$source = file_get_contents(
-			WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php'
-		);
+		$source = $this->read_api_source();
 
 		$this->assertStringNotContainsString( 'error_log(', $source );
 	}
@@ -146,9 +156,7 @@ class ApiCacheTest extends TestCase {
 	 * Test that caching is not disabled (no commented-out set_transient calls).
 	 */
 	public function test_caching_not_disabled(): void {
-		$source = file_get_contents(
-			WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php'
-		);
+		$source = $this->read_api_source();
 
 		$this->assertStringNotContainsString( '// set_transient(', $source );
 		$this->assertStringNotContainsString( 'Caching disabled', $source );
@@ -158,9 +166,7 @@ class ApiCacheTest extends TestCase {
 	 * Test that set_transient is called with appropriate TTL values.
 	 */
 	public function test_transient_ttl_values(): void {
-		$source = file_get_contents(
-			WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php'
-		);
+		$source = $this->read_api_source();
 
 		// Search results: 12h or 24h
 		$this->assertStringContainsString( 'HOUR_IN_SECONDS * 12', $source );

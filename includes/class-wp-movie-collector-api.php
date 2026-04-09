@@ -60,6 +60,11 @@ class WP_Movie_Collector_API {
             return new WP_Error('no_api_key', __('TMDb API key is not set. Please set it in the settings page.', 'wp-movie-collector'));
         }
 
+        // Normalize year so that 0, '', and null all produce the same cache key
+        if (empty($year)) {
+            $year = null;
+        }
+
         // Check the cache first
         $cache_key = self::make_cache_key('wp_movie_search_', md5($title . '_' . $year));
         if (!$bypass_cache) {

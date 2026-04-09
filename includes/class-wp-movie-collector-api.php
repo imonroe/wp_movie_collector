@@ -50,21 +50,29 @@ class WP_Movie_Collector_API {
      * Search for a movie by title using TMDb API.
      *
      * @since    1.0.0
-     * @param    string    $title    The movie title to search for.
-     * @param    int       $year     Optional. The release year to filter by.
-     * @return   array|WP_Error     The search results or error.
+     * @param    string    $title         The movie title to search for.
+     * @param    int       $year          Optional. The release year to filter by.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The search results or error.
      */
-    public function search_movie_by_title($title, $year = null) {
+    public function search_movie_by_title($title, $year = null, $bypass_cache = false) {
         if (empty($this->tmdb_api_key)) {
             return new WP_Error('no_api_key', __('TMDb API key is not set. Please set it in the settings page.', 'wp-movie-collector'));
         }
 
-        // Check the cache first
-        $cache_key = 'wp_movie_search_' . md5($title . '_' . $year);
-        $cached_results = get_transient($cache_key);
+        // Normalize year so that 0, '', and null all produce the same cache key
+        if (empty($year)) {
+            $year = null;
+        }
 
-        if (false !== $cached_results) {
-            return $cached_results;
+        // Check the cache first
+        $cache_key = self::make_cache_key('wp_movie_search_', md5($title . '_' . $year));
+        if (!$bypass_cache) {
+            $cached_results = get_transient($cache_key);
+
+            if (false !== $cached_results) {
+                return $cached_results;
+            }
         }
 
         $args = array(
@@ -89,8 +97,7 @@ class WP_Movie_Collector_API {
                 return $response;
             }
 
-            // Caching disabled for debugging purposes
-            // set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
 
             return $fallback_results;
         }
@@ -123,8 +130,7 @@ class WP_Movie_Collector_API {
             return $fallback_results;
         }
 
-        // Caching disabled for debugging purposes
-        // set_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
+        set_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
 
         return $data['results'];
     }
@@ -173,12 +179,21 @@ class WP_Movie_Collector_API {
      * Get detailed movie information from TMDb.
      *
      * @since    1.0.0
-     * @param    int       $tmdb_id    The TMDb movie ID.
-     * @return   array|WP_Error       The movie details or error.
+     * @param    int       $tmdb_id       The TMDb movie ID.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The movie details or error.
      */
-    public function get_movie_details($tmdb_id) {
+    public function get_movie_details($tmdb_id, $bypass_cache = false) {
         if (empty($this->tmdb_api_key)) {
             return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
+        }
+
+        $cache_key = self::make_cache_key('wp_movie_details_', intval($tmdb_id));
+        if (!$bypass_cache) {
+            $cached_result = get_transient($cache_key);
+            if (false !== $cached_result) {
+                return $cached_result;
+            }
         }
 
         $url = "https://api.themoviedb.org/3/movie/{$tmdb_id}?api_key={$this->tmdb_api_key}&append_to_response=credits,images";
@@ -196,7 +211,10 @@ class WP_Movie_Collector_API {
             return new WP_Error('api_error', __('Failed to retrieve movie details.', 'wp-movie-collector'));
         }
 
-        return $this->format_movie_data($data);
+        $result = $this->format_movie_data($data);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+
+        return $result;
     }
 
     /**
@@ -266,10 +284,11 @@ class WP_Movie_Collector_API {
      * Look up movie by barcode using BarcodeLookup.com API and other sources.
      *
      * @since    1.0.0
-     * @param    string    $barcode    The movie barcode.
-     * @return   array|WP_Error       The movie details or error.
+     * @param    string    $barcode       The movie barcode.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The movie details or error.
      */
-    public function lookup_by_barcode($barcode) {
+    public function lookup_by_barcode($barcode, $bypass_cache = false) {
         // First, check if we have BarcodeLookup API key
         if (empty($this->barcode_api_key)) {
             return new WP_Error(
@@ -286,13 +305,14 @@ class WP_Movie_Collector_API {
             return new WP_Error('invalid_barcode', __('Invalid barcode format.', 'wp-movie-collector'));
         }
 
-        // Caching disabled for debugging purposes
-        // $cache_key = 'wp_movie_barcode_' . $barcode;
-        // $cached_result = get_transient($cache_key);
-        //
-        // if (false !== $cached_result) {
-        //     return $cached_result;
-        // }
+        $cache_key = self::make_cache_key('wp_movie_barcode_', $barcode);
+        if (!$bypass_cache) {
+            $cached_result = get_transient($cache_key);
+
+            if (false !== $cached_result) {
+                return $cached_result;
+            }
+        }
 
         // Make request to BarcodeLookup API
         $url = add_query_arg(array(
@@ -300,8 +320,6 @@ class WP_Movie_Collector_API {
             'formatted' => 'y',
             'key' => $this->barcode_api_key,
         ), 'https://api.barcodelookup.com/v3/products');
-        
-        error_log('BarcodeLookup API Request URL: ' . $url);
 
         $args = array(
             'timeout' => 15
@@ -311,27 +329,24 @@ class WP_Movie_Collector_API {
 
         // Check for WP error
         if (is_wp_error($response)) {
-            error_log('BarcodeLookup API Error: ' . $response->get_error_message());
             return $response;
         }
 
         // Get response code
         $response_code = wp_remote_retrieve_response_code($response);
-        error_log('BarcodeLookup API Response Code: ' . $response_code);
 
         // If response code is not 200, try OpenLibrary as fallback (for books/DVDs with ISBN)
         if ($response_code !== 200) {
-            return $this->fallback_to_open_library($barcode);
+            return $this->fallback_to_open_library($barcode, $bypass_cache);
         }
 
         // Get response body
         $body = wp_remote_retrieve_body($response);
-        error_log('BarcodeLookup API Response Body: ' . $body);
         $data = json_decode($body, true);
 
         // Check if we got a valid response with products
         if (empty($data) || !isset($data['products']) || empty($data['products'])) {
-            return $this->fallback_to_open_library($barcode);
+            return $this->fallback_to_open_library($barcode, $bypass_cache);
         }
 
         // Get the first product
@@ -361,12 +376,12 @@ class WP_Movie_Collector_API {
         // If it doesn't look like a movie, try to search for the title on TMDb
         if (!$is_movie) {
             if (isset($product['title'])) {
-                $search_result = $this->search_movie_by_title($product['title']);
+                $search_result = $this->search_movie_by_title($product['title'], null, $bypass_cache);
 
                 if (!is_wp_error($search_result) && !empty($search_result)) {
                     // Get the first match
                     $movie_id = $search_result[0]['id'];
-                    return $this->get_movie_details($movie_id);
+                    return $this->get_movie_details($movie_id, $bypass_cache);
                 }
             }
 
@@ -377,8 +392,7 @@ class WP_Movie_Collector_API {
         // Format the data from BarcodeLookup
         $result = $this->format_barcode_data($product);
 
-        // Caching disabled for debugging purposes
-        // set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -432,25 +446,23 @@ class WP_Movie_Collector_API {
      * Fallback to Open Library for ISBN lookup.
      *
      * @since    1.0.0
-     * @param    string    $barcode    The barcode/ISBN.
-     * @return   array|WP_Error       The movie/book details or error.
+     * @param    string    $barcode       The barcode/ISBN.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The movie/book details or error.
      */
-    private function fallback_to_open_library($barcode) {
+    private function fallback_to_open_library($barcode, $bypass_cache = false) {
         // Try looking up as ISBN (for books/DVDs that might have ISBN)
         $url = "https://openlibrary.org/api/books?bibkeys=ISBN:{$barcode}&format=json&jscmd=data";
-        error_log('OpenLibrary API Request URL: ' . $url);
 
         $response = wp_remote_get($url);
 
         // Check for WP error
         if (is_wp_error($response)) {
-            error_log('OpenLibrary API Error: ' . $response->get_error_message());
             return $response;
         }
 
         // Get response code
         $response_code = wp_remote_retrieve_response_code($response);
-        error_log('OpenLibrary API Response Code: ' . $response_code);
 
         // If response code is not 200, return error
         if ($response_code !== 200) {
@@ -462,13 +474,12 @@ class WP_Movie_Collector_API {
 
         // Get response body
         $body = wp_remote_retrieve_body($response);
-        error_log('OpenLibrary API Response Body: ' . $body);
         $data = json_decode($body, true);
 
         // Check if we got a valid response
         if (empty($data) || empty($data["ISBN:{$barcode}"])) {
             // Last resort - search for an exact barcode match on TMDb
-            return $this->search_tmdb_by_external_id($barcode);
+            return $this->search_tmdb_by_external_id($barcode, $bypass_cache);
         }
 
         // Format the data from Open Library
@@ -519,8 +530,7 @@ class WP_Movie_Collector_API {
             $movie['studio'] = implode(', ', $publishers);
         }
 
-        // Caching disabled for debugging purposes
-        // set_transient('wp_movie_barcode_' . $barcode, $movie, DAY_IN_SECONDS * 7);
+        set_transient(self::make_cache_key('wp_movie_barcode_', $barcode), $movie, DAY_IN_SECONDS * 7);
 
         return $movie;
     }
@@ -529,10 +539,11 @@ class WP_Movie_Collector_API {
      * Search TMDb by external ID (last resort for barcode lookup).
      *
      * @since    1.0.0
-     * @param    string    $external_id    The external ID (barcode/UPC/EAN).
+     * @param    string    $external_id   The external ID (barcode/UPC/EAN).
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
      * @return   array|WP_Error           The movie details or error.
      */
-    private function search_tmdb_by_external_id($external_id) {
+    private function search_tmdb_by_external_id($external_id, $bypass_cache = false) {
         if (empty($this->tmdb_api_key)) {
             return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
         }
@@ -542,23 +553,20 @@ class WP_Movie_Collector_API {
 
         foreach ($external_sources as $source) {
             $url = "https://api.themoviedb.org/3/find/{$external_id}?api_key={$this->tmdb_api_key}&external_source={$source}";
-            error_log('TMDb External ID API Request URL: ' . $url);
 
             $response = wp_remote_get($url);
 
             if (is_wp_error($response)) {
-                error_log('TMDb External ID API Error: ' . $response->get_error_message());
                 continue;
             }
 
             $body = wp_remote_retrieve_body($response);
-            error_log('TMDb External ID API Response Body: ' . $body);
             $data = json_decode($body, true);
 
             // Check if we got movie results
             if (!empty($data['movie_results'])) {
                 $movie_id = $data['movie_results'][0]['id'];
-                return $this->get_movie_details($movie_id);
+                return $this->get_movie_details($movie_id, $bypass_cache);
             }
 
             // Check if we got TV results
@@ -586,8 +594,7 @@ class WP_Movie_Collector_API {
             __('No movie found with this barcode.', 'wp-movie-collector')
         );
 
-        // Caching disabled for debugging purposes
-        // set_transient('wp_movie_barcode_' . $external_id, $error, HOUR_IN_SECONDS);
+        set_transient(self::make_cache_key('wp_movie_barcode_', $external_id), $error, HOUR_IN_SECONDS);
 
         return $error;
     }
@@ -596,12 +603,28 @@ class WP_Movie_Collector_API {
      * Get movie details from OMDb by IMDb ID.
      *
      * @since    1.0.0
-     * @param    string    $imdb_id    The IMDb ID.
-     * @return   array|WP_Error       The movie details or error.
+     * @param    string    $imdb_id       The IMDb ID.
+     * @param    bool      $bypass_cache  Optional. Whether to bypass the cache.
+     * @return   array|WP_Error           The movie details or error.
      */
-    public function get_movie_details_by_imdb($imdb_id) {
+    public function get_movie_details_by_imdb($imdb_id, $bypass_cache = false) {
         if (empty($this->omdb_api_key)) {
             return new WP_Error('no_api_key', __('OMDb API key is not set.', 'wp-movie-collector'));
+        }
+
+        // Normalize the IMDb ID once for both cache key and API request
+        $imdb_id = sanitize_key(trim($imdb_id));
+
+        if (empty($imdb_id) || !preg_match('/^tt\d{7,}$/', $imdb_id)) {
+            return new WP_Error('invalid_imdb_id', __('Invalid IMDb ID.', 'wp-movie-collector'));
+        }
+
+        $cache_key = self::make_cache_key('wp_movie_imdb_', $imdb_id);
+        if (!$bypass_cache) {
+            $cached_result = get_transient($cache_key);
+            if (false !== $cached_result) {
+                return $cached_result;
+            }
         }
 
         $url = add_query_arg(array(
@@ -623,7 +646,10 @@ class WP_Movie_Collector_API {
             return new WP_Error('api_error', $data['Error']);
         }
 
-        return $this->format_omdb_movie_data($data);
+        $result = $this->format_omdb_movie_data($data);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+
+        return $result;
     }
 
     /**
@@ -651,5 +677,37 @@ class WP_Movie_Collector_API {
         }
 
         return $movie;
+    }
+
+    /**
+     * Build a versioned cache key.
+     *
+     * Includes a cache version number so that bumping the version
+     * instantly invalidates all prior cached entries. Works correctly
+     * with both database-backed transients and persistent object caches.
+     *
+     * @since    1.0.0
+     * @param    string    $prefix    The cache key prefix.
+     * @param    string    $suffix    The cache key suffix (unique identifier).
+     * @return   string              The versioned cache key.
+     */
+    private static function make_cache_key($prefix, $suffix) {
+        $version = (int) get_option('wp_movie_collector_cache_version', 1);
+        return $prefix . $version . '_' . $suffix;
+    }
+
+    /**
+     * Invalidate all API response caches.
+     *
+     * Bumps the internal cache version so that all previously cached
+     * entries are no longer matched by subsequent lookups. Old transients
+     * expire naturally via their TTL. This approach is atomic, avoids
+     * unbounded key tracking, and works with persistent object caches.
+     *
+     * @since    1.0.0
+     */
+    public static function clear_api_cache() {
+        $version = (int) get_option('wp_movie_collector_cache_version', 1);
+        update_option('wp_movie_collector_cache_version', $version + 1);
     }
 }

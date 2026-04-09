@@ -101,6 +101,7 @@ class WP_Movie_Collector {
         $this->loader->add_action('wp_ajax_wp_movie_collector_barcode_lookup', $plugin_admin, 'ajax_barcode_lookup');
         $this->loader->add_action('wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search');
         $this->loader->add_action('wp_ajax_wp_movie_collector_get_movie_details', $plugin_admin, 'ajax_get_movie_details');
+        $this->loader->add_action('wp_ajax_wp_movie_collector_clear_api_cache', $plugin_admin, 'ajax_clear_api_cache');
     }
 
     /**

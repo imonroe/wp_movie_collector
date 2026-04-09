@@ -13,7 +13,7 @@ $paged = get_query_var('paged') ? get_query_var('paged') : 1;
 // Get filter values from URL
 $filter_format = isset($_GET['format']) ? sanitize_text_field(wp_unslash($_GET['format'])) : '';
 $filter_genre = isset($_GET['genre']) ? sanitize_text_field(wp_unslash($_GET['genre'])) : '';
-$raw_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
+$raw_year = (isset($_GET['year']) && is_scalar($_GET['year'])) ? absint(wp_unslash($_GET['year'])) : 0;
 $filter_year = ($raw_year >= 1900 && $raw_year <= intval(date('Y')) + 1) ? $raw_year : 0;
 $filter_director = isset($_GET['director']) ? sanitize_text_field(wp_unslash($_GET['director'])) : '';
 $filter_studio = isset($_GET['studio']) ? sanitize_text_field(wp_unslash($_GET['studio'])) : '';

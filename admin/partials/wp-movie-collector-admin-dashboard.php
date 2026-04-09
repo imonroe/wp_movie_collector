@@ -16,6 +16,12 @@ if ( ! current_user_can( 'manage_options' ) ) {
             case 'movie_added':
                 $message = __('Movie added successfully!', 'wp-movie-collector');
                 break;
+            case 'box_set_added':
+                $message = __('Box set added successfully!', 'wp-movie-collector');
+                break;
+            case 'box_set_deleted':
+                $message = __('Box set deleted successfully!', 'wp-movie-collector');
+                break;
             default:
                 $message = __('Operation completed successfully.', 'wp-movie-collector');
                 break;
@@ -77,6 +83,13 @@ if ( ! current_user_can( 'manage_options' ) ) {
             </div>
         </div>
         
-        <!-- Search functionality will be implemented with the admin movie list page (issue #12) -->
+        <div class="wp-movie-collector-search">
+            <h3><?php esc_html_e('Search Collection', 'wp-movie-collector'); ?></h3>
+            <form method="get">
+                <input type="hidden" name="page" value="wp-movie-collector-dashboard">
+                <input type="text" name="search" placeholder="<?php esc_attr_e('Search by title, director, actor...', 'wp-movie-collector'); ?>" class="regular-text">
+                <button type="submit" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
+            </form>
+        </div>
     </div>
 </div>

@@ -23,10 +23,13 @@ class WP_Movie_Collector_Public {
      * @since    1.0.0
      */
     public function enqueue_styles() {
-        $suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-        $css_url = $suffix
-            ? WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/css/wp-movie-collector-public' . $suffix . '.css'
-            : WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/css/wp-movie-collector-public.css';
+        $css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/css/wp-movie-collector-public.css';
+        if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
+            $built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/public/css/wp-movie-collector-public.min.css';
+            if ( file_exists( $built_path ) ) {
+                $css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/css/wp-movie-collector-public.min.css';
+            }
+        }
         wp_enqueue_style('wp-movie-collector-public', $css_url, array(), WP_MOVIE_COLLECTOR_VERSION, 'all');
     }
 
@@ -36,10 +39,13 @@ class WP_Movie_Collector_Public {
      * @since    1.0.0
      */
     public function enqueue_scripts() {
-        $suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-        $js_url = $suffix
-            ? WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/js/wp-movie-collector-public' . $suffix . '.js'
-            : WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/js/wp-movie-collector-public.js';
+        $js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/js/wp-movie-collector-public.js';
+        if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
+            $built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/public/js/wp-movie-collector-public.min.js';
+            if ( file_exists( $built_path ) ) {
+                $js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/js/wp-movie-collector-public.min.js';
+            }
+        }
         wp_enqueue_script('wp-movie-collector-public', $js_url, array('jquery'), WP_MOVIE_COLLECTOR_VERSION, false);
         
         // Localize the script with new data

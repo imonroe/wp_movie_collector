@@ -1,9 +1,8 @@
 /**
- * Admin JavaScript for WP Movie Collector
+ * Admin entry point for WP Movie Collector
  *
- * This is the webpack entry point. It imports the main admin JS file
- * so webpack can bundle and minify it for production.
+ * Webpack entry that imports admin JS and CSS for bundling/minification.
  */
 
-// Import the admin JavaScript
+import '../../../admin/css/wp-movie-collector-admin.css';
 import '../../../admin/js/wp-movie-collector-admin';

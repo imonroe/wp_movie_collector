@@ -8,9 +8,7 @@ module.exports = ( env, argv ) => {
 	return {
 		entry: {
 			'admin/js/wp-movie-collector-admin': './src/admin/js/admin.js',
-			'admin/css/wp-movie-collector-admin': './src/admin/css/admin.css',
 			'public/js/wp-movie-collector-public': './src/public/js/public.js',
-			'public/css/wp-movie-collector-public': './src/public/css/public.css',
 		},
 		output: {
 			path: path.resolve( __dirname, 'dist' ),
@@ -30,7 +28,14 @@ module.exports = ( env, argv ) => {
 		},
 		plugins: [
 			new MiniCssExtractPlugin( {
-				filename: '[name]' + ( isProduction ? '.min.css' : '.css' ),
+				filename: ( pathData ) => {
+					// Map JS entry names to CSS output paths
+					const name = pathData.chunk.name
+						.replace( '/js/', '/css/' )
+						.replace( '-admin', '-admin' )
+						.replace( '-public', '-public' );
+					return name + ( isProduction ? '.min.css' : '.css' );
+				},
 			} ),
 		],
 		optimization: {

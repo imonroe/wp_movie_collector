@@ -1,9 +1,8 @@
 /**
- * Public JavaScript for WP Movie Collector
+ * Public entry point for WP Movie Collector
  *
- * This is the webpack entry point. It imports the main public JS file
- * so webpack can bundle and minify it for production.
+ * Webpack entry that imports public JS and CSS for bundling/minification.
  */
 
-// Import the public JavaScript
+import '../../../public/css/wp-movie-collector-public.css';
 import '../../../public/js/wp-movie-collector-public';

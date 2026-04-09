@@ -116,7 +116,7 @@ class WP_Movie_Collector_API_Client {
 			);
 		}
 
-		// Check rate limit.
+		// Check rate limit before first attempt.
 		if ( self::is_rate_limited( $provider ) ) {
 			self::log_failure( $provider, $url, 'Rate limit reached — request blocked' );
 			return new WP_Error(
@@ -150,6 +150,12 @@ class WP_Movie_Collector_API_Client {
 			if ( $attempt > 0 ) {
 				$delay = self::BASE_RETRY_DELAY * pow( 2, $attempt - 1 );
 				sleep( min( $delay, self::MAX_RETRY_DELAY ) );
+
+				// Re-check rate limit before each retry to avoid exceeding quota.
+				if ( self::is_rate_limited( $provider ) ) {
+					self::log_failure( $provider, $url, 'Rate limit reached during retry', $attempt );
+					break;
+				}
 			}
 
 			self::increment_request_count( $provider );
@@ -296,7 +302,9 @@ class WP_Movie_Collector_API_Client {
 	 * Check whether the circuit breaker is open for a provider.
 	 *
 	 * When open, requests are blocked until the cooldown expires. After
-	 * cooldown the circuit enters half-open state (allows one request).
+	 * cooldown the circuit enters half-open state: a short-lived probe
+	 * lock ensures only one request passes through. If that request
+	 * succeeds the circuit resets; if it fails the circuit re-opens.
 	 *
 	 * @param string $provider The provider key.
 	 * @return bool True if the circuit is open and requests should be blocked.
@@ -317,12 +325,36 @@ class WP_Movie_Collector_API_Client {
 
 		$elapsed = time() - $opened_at;
 
-		// Cooldown expired — allow a half-open attempt.
+		// Cooldown expired — enter half-open state.
 		if ( $elapsed >= self::CIRCUIT_COOLDOWN_SECONDS ) {
-			return false;
+			return self::acquire_half_open_lock( $provider );
 		}
 
 		return true;
+	}
+
+	/**
+	 * Try to acquire the half-open probe lock for a provider.
+	 *
+	 * Only one request is allowed through after cooldown. A short-lived
+	 * transient acts as a lock: the first caller acquires it and
+	 * proceeds (returns false = circuit not open); subsequent callers
+	 * see the lock and are blocked (returns true = circuit still open).
+	 *
+	 * @param string $provider The provider key.
+	 * @return bool True if lock was NOT acquired (circuit stays open for this caller).
+	 */
+	private static function acquire_half_open_lock( $provider ) {
+		$lock_key = "wp_movie_api_halfopen_{$provider}";
+
+		// If the lock already exists, another request is probing.
+		if ( false !== get_transient( $lock_key ) ) {
+			return true;
+		}
+
+		// Acquire the lock for 30 seconds (enough for one request + timeout).
+		set_transient( $lock_key, 1, 30 );
+		return false;
 	}
 
 	/**
@@ -354,6 +386,9 @@ class WP_Movie_Collector_API_Client {
 
 		// Keep state for cooldown plus a buffer.
 		set_transient( $key, $state, self::CIRCUIT_COOLDOWN_SECONDS + 60 );
+
+		// Release the half-open probe lock so the circuit re-opens.
+		delete_transient( "wp_movie_api_halfopen_{$provider}" );
 	}
 
 	/**
@@ -367,6 +402,9 @@ class WP_Movie_Collector_API_Client {
 		if ( false !== get_transient( $key ) ) {
 			delete_transient( $key );
 		}
+
+		// Release the half-open probe lock on success.
+		delete_transient( "wp_movie_api_halfopen_{$provider}" );
 	}
 
 	/**

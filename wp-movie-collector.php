@@ -19,9 +19,6 @@
  * Domain Path:       /languages
  */
 
-// Suppress PHP deprecation notices
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
-
 // If this file is called directly, abort.
 if (!defined('WPINC')) {
     die;

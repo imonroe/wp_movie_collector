@@ -209,7 +209,7 @@ class WP_Movie_Collector_API {
     private function format_movie_data($data) {
         $movie = array(
             'title' => $data['title'],
-            'release_year' => substr($data['release_date'], 0, 4),
+            'release_year' => substr($data['release_date'] ?? '', 0, 4),
             'description' => $data['overview'],
             'cover_image_url' => !empty($data['poster_path']) ? 'https://image.tmdb.org/t/p/w500' . $data['poster_path'] : '',
             'api_source' => 'TMDb',
@@ -567,7 +567,7 @@ class WP_Movie_Collector_API {
 
                 $movie = array(
                     'title' => $tv_data['name'],
-                    'release_year' => substr($tv_data['first_air_date'], 0, 4),
+                    'release_year' => substr($tv_data['first_air_date'] ?? '', 0, 4),
                     'description' => $tv_data['overview'],
                     'cover_image_url' => !empty($tv_data['poster_path'])
                         ? 'https://image.tmdb.org/t/p/w500' . $tv_data['poster_path']

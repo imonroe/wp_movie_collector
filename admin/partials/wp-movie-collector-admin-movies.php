@@ -5,13 +5,16 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 $db = new WP_Movie_Collector_DB();
 
-// Handle search and filter parameters
-$search   = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
-$format   = isset( $_GET['format'] ) ? sanitize_text_field( wp_unslash( $_GET['format'] ) ) : '';
-$orderby  = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'title';
-$order    = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'ASC';
-$paged    = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
-$per_page = 20;
+// Handle search and filter parameters.
+$search          = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+$format          = isset( $_GET['format'] ) ? sanitize_text_field( wp_unslash( $_GET['format'] ) ) : '';
+$allowed_orderby = array( 'title', 'release_year', 'format', 'director', 'genre', 'acquisition_date' );
+$raw_orderby     = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'title';
+$orderby         = in_array( $raw_orderby, $allowed_orderby, true ) ? $raw_orderby : 'title';
+$raw_order       = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'ASC';
+$order           = in_array( strtoupper( $raw_order ), array( 'ASC', 'DESC' ), true ) ? strtoupper( $raw_order ) : 'ASC';
+$paged           = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
+$per_page        = 20;
 
 // Build search criteria
 $criteria = array(

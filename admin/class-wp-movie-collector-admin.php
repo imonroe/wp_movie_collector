@@ -320,7 +320,7 @@ public function add_plugin_admin_menu() {
         }
 
         // Validate and sanitize movie data
-        $movie = $this->validate_and_sanitize_movie_data($_POST['movie']);
+        $movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ) );
 
         // Insert the movie into the database
         $db = new WP_Movie_Collector_DB();
@@ -364,7 +364,7 @@ public function add_plugin_admin_menu() {
         }
 
         // Validate and sanitize box set data
-        $box_set = $this->validate_and_sanitize_box_set_data($_POST['box_set']);
+        $box_set = $this->validate_and_sanitize_box_set_data( wp_unslash( $_POST['box_set'] ) );
 
         // Insert the box set into the database
         $db = new WP_Movie_Collector_DB();
@@ -418,7 +418,7 @@ public function add_plugin_admin_menu() {
         }
 
         // Validate and sanitize movie data
-        $movie = $this->validate_and_sanitize_movie_data( $_POST['movie'], $movie_id );
+        $movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ), $movie_id );
 
         // Update the movie in the database
         $result = $db->update_movie( $movie_id, $movie );

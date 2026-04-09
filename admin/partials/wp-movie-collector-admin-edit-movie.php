@@ -102,17 +102,17 @@ if ( ! $movie ) {
 					<option value=""><?php esc_html_e( 'Select Region', 'wp-movie-collector' ); ?></option>
 					<?php
 					$regions = array(
-						'R1'  => 'Region 1 (USA, Canada)',
-						'R2'  => 'Region 2 (Europe, Japan, Middle East)',
-						'R3'  => 'Region 3 (East Asia)',
-						'R4'  => 'Region 4 (Australia, New Zealand, Latin America)',
-						'R5'  => 'Region 5 (Africa, Asia, Russia)',
-						'R6'  => 'Region 6 (China)',
-						'R0'  => 'Region Free',
-						'A'   => 'Region A (Blu-ray: Americas, East Asia)',
-						'B'   => 'Region B (Blu-ray: Europe, Africa, Australia)',
-						'C'   => 'Region C (Blu-ray: Central/South Asia, Russia, China)',
-						'ABC' => 'Region Free (Blu-ray)',
+						'R1'  => __( 'Region 1 (USA, Canada)', 'wp-movie-collector' ),
+						'R2'  => __( 'Region 2 (Europe, Japan, Middle East)', 'wp-movie-collector' ),
+						'R3'  => __( 'Region 3 (East Asia)', 'wp-movie-collector' ),
+						'R4'  => __( 'Region 4 (Australia, New Zealand, Latin America)', 'wp-movie-collector' ),
+						'R5'  => __( 'Region 5 (Africa, Asia, Russia)', 'wp-movie-collector' ),
+						'R6'  => __( 'Region 6 (China)', 'wp-movie-collector' ),
+						'R0'  => __( 'Region Free', 'wp-movie-collector' ),
+						'A'   => __( 'Region A (Blu-ray: Americas, East Asia)', 'wp-movie-collector' ),
+						'B'   => __( 'Region B (Blu-ray: Europe, Africa, Australia)', 'wp-movie-collector' ),
+						'C'   => __( 'Region C (Blu-ray: Central/South Asia, Russia, China)', 'wp-movie-collector' ),
+						'ABC' => __( 'Region Free (Blu-ray)', 'wp-movie-collector' ),
 					);
 					foreach ( $regions as $value => $label ) {
 						printf(

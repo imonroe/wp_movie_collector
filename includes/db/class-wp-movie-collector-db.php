@@ -634,9 +634,19 @@ class WP_Movie_Collector_DB {
             $values[] = '%' . $wpdb->esc_like($criteria['director']) . '%';
         }
 
+        if (!empty($criteria['actor'])) {
+            $where[] = "actors LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($criteria['actor']) . '%';
+        }
+
         if (!empty($criteria['genre'])) {
             $where[] = "genre LIKE %s";
             $values[] = '%' . $wpdb->esc_like($criteria['genre']) . '%';
+        }
+
+        if (!empty($criteria['studio'])) {
+            $where[] = "studio LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($criteria['studio']) . '%';
         }
 
         $sql = "SELECT COUNT(*) FROM $this->movies_table";

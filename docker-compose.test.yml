@@ -1,0 +1,40 @@
+services:
+  # MySQL service for tests (shared with dev when running together).
+  db:
+    image: mysql:5.7
+    container_name: wp_movie_collector_test_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress_test
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - test_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # PHPUnit integration test runner.
+  phpunit:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: wp_movie_collector_phpunit
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_NAME: wordpress_test
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_HOST: db
+      WP_VERSION: latest
+    volumes:
+      - ./tests:/var/www/html/wp-content/plugins/wp-movie-collector/tests
+    networks:
+      - test_network
+
+networks:
+  test_network:

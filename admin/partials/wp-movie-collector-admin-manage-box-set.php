@@ -371,7 +371,7 @@ jQuery(document).ready(function($) {
                     
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<tr>';
-                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + parseInt(movie.id) + '"></td>';
+                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + parseInt(movie.id, 10) + '"></td>';
                         resultsHtml += '<td>' + escHtml(movie.title) + '</td>';
                         resultsHtml += '<td>' + escHtml(movie.release_year) + '</td>';
                         resultsHtml += '<td>' + escHtml(movie.format) + '</td>';

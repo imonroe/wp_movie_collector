@@ -275,7 +275,7 @@ jQuery(document).ready(function($) {
                     
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<li>';
-                        resultsHtml += '<a href="#" class="wp-movie-collector-select-movie" data-movie-id="' + parseInt(movie.id) + '">';
+                        resultsHtml += '<a href="#" class="wp-movie-collector-select-movie" data-movie-id="' + parseInt(movie.id, 10) + '">';
                         resultsHtml += escHtml(movie.title) + ' (' + escHtml(movie.release_year) + ')';
                         resultsHtml += '</a>';
                         resultsHtml += '</li>';
@@ -381,29 +381,29 @@ jQuery(document).ready(function($) {
                                 fillMovieFormWithTMDBData(tmdbMovie, barcode);
                                 
                                 $('#wp-movie-collector-search-results').html(
-                                    '<p class="success"><?php esc_html_e('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector'); ?></p>'
+                                    <?php echo wp_json_encode('<p class="success">' . esc_html__('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector') . '</p>'); ?>
                                 );
                             } else {
                                 $('#wp-movie-collector-search-results').html(
-                                    '<p class="error"><?php esc_html_e('Error retrieving full movie details.', 'wp-movie-collector'); ?></p>'
+                                    <?php echo wp_json_encode('<p class="error">' . esc_html__('Error retrieving full movie details.', 'wp-movie-collector') . '</p>'); ?>
                                 );
                             }
                         },
                         error: function() {
                             $('#wp-movie-collector-search-results').html(
-                                '<p class="error"><?php esc_html_e('Error connecting to server.', 'wp-movie-collector'); ?></p>'
+                                <?php echo wp_json_encode('<p class="error">' . esc_html__('Error connecting to server.', 'wp-movie-collector') . '</p>'); ?>
                             );
                         }
                     });
                 } else {
                     $('#wp-movie-collector-search-results').html(
-                        '<p class="error"><?php esc_html_e('No additional movie details found.', 'wp-movie-collector'); ?></p>'
+                        <?php echo wp_json_encode('<p class="error">' . esc_html__('No additional movie details found.', 'wp-movie-collector') . '</p>'); ?>
                     );
                 }
             },
             error: function() {
                 $('#wp-movie-collector-search-results').html(
-                    '<p class="error"><?php esc_html_e('Error searching for additional movie details.', 'wp-movie-collector'); ?></p>'
+                    <?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for additional movie details.', 'wp-movie-collector') . '</p>'); ?>
                 );
             }
         });

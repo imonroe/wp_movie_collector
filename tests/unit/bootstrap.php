@@ -11,8 +11,7 @@
 // Load Composer autoloader.
 $autoloader = dirname( __DIR__, 2 ) . '/vendor/autoload.php';
 if ( ! file_exists( $autoloader ) ) {
-	echo 'Composer autoloader not found. Run `composer install` first.' . PHP_EOL;
-	exit( 1 );
+	throw new RuntimeException( 'Composer autoloader not found. Run `composer install` first.' );
 }
 require_once $autoloader;
 

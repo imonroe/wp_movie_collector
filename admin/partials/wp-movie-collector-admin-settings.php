@@ -1,6 +1,6 @@
 <?php
 if ( ! current_user_can( 'manage_options' ) ) {
-    wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-movie-collector' ) );
+    wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
 }
 ?>
 <div class="wrap">

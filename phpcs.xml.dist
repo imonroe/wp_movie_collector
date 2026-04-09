@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<ruleset name="WP Movie Collector">
+    <description>Custom ruleset for WP Movie Collector plugin.</description>
+
+    <!-- What to scan -->
+    <file>.</file>
+
+    <!-- Exclude paths -->
+    <exclude-pattern>/vendor/*</exclude-pattern>
+    <exclude-pattern>/node_modules/*</exclude-pattern>
+    <exclude-pattern>/tests/*</exclude-pattern>
+    <exclude-pattern>/dist/*</exclude-pattern>
+    <exclude-pattern>/build/*</exclude-pattern>
+    <exclude-pattern>/Docker/*</exclude-pattern>
+
+    <!-- How to scan -->
+    <arg value="sp"/>
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="8"/>
+
+    <!-- Rules: WordPress Coding Standards -->
+    <rule ref="WordPress">
+        <!-- Allow short array syntax -->
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+    </rule>
+
+    <!-- Check for cross-version support for PHP 8.1+. -->
+    <config name="testVersion" value="8.1-"/>
+    <rule ref="PHPCompatibilityWP"/>
+
+    <!-- WordPress minimum version -->
+    <config name="minimum_wp_version" value="6.0"/>
+
+    <!-- Text domain -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="wp-movie-collector"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Prefixes -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="wp_movie_collector"/>
+                <element value="WP_Movie_Collector"/>
+                <element value="WP_MOVIE_COLLECTOR"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

@@ -16,9 +16,10 @@ if ( ! $_tests_dir ) {
 
 // Check for the WordPress test suite.
 if ( ! file_exists( "{$_tests_dir}/includes/functions.php" ) ) {
-	echo "Could not find {$_tests_dir}/includes/functions.php." . PHP_EOL; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	echo 'Run bin/install-wp-tests.sh to set up the WordPress test suite.' . PHP_EOL; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	exit( 1 );
+	throw new RuntimeException(
+		"Could not find {$_tests_dir}/includes/functions.php." . PHP_EOL .
+		'Run bin/install-wp-tests.sh to set up the WordPress test suite.'
+	);
 }
 
 // Give access to tests_add_filter() function.

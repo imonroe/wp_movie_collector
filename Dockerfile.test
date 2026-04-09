@@ -21,8 +21,9 @@ WORKDIR /var/www/html/wp-content/plugins/wp-movie-collector
 COPY composer.json composer.lock ./
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --no-progress
 
-# Copy the full plugin.
+# Copy the full plugin and regenerate classmap autoloader.
 COPY . .
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-interaction --no-progress
 
 # Script that waits for MySQL, installs WP test suite, and runs PHPUnit.
 COPY bin/run-tests.sh /usr/local/bin/run-tests.sh

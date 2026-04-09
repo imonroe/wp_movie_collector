@@ -86,7 +86,7 @@ class WP_Movie_Collector_API {
         $url = add_query_arg($args, 'https://api.themoviedb.org/3/search/movie');
         $url = add_query_arg('api_key', $this->tmdb_api_key, $url);
 
-        $response = wp_remote_get($url, array('timeout' => 15));
+        $response = WP_Movie_Collector_API_Client::get($url, array('timeout' => 15));
 
         if (is_wp_error($response)) {
             // If there's a connection error, try the fallback
@@ -159,7 +159,7 @@ class WP_Movie_Collector_API {
 
         $url = add_query_arg($args, 'https://www.omdbapi.com/');
 
-        $response = wp_remote_get($url);
+        $response = WP_Movie_Collector_API_Client::get($url);
 
         if (is_wp_error($response)) {
             return $response;
@@ -198,7 +198,7 @@ class WP_Movie_Collector_API {
 
         $url = "https://api.themoviedb.org/3/movie/{$tmdb_id}?api_key={$this->tmdb_api_key}&append_to_response=credits,images";
 
-        $response = wp_remote_get($url);
+        $response = WP_Movie_Collector_API_Client::get($url);
 
         if (is_wp_error($response)) {
             return $response;
@@ -325,7 +325,7 @@ class WP_Movie_Collector_API {
             'timeout' => 15
         );
 
-        $response = wp_remote_get($url, $args);
+        $response = WP_Movie_Collector_API_Client::get($url, $args);
 
         // Check for WP error
         if (is_wp_error($response)) {
@@ -454,7 +454,7 @@ class WP_Movie_Collector_API {
         // Try looking up as ISBN (for books/DVDs that might have ISBN)
         $url = "https://openlibrary.org/api/books?bibkeys=ISBN:{$barcode}&format=json&jscmd=data";
 
-        $response = wp_remote_get($url);
+        $response = WP_Movie_Collector_API_Client::get($url);
 
         // Check for WP error
         if (is_wp_error($response)) {
@@ -554,7 +554,7 @@ class WP_Movie_Collector_API {
         foreach ($external_sources as $source) {
             $url = "https://api.themoviedb.org/3/find/{$external_id}?api_key={$this->tmdb_api_key}&external_source={$source}";
 
-            $response = wp_remote_get($url);
+            $response = WP_Movie_Collector_API_Client::get($url);
 
             if (is_wp_error($response)) {
                 continue;
@@ -633,7 +633,7 @@ class WP_Movie_Collector_API {
             'plot' => 'full',
         ), 'https://www.omdbapi.com/');
 
-        $response = wp_remote_get($url);
+        $response = WP_Movie_Collector_API_Client::get($url);
 
         if (is_wp_error($response)) {
             return $response;

@@ -31,9 +31,7 @@ module.exports = ( env, argv ) => {
 				filename: ( pathData ) => {
 					// Map JS entry names to CSS output paths
 					const name = pathData.chunk.name
-						.replace( '/js/', '/css/' )
-						.replace( '-admin', '-admin' )
-						.replace( '-public', '-public' );
+						.replace( '/js/', '/css/' );
 					return name + ( isProduction ? '.min.css' : '.css' );
 				},
 			} ),

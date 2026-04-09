@@ -26,8 +26,8 @@
         <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
     </rule>
 
-    <!-- Check for cross-version support for PHP 8.1+. -->
-    <config name="testVersion" value="8.1-"/>
+    <!-- Check for cross-version support for PHP 8.2+. -->
+    <config name="testVersion" value="8.2-"/>
     <rule ref="PHPCompatibilityWP"/>
 
     <!-- WordPress minimum version -->

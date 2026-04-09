@@ -420,6 +420,19 @@ public function add_plugin_admin_menu() {
         // Validate and sanitize movie data
         $movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ), $movie_id );
 
+        // Ensure clearable optional fields are always explicitly persisted on edit.
+        // The validator omits empty optional fields, but update needs explicit values
+        // so previously stored data can be cleared.
+        if ( ! isset( $movie['box_set_id'] ) ) {
+            $movie['box_set_id'] = null;
+        }
+        if ( ! isset( $movie['cover_image_id'] ) ) {
+            $movie['cover_image_id'] = 0;
+        }
+        if ( ! isset( $movie['acquisition_date'] ) ) {
+            $movie['acquisition_date'] = '';
+        }
+
         // Update the movie in the database
         $result = $db->update_movie( $movie_id, $movie );
 

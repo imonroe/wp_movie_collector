@@ -433,55 +433,69 @@ public function add_plugin_admin_menu() {
             $movie['acquisition_date'] = '';
         }
 
-        // Update the movie in the database
+        global $wpdb;
+
+        // Wrap the movie update and relationship rewrite in a transaction
+        // so they succeed or fail together.
+        $transaction_started = false;
+        if ( false !== $wpdb->query( 'START TRANSACTION' ) ) {
+            $transaction_started = true;
+        }
+
+        // Update the movie in the database.
         $result = $db->update_movie( $movie_id, $movie );
 
         if ( $result ) {
-            // Handle box set relationship changes
-            // First remove existing relationships for this movie
-            global $wpdb;
-            $wpdb->delete( $db->get_relationships_table(), array( 'movie_id' => $movie_id ) );
+            // Handle box set relationship changes.
+            // A return value of 0 means no rows matched (not a failure).
+            $delete_result         = $wpdb->delete( $db->get_relationships_table(), array( 'movie_id' => $movie_id ) );
+            $relationships_updated = ( false !== $delete_result );
 
-            // Add new relationship if a box set is selected
-            if ( ! empty( $movie['box_set_id'] ) ) {
-                $db->add_movie_to_box_set( $movie_id, $movie['box_set_id'] );
+            // Add new relationship if a box set is selected.
+            if ( $relationships_updated && ! empty( $movie['box_set_id'] ) ) {
+                $relationships_updated = ( false !== $db->add_movie_to_box_set( $movie_id, $movie['box_set_id'] ) );
             }
 
-            wp_safe_redirect( add_query_arg( 'message', 'movie_updated', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
-            exit;
-        } else {
-            wp_safe_redirect( add_query_arg( 'error', 'db_error', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
-            exit;
+            if ( $relationships_updated ) {
+                if ( $transaction_started ) {
+                    $wpdb->query( 'COMMIT' );
+                }
+
+                wp_safe_redirect( add_query_arg( 'message', 'movie_updated', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+                exit;
+            }
         }
+
+        if ( $transaction_started ) {
+            $wpdb->query( 'ROLLBACK' );
+        }
+
+        wp_safe_redirect( add_query_arg( 'error', 'db_error', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+        exit;
     }
 
     /**
-     * Process deleting a movie.
+     * Process deleting a movie via admin-post.php.
      *
      * @since    1.0.0
      */
     public function process_delete_movie() {
-        // Check if this is a delete movie request
-        if ( ! isset( $_GET['action'] ) || sanitize_text_field( wp_unslash( $_GET['action'] ) ) !== 'wp_movie_collector_delete_movie' ) {
-            return;
+        // Get and validate movie ID first for a clearer error message.
+        $movie_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
+
+        if ( ! $movie_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
+            exit;
         }
 
-        // Get movie ID
-        $movie_id = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
-
         // Check nonce
-        if ( ! isset( $_GET['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_GET['wp_movie_collector_nonce'] ), 'wp_movie_collector_delete_movie_' . $movie_id ) ) {
+        if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_delete_movie_' . $movie_id ) ) {
             wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
         }
 
         // Check user capabilities
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
-        }
-
-        if ( ! $movie_id ) {
-            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-movies' ) ) );
-            exit;
         }
 
         // Get database instance

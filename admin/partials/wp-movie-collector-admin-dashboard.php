@@ -84,9 +84,14 @@ if ( ! current_user_can( 'manage_options' ) ) {
                         <a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) ) ); ?>"><?php echo esc_html($movie['title']); ?></a>
                         <span class="row-actions">
                             <a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'wp-movie-collector' ); ?></a> |
-                            <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=wp-movie-collector-movies&action=wp_movie_collector_delete_movie&id=' . intval( $movie['id'] ) ), 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ) ); ?>"
-                               onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');"
-                               style="color:#b32d2e;"><?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?></a>
+                            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+                                <input type="hidden" name="action" value="wp_movie_collector_delete_movie">
+                                <input type="hidden" name="id" value="<?php echo intval( $movie['id'] ); ?>">
+                                <?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ); ?>
+                                <button type="submit"
+                                        onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');"
+                                        style="color:#b32d2e; background:none; border:none; padding:0; cursor:pointer; text-decoration:underline;"><?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?></button>
+                            </form>
                         </span>
                     </li>
                     <?php endforeach; ?>

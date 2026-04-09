@@ -32,10 +32,17 @@ if ( ! empty( $format ) ) {
 	$criteria['format'] = $format;
 }
 
-// Get movies and total count
-$movies      = $db->search_movies( $criteria );
+// Get movies and total count.
 $total_items = $db->count_movies( $criteria );
-$total_pages = ceil( $total_items / $per_page );
+$total_pages = max( 1, (int) ceil( $total_items / $per_page ) );
+
+// Clamp page to valid range so an out-of-bounds page doesn't show empty results.
+if ( $paged > $total_pages ) {
+	$paged            = $total_pages;
+	$criteria['page'] = $paged;
+}
+
+$movies = $db->search_movies( $criteria );
 
 // Toggle sort order for column headers
 $toggle_order = ( $order === 'ASC' ) ? 'DESC' : 'ASC';
@@ -235,11 +242,16 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 								</a> |
 							</span>
 							<span class="trash">
-								<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=wp-movie-collector-movies&action=wp_movie_collector_delete_movie&id=' . intval( $movie['id'] ) ), 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ) ); ?>"
-									class="submitdelete"
-									onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');">
-									<?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?>
-								</a>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+									<input type="hidden" name="action" value="wp_movie_collector_delete_movie">
+									<input type="hidden" name="id" value="<?php echo intval( $movie['id'] ); ?>">
+									<?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ); ?>
+									<button type="submit"
+										class="button-link submitdelete"
+										onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');">
+										<?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?>
+									</button>
+								</form>
 							</span>
 						</div>
 					</td>

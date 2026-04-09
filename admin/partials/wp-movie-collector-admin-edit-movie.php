@@ -221,13 +221,18 @@ if ( ! $movie ) {
 					<?php esc_html_e( 'Update Movie', 'wp-movie-collector' ); ?>
 				</button>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-movies' ) ); ?>" class="button"><?php esc_html_e( 'Cancel', 'wp-movie-collector' ); ?></a>
-				<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=wp-movie-collector-movies&action=wp_movie_collector_delete_movie&id=' . intval( $movie_id ) ), 'wp_movie_collector_delete_movie_' . intval( $movie_id ), 'wp_movie_collector_nonce' ) ); ?>"
-					class="button button-link-delete"
-					onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');"
-					style="color:#b32d2e;">
-					<?php esc_html_e( 'Delete Movie', 'wp-movie-collector' ); ?>
-				</a>
 			</p>
+		</form>
+		<form method="post"
+			action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+			style="display:inline;"
+			onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');">
+			<input type="hidden" name="action" value="wp_movie_collector_delete_movie">
+			<input type="hidden" name="id" value="<?php echo intval( $movie_id ); ?>">
+			<?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie_id ), 'wp_movie_collector_nonce' ); ?>
+			<button type="submit" class="button button-link-delete" style="color:#b32d2e;">
+				<?php esc_html_e( 'Delete Movie', 'wp-movie-collector' ); ?>
+			</button>
 		</form>
 	</div>
 </div>

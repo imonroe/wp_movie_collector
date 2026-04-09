@@ -60,7 +60,7 @@ class ApiRateLimitTest extends TestCase {
 		$method = $this->reflection->getMethod( 'get' );
 		$params = $method->getParameters();
 
-		$this->assertGreaterThanOrEqual( 1, count( $params ) );
+		$this->assertCount( 2, $params );
 		$this->assertSame( 'url', $params[0]->getName() );
 		$this->assertSame( 'args', $params[1]->getName() );
 		$this->assertTrue( $params[1]->isDefaultValueAvailable() );

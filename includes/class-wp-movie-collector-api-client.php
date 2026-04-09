@@ -150,8 +150,9 @@ class WP_Movie_Collector_API_Client {
 			if ( 429 === $code ) {
 				$last_error = new WP_Error(
 					'rate_limited',
-					sprintf( 'HTTP 429 from %s', $provider )
+					__( 'Too many requests. Please wait a moment and try again.', 'wp-movie-collector' )
 				);
+				self::record_failure( $provider );
 				self::log_failure( $provider, $url, 'HTTP 429 rate limited', $attempt );
 				continue;
 			}
@@ -203,16 +204,27 @@ class WP_Movie_Collector_API_Client {
 		}
 
 		$limit = self::$rate_limits[ $provider ];
-		$count = (int) get_transient( "wp_movie_api_rate_{$provider}" );
+		$data  = get_transient( "wp_movie_api_rate_{$provider}" );
 
-		return $count >= $limit['max_requests'];
+		if ( ! is_array( $data ) || ! isset( $data['count'], $data['window_start'] ) ) {
+			return false;
+		}
+
+		// Window expired — not rate-limited.
+		if ( ( time() - $data['window_start'] ) >= $limit['window_seconds'] ) {
+			return false;
+		}
+
+		return $data['count'] >= $limit['max_requests'];
 	}
 
 	/**
 	 * Increment the request counter for a provider.
 	 *
-	 * Uses a transient whose TTL matches the rate-limit window so the
-	 * counter auto-resets when the window expires.
+	 * Uses a fixed-window approach: stores the count and the window
+	 * start timestamp. The counter resets when the window expires.
+	 * The transient TTL is set once when the window starts and is
+	 * not extended on subsequent increments.
 	 *
 	 * @param string $provider The provider key.
 	 */
@@ -223,14 +235,24 @@ class WP_Movie_Collector_API_Client {
 
 		$key   = "wp_movie_api_rate_{$provider}";
 		$limit = self::$rate_limits[ $provider ];
-		$count = get_transient( $key );
+		$data  = get_transient( $key );
 
-		if ( false === $count ) {
-			set_transient( $key, 1, $limit['window_seconds'] );
-		} else {
-			// Preserve existing TTL by reading and re-setting.
-			set_transient( $key, (int) $count + 1, $limit['window_seconds'] );
+		$now = time();
+
+		// Start a new window if no data or window expired.
+		if ( ! is_array( $data ) || ! isset( $data['count'], $data['window_start'] ) || ( $now - $data['window_start'] ) >= $limit['window_seconds'] ) {
+			$data = array(
+				'count'        => 1,
+				'window_start' => $now,
+			);
+			set_transient( $key, $data, $limit['window_seconds'] );
+			return;
 		}
+
+		// Increment within the existing window — do not reset TTL.
+		$data['count'] = $data['count'] + 1;
+		$remaining_ttl = $limit['window_seconds'] - ( $now - $data['window_start'] );
+		set_transient( $key, $data, max( 1, $remaining_ttl ) );
 	}
 
 	/**
@@ -249,11 +271,14 @@ class WP_Movie_Collector_API_Client {
 			return false;
 		}
 
-		if ( $state['failures'] < self::CIRCUIT_FAILURE_THRESHOLD ) {
+		$failures  = isset( $state['failures'] ) ? (int) $state['failures'] : 0;
+		$opened_at = isset( $state['opened_at'] ) ? (int) $state['opened_at'] : 0;
+
+		if ( $failures < self::CIRCUIT_FAILURE_THRESHOLD ) {
 			return false;
 		}
 
-		$elapsed = time() - $state['opened_at'];
+		$elapsed = time() - $opened_at;
 
 		// Cooldown expired — allow a half-open attempt.
 		if ( $elapsed >= self::CIRCUIT_COOLDOWN_SECONDS ) {

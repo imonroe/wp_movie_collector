@@ -31,6 +31,16 @@ class WP_Movie_Collector_API_Client {
 	const BASE_RETRY_DELAY = 1;
 
 	/**
+	 * Maximum delay in seconds for any single retry sleep.
+	 *
+	 * Caps both exponential backoff and Retry-After headers to prevent
+	 * a single request from blocking a PHP worker for too long.
+	 *
+	 * @var int
+	 */
+	const MAX_RETRY_DELAY = 5;
+
+	/**
 	 * Number of consecutive failures to trip the circuit breaker.
 	 *
 	 * @var int
@@ -121,11 +131,25 @@ class WP_Movie_Collector_API_Client {
 
 		$last_error = null;
 
-		for ( $attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++ ) {
+		/**
+		 * Filters whether API request retries are enabled.
+		 *
+		 * When disabled, the client returns immediately on any transient
+		 * failure (429, 5xx, WP_Error) instead of sleeping and retrying.
+		 * Useful for AJAX or time-sensitive requests.
+		 *
+		 * @since 1.0.0
+		 * @param bool   $enabled  Whether retries are enabled. Default true.
+		 * @param string $provider The API provider key.
+		 */
+		$retries_enabled = apply_filters( 'wp_movie_collector_api_retry_enabled', true, $provider );
+		$max_attempts    = $retries_enabled ? self::MAX_RETRIES : 0;
+
+		for ( $attempt = 0; $attempt <= $max_attempts; $attempt++ ) {
 			// Exponential backoff for retries.
 			if ( $attempt > 0 ) {
 				$delay = self::BASE_RETRY_DELAY * pow( 2, $attempt - 1 );
-				sleep( $delay );
+				sleep( min( $delay, self::MAX_RETRY_DELAY ) );
 			}
 
 			self::increment_request_count( $provider );
@@ -146,7 +170,7 @@ class WP_Movie_Collector_API_Client {
 				return $response;
 			}
 
-			// Rate limited (429) — retry with backoff.
+			// Rate limited (429) — honor Retry-After header if present.
 			if ( 429 === $code ) {
 				$last_error = new WP_Error(
 					'rate_limited',
@@ -154,6 +178,13 @@ class WP_Movie_Collector_API_Client {
 				);
 				self::record_failure( $provider );
 				self::log_failure( $provider, $url, 'HTTP 429 rate limited', $attempt );
+
+				if ( $retries_enabled && $attempt < $max_attempts ) {
+					$retry_after = (int) wp_remote_retrieve_header( $response, 'retry-after' );
+					if ( $retry_after > 0 ) {
+						sleep( min( $retry_after, self::MAX_RETRY_DELAY ) );
+					}
+				}
 				continue;
 			}
 
@@ -161,7 +192,7 @@ class WP_Movie_Collector_API_Client {
 			if ( $code >= 500 ) {
 				$last_error = new WP_Error(
 					'server_error',
-					sprintf( 'HTTP %d from %s', $code, $provider )
+					__( 'The movie service is temporarily unavailable. Please try again later.', 'wp-movie-collector' )
 				);
 				self::record_failure( $provider );
 				self::log_failure( $provider, $url, 'HTTP ' . $code . ' server error', $attempt );
@@ -225,6 +256,12 @@ class WP_Movie_Collector_API_Client {
 	 * start timestamp. The counter resets when the window expires.
 	 * The transient TTL is set once when the window starts and is
 	 * not extended on subsequent increments.
+	 *
+	 * Note: the get/set cycle is not atomic. Under high concurrency
+	 * the counter may under-count, allowing a few extra requests
+	 * through. This is acceptable because the API providers' own
+	 * rate limiting is the authoritative backstop, and our retry
+	 * logic handles the resulting 429 responses gracefully.
 	 *
 	 * @param string $provider The provider key.
 	 */

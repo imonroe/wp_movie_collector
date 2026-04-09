@@ -89,6 +89,17 @@ class ApiRateLimitTest extends TestCase {
 	}
 
 	/**
+	 * Test that MAX_RETRY_DELAY constant is defined and reasonable.
+	 */
+	public function test_max_retry_delay_constant(): void {
+		$this->assertTrue( $this->reflection->hasConstant( 'MAX_RETRY_DELAY' ) );
+		$value = $this->reflection->getConstant( 'MAX_RETRY_DELAY' );
+		$this->assertIsInt( $value );
+		$this->assertGreaterThan( 0, $value );
+		$this->assertLessThanOrEqual( 10, $value );
+	}
+
+	/**
 	 * Test that CIRCUIT_FAILURE_THRESHOLD constant is defined.
 	 */
 	public function test_circuit_failure_threshold_constant(): void {
@@ -320,6 +331,25 @@ class ApiRateLimitTest extends TestCase {
 		$source = $this->read_api_client_source();
 
 		$this->assertStringContainsString( 'WP_DEBUG', $source );
+	}
+
+	/**
+	 * Test that the source provides a filter to disable retries.
+	 */
+	public function test_source_has_retry_filter(): void {
+		$source = $this->read_api_client_source();
+
+		$this->assertStringContainsString( 'wp_movie_collector_api_retry_enabled', $source );
+		$this->assertStringContainsString( 'apply_filters', $source );
+	}
+
+	/**
+	 * Test that the source honors Retry-After header on 429 responses.
+	 */
+	public function test_source_honors_retry_after_header(): void {
+		$source = $this->read_api_client_source();
+
+		$this->assertStringContainsString( 'retry-after', $source );
 	}
 
 	/**

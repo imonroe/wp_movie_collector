@@ -95,40 +95,40 @@
             </tr>
         </table>
         
-        <h2><?php _e('Tools', 'wp-movie-collector'); ?></h2>
-        <table class="form-table">
-            <tr>
-                <th scope="row"><?php _e('Repair Database', 'wp-movie-collector'); ?></th>
-                <td>
-                    <p>
-                        <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wp-movie-collector-settings&action=repair_db'), 'wp_movie_collector_repair_db', 'wp_movie_collector_nonce'); ?>" class="button">
-                            <?php _e('Repair Database Tables', 'wp-movie-collector'); ?>
-                        </a>
-                    </p>
-                    <p class="description">
-                        <?php _e('This will attempt to recreate any missing database tables.', 'wp-movie-collector'); ?>
-                    </p>
-                </td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Clear API Cache', 'wp-movie-collector'); ?></th>
-                <td>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
-                        <?php wp_nonce_field('wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>
-                        <input type="hidden" name="action" value="wp_movie_collector_clear_api_cache">
-                        <p>
-                            <button type="submit" class="button" id="wp-movie-collector-clear-cache">
-                                <?php _e('Clear API Cache', 'wp-movie-collector'); ?>
-                            </button>
-                        </p>
-                    </form>
-                    <p class="description">
-                        <?php _e('This will clear all cached API responses (movie searches, details, and barcode lookups).', 'wp-movie-collector'); ?>
-                    </p>
-                </td>
-            </tr>
-        </table>
-        
         <?php submit_button(); ?>
     </form>
+
+    <h2><?php _e('Tools', 'wp-movie-collector'); ?></h2>
+    <table class="form-table">
+        <tr>
+            <th scope="row"><?php _e('Repair Database', 'wp-movie-collector'); ?></th>
+            <td>
+                <p>
+                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=wp-movie-collector-settings&action=repair_db'), 'wp_movie_collector_repair_db', 'wp_movie_collector_nonce')); ?>" class="button">
+                        <?php _e('Repair Database Tables', 'wp-movie-collector'); ?>
+                    </a>
+                </p>
+                <p class="description">
+                    <?php _e('This will attempt to recreate any missing database tables.', 'wp-movie-collector'); ?>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><?php _e('Clear API Cache', 'wp-movie-collector'); ?></th>
+            <td>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
+                    <?php wp_nonce_field('wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>
+                    <input type="hidden" name="action" value="wp_movie_collector_clear_api_cache">
+                    <p>
+                        <button type="submit" class="button" id="wp-movie-collector-clear-cache">
+                            <?php _e('Clear API Cache', 'wp-movie-collector'); ?>
+                        </button>
+                    </p>
+                </form>
+                <p class="description">
+                    <?php _e('This will clear all cached API responses (movie searches, details, and barcode lookups).', 'wp-movie-collector'); ?>
+                </p>
+            </td>
+        </tr>
+    </table>
 </div>

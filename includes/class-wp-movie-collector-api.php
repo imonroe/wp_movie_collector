@@ -92,7 +92,7 @@ class WP_Movie_Collector_API {
                 return $response;
             }
 
-            set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
 
             return $fallback_results;
         }
@@ -105,7 +105,7 @@ class WP_Movie_Collector_API {
 
             // Cache the fallback results if successful
             if (!is_wp_error($fallback_results)) {
-                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+                self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
             }
 
             return $fallback_results;
@@ -119,13 +119,13 @@ class WP_Movie_Collector_API {
 
             // Cache the fallback results if successful
             if (!is_wp_error($fallback_results)) {
-                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+                self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
             }
 
             return $fallback_results;
         }
 
-        set_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
+        self::set_api_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
 
         return $data['results'];
     }
@@ -207,7 +207,7 @@ class WP_Movie_Collector_API {
         }
 
         $result = $this->format_movie_data($data);
-        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -387,7 +387,7 @@ class WP_Movie_Collector_API {
         // Format the data from BarcodeLookup
         $result = $this->format_barcode_data($product);
 
-        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -525,7 +525,7 @@ class WP_Movie_Collector_API {
             $movie['studio'] = implode(', ', $publishers);
         }
 
-        set_transient('wp_movie_barcode_' . $barcode, $movie, DAY_IN_SECONDS * 7);
+        self::set_api_transient('wp_movie_barcode_' . $barcode, $movie, DAY_IN_SECONDS * 7);
 
         return $movie;
     }
@@ -589,7 +589,7 @@ class WP_Movie_Collector_API {
             __('No movie found with this barcode.', 'wp-movie-collector')
         );
 
-        set_transient('wp_movie_barcode_' . $external_id, $error, HOUR_IN_SECONDS);
+        self::set_api_transient('wp_movie_barcode_' . $external_id, $error, HOUR_IN_SECONDS);
 
         return $error;
     }
@@ -635,7 +635,7 @@ class WP_Movie_Collector_API {
         }
 
         $result = $this->format_omdb_movie_data($data);
-        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -668,42 +668,48 @@ class WP_Movie_Collector_API {
     }
 
     /**
+     * Store a transient and register its key for later cache clearing.
+     *
+     * Wraps set_transient() and tracks the key in an option so that
+     * clear_api_cache() can delete all cached entries regardless of
+     * whether the site uses a persistent object cache or the database.
+     *
+     * @since    1.0.0
+     * @param    string    $key        The transient key.
+     * @param    mixed     $value      The transient value.
+     * @param    int       $expiration Time until expiration in seconds.
+     */
+    private static function set_api_transient($key, $value, $expiration) {
+        set_transient($key, $value, $expiration);
+
+        $tracked = get_option('wp_movie_collector_cache_keys', array());
+        if (!in_array($key, $tracked, true)) {
+            $tracked[] = $key;
+            update_option('wp_movie_collector_cache_keys', $tracked, false);
+        }
+    }
+
+    /**
      * Clear all API response caches.
      *
-     * Deletes all transients created by this plugin's API calls.
+     * Uses tracked transient keys so this works correctly with both
+     * database-backed transients and persistent object caches (Redis,
+     * Memcached, etc.).
      *
      * @since    1.0.0
      * @return   int    The number of transients deleted.
      */
     public static function clear_api_cache() {
-        global $wpdb;
-
-        $prefixes = array(
-            '_transient_wp_movie_search_',
-            '_transient_wp_movie_details_',
-            '_transient_wp_movie_barcode_',
-            '_transient_wp_movie_imdb_',
-        );
-
+        $tracked = get_option('wp_movie_collector_cache_keys', array());
         $deleted = 0;
 
-        foreach ($prefixes as $prefix) {
-            $like_pattern = $wpdb->esc_like($prefix) . '%';
-
-            $transients = $wpdb->get_col(
-                $wpdb->prepare(
-                    "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-                    $like_pattern
-                )
-            );
-
-            foreach ($transients as $transient) {
-                $transient_name = str_replace('_transient_', '', $transient);
-                if (delete_transient($transient_name)) {
-                    $deleted++;
-                }
+        foreach ($tracked as $key) {
+            if (delete_transient($key)) {
+                $deleted++;
             }
         }
+
+        delete_option('wp_movie_collector_cache_keys');
 
         return $deleted;
     }

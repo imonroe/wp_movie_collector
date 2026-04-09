@@ -76,7 +76,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             
             <div class="form-group">
                 <label for="movie-release-year"><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></label>
-                <input type="number" id="movie-release-year" name="movie[release_year]" min="1900" max="<?php echo date('Y'); ?>" class="small-text" required>
+                <input type="number" id="movie-release-year" name="movie[release_year]" min="1900" max="<?php echo esc_attr( date('Y') ); ?>" class="small-text" required>
             </div>
             
             <div class="form-group">

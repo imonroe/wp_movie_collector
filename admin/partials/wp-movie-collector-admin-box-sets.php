@@ -1,6 +1,11 @@
+<?php
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-movie-collector' ) );
+}
+?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-    
+
     <?php
     // Show success message if there is one
     if (isset($_GET['message'])) {
@@ -22,7 +27,7 @@
     
     <div class="wp-movie-collector-box-sets">
         <div class="wp-movie-collector-actions">
-            <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-add-box-set'); ?>" class="button button-primary"><?php _e('Add New Box Set', 'wp-movie-collector'); ?></a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-add-box-set')); ?>" class="button button-primary"><?php esc_html_e('Add New Box Set', 'wp-movie-collector'); ?></a>
         </div>
         
         <?php
@@ -37,12 +42,12 @@
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th><?php _e('Title', 'wp-movie-collector'); ?></th>
-                    <th><?php _e('Release Year', 'wp-movie-collector'); ?></th>
-                    <th><?php _e('Format', 'wp-movie-collector'); ?></th>
-                    <th><?php _e('Region', 'wp-movie-collector'); ?></th>
-                    <th><?php _e('Movies', 'wp-movie-collector'); ?></th>
-                    <th><?php _e('Actions', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Title', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Format', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Region', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Movies', 'wp-movie-collector'); ?></th>
+                    <th><?php esc_html_e('Actions', 'wp-movie-collector'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -62,9 +67,9 @@
                     <td><?php echo esc_html($box_set['region_code']); ?></td>
                     <td><?php echo intval($movie_count); ?></td>
                     <td>
-                        <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set['id']); ?>" class="button button-small"><?php _e('Edit', 'wp-movie-collector'); ?></a>
-                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_delete_box_set&id=' . $box_set['id']), 'wp_movie_collector_delete_box_set_' . $box_set['id'], 'wp_movie_collector_nonce'); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e('Are you sure you want to delete this box set?', 'wp-movie-collector'); ?>')"><?php _e('Delete', 'wp-movie-collector'); ?></a>
-                        <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set['id']); ?>" class="button button-small"><?php _e('Manage Movies', 'wp-movie-collector'); ?></a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-edit-box-set&id=' . intval($box_set['id']))); ?>" class="button button-small"><?php esc_html_e('Edit', 'wp-movie-collector'); ?></a>
+                        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wp_movie_collector_delete_box_set&id=' . intval($box_set['id'])), 'wp_movie_collector_delete_box_set_' . intval($box_set['id']), 'wp_movie_collector_nonce')); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e('Are you sure you want to delete this box set?', 'wp-movie-collector'); ?>')"><?php esc_html_e('Delete', 'wp-movie-collector'); ?></a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . intval($box_set['id']))); ?>" class="button button-small"><?php esc_html_e('Manage Movies', 'wp-movie-collector'); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -72,7 +77,7 @@
         </table>
         <?php else : ?>
         <div class="wp-movie-collector-no-items">
-            <p><?php _e('No box sets found. Why not add one?', 'wp-movie-collector'); ?></p>
+            <p><?php esc_html_e('No box sets found. Why not add one?', 'wp-movie-collector'); ?></p>
         </div>
         <?php endif; ?>
     </div>

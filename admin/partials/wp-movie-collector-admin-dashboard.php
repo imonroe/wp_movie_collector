@@ -1,6 +1,11 @@
+<?php
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-movie-collector' ) );
+}
+?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-    
+
     <?php
     // Show success message if there is one
     if (isset($_GET['message'])) {
@@ -36,28 +41,28 @@
             ?>
             
             <div class="wp-movie-collector-stat-box">
-                <h2><?php echo $movies_count; ?></h2>
-                <p><?php _e('Movies', 'wp-movie-collector'); ?></p>
+                <h2><?php echo intval($movies_count); ?></h2>
+                <p><?php esc_html_e('Movies', 'wp-movie-collector'); ?></p>
             </div>
             
             <div class="wp-movie-collector-stat-box">
-                <h2><?php echo $box_sets_count; ?></h2>
-                <p><?php _e('Box Sets', 'wp-movie-collector'); ?></p>
+                <h2><?php echo intval($box_sets_count); ?></h2>
+                <p><?php esc_html_e('Box Sets', 'wp-movie-collector'); ?></p>
             </div>
         </div>
         
         <div class="wp-movie-collector-actions">
             <div class="wp-movie-collector-action-box">
-                <h3><?php _e('Quick Actions', 'wp-movie-collector'); ?></h3>
-                <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-add-movie'); ?>" class="button button-primary"><?php _e('Add New Movie', 'wp-movie-collector'); ?></a>
-                <a href="<?php echo admin_url('admin.php?page=wp-movie-collector-add-box-set'); ?>" class="button button-primary"><?php _e('Add New Box Set', 'wp-movie-collector'); ?></a>
+                <h3><?php esc_html_e('Quick Actions', 'wp-movie-collector'); ?></h3>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-add-movie')); ?>" class="button button-primary"><?php esc_html_e('Add New Movie', 'wp-movie-collector'); ?></a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=wp-movie-collector-add-box-set')); ?>" class="button button-primary"><?php esc_html_e('Add New Box Set', 'wp-movie-collector'); ?></a>
             </div>
             
             <div class="wp-movie-collector-action-box">
-                <h3><?php _e('Recent Movies', 'wp-movie-collector'); ?></h3>
+                <h3><?php esc_html_e('Recent Movies', 'wp-movie-collector'); ?></h3>
                 <?php
                 // Get recent movies
-                $recent_movies = $wpdb->get_results("SELECT id, title FROM {$db->get_movies_table()} ORDER BY created_at DESC LIMIT 5", ARRAY_A);
+                $recent_movies = $wpdb->get_results($wpdb->prepare("SELECT id, title FROM {$db->get_movies_table()} ORDER BY created_at DESC LIMIT %d", 5), ARRAY_A);
                 
                 if ($recent_movies) :
                 ?>
@@ -67,17 +72,17 @@
                     <?php endforeach; ?>
                 </ul>
                 <?php else : ?>
-                <p><?php _e('No movies yet. Why not add one?', 'wp-movie-collector'); ?></p>
+                <p><?php esc_html_e('No movies yet. Why not add one?', 'wp-movie-collector'); ?></p>
                 <?php endif; ?>
             </div>
         </div>
         
         <div class="wp-movie-collector-search">
-            <h3><?php _e('Search Collection', 'wp-movie-collector'); ?></h3>
+            <h3><?php esc_html_e('Search Collection', 'wp-movie-collector'); ?></h3>
             <form method="get">
                 <input type="hidden" name="page" value="wp-movie-collector">
-                <input type="text" name="search" placeholder="<?php _e('Search by title, director, actor...', 'wp-movie-collector'); ?>" class="regular-text">
-                <button type="submit" class="button"><?php _e('Search', 'wp-movie-collector'); ?></button>
+                <input type="text" name="search" placeholder="<?php esc_attr_e('Search by title, director, actor...', 'wp-movie-collector'); ?>" class="regular-text">
+                <button type="submit" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
             </form>
         </div>
     </div>

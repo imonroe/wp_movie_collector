@@ -1,6 +1,11 @@
+<?php
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-movie-collector' ) );
+}
+?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-    
+
     <?php
     // Show error message if there is one
     if (isset($_GET['error'])) {
@@ -41,55 +46,55 @@
     
     <div class="wp-movie-collector-form">
         <div class="wp-movie-collector-barcode-scanner">
-            <h3><?php _e('Scan Barcode', 'wp-movie-collector'); ?></h3>
-            <p><?php _e('Use a barcode scanner or enter a barcode manually to quickly add a movie.', 'wp-movie-collector'); ?></p>
+            <h3><?php esc_html_e('Scan Barcode', 'wp-movie-collector'); ?></h3>
+            <p><?php esc_html_e('Use a barcode scanner or enter a barcode manually to quickly add a movie.', 'wp-movie-collector'); ?></p>
             <div class="wp-movie-collector-barcode-input">
-                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php _e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
-                <button type="button" id="wp-movie-collector-lookup-barcode" class="button"><?php _e('Lookup', 'wp-movie-collector'); ?></button>
+                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php esc_html_e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
+                <button type="button" id="wp-movie-collector-lookup-barcode" class="button"><?php esc_html_e('Lookup', 'wp-movie-collector'); ?></button>
             </div>
             <div id="wp-movie-collector-barcode-result"></div>
         </div>
         
         <div class="wp-movie-collector-api-search">
-            <h3><?php _e('Search Movie Database', 'wp-movie-collector'); ?></h3>
-            <p><?php _e('Search for a movie title to retrieve metadata.', 'wp-movie-collector'); ?></p>
+            <h3><?php esc_html_e('Search Movie Database', 'wp-movie-collector'); ?></h3>
+            <p><?php esc_html_e('Search for a movie title to retrieve metadata.', 'wp-movie-collector'); ?></p>
             <div class="wp-movie-collector-search-input">
-                <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php _e('Search movie title...', 'wp-movie-collector'); ?>">
-                <button type="button" id="wp-movie-collector-search-movie" class="button"><?php _e('Search', 'wp-movie-collector'); ?></button>
+                <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_html_e('Search movie title...', 'wp-movie-collector'); ?>">
+                <button type="button" id="wp-movie-collector-search-movie" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
             </div>
             <div id="wp-movie-collector-search-results"></div>
         </div>
         
-        <h3><?php _e('Movie Details', 'wp-movie-collector'); ?></h3>
+        <h3><?php esc_html_e('Movie Details', 'wp-movie-collector'); ?></h3>
         <form method="post" id="wp-movie-collector-add-movie-form">
             <?php wp_nonce_field('wp_movie_collector_add_movie', 'wp_movie_collector_nonce'); ?>
             
             <div class="form-group">
-                <label for="movie-title"><?php _e('Title', 'wp-movie-collector'); ?></label>
+                <label for="movie-title"><?php esc_html_e('Title', 'wp-movie-collector'); ?></label>
                 <input type="text" id="movie-title" name="movie[title]" class="regular-text" required>
             </div>
             
             <div class="form-group">
-                <label for="movie-release-year"><?php _e('Release Year', 'wp-movie-collector'); ?></label>
+                <label for="movie-release-year"><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></label>
                 <input type="number" id="movie-release-year" name="movie[release_year]" min="1900" max="<?php echo date('Y'); ?>" class="small-text" required>
             </div>
             
             <div class="form-group">
-                <label for="movie-format"><?php _e('Format', 'wp-movie-collector'); ?></label>
+                <label for="movie-format"><?php esc_html_e('Format', 'wp-movie-collector'); ?></label>
                 <select id="movie-format" name="movie[format]" required>
-                    <option value=""><?php _e('Select Format', 'wp-movie-collector'); ?></option>
-                    <option value="DVD"><?php _e('DVD', 'wp-movie-collector'); ?></option>
-                    <option value="Blu-ray"><?php _e('Blu-ray', 'wp-movie-collector'); ?></option>
-                    <option value="4K UHD"><?php _e('4K Ultra HD', 'wp-movie-collector'); ?></option>
-                    <option value="VHS"><?php _e('VHS', 'wp-movie-collector'); ?></option>
-                    <option value="LaserDisc"><?php _e('LaserDisc', 'wp-movie-collector'); ?></option>
+                    <option value=""><?php esc_html_e('Select Format', 'wp-movie-collector'); ?></option>
+                    <option value="DVD"><?php esc_html_e('DVD', 'wp-movie-collector'); ?></option>
+                    <option value="Blu-ray"><?php esc_html_e('Blu-ray', 'wp-movie-collector'); ?></option>
+                    <option value="4K UHD"><?php esc_html_e('4K Ultra HD', 'wp-movie-collector'); ?></option>
+                    <option value="VHS"><?php esc_html_e('VHS', 'wp-movie-collector'); ?></option>
+                    <option value="LaserDisc"><?php esc_html_e('LaserDisc', 'wp-movie-collector'); ?></option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label for="movie-region-code"><?php _e('Region Code', 'wp-movie-collector'); ?></label>
+                <label for="movie-region-code"><?php esc_html_e('Region Code', 'wp-movie-collector'); ?></label>
                 <select id="movie-region-code" name="movie[region_code]" required>
-                    <option value=""><?php _e('Select Region', 'wp-movie-collector'); ?></option>
+                    <option value=""><?php esc_html_e('Select Region', 'wp-movie-collector'); ?></option>
                     <option value="R1">Region 1 (USA, Canada)</option>
                     <option value="R2">Region 2 (Europe, Japan, Middle East)</option>
                     <option value="R3">Region 3 (East Asia)</option>
@@ -105,65 +110,65 @@
             </div>
             
             <div class="form-group">
-                <label for="movie-barcode"><?php _e('Barcode', 'wp-movie-collector'); ?></label>
+                <label for="movie-barcode"><?php esc_html_e('Barcode', 'wp-movie-collector'); ?></label>
                 <input type="text" id="movie-barcode" name="movie[barcode]" class="regular-text">
             </div>
             
             <div class="form-group">
-                <label for="movie-director"><?php _e('Director', 'wp-movie-collector'); ?></label>
+                <label for="movie-director"><?php esc_html_e('Director', 'wp-movie-collector'); ?></label>
                 <input type="text" id="movie-director" name="movie[director]" class="regular-text">
             </div>
             
             <div class="form-group">
-                <label for="movie-studio"><?php _e('Studio', 'wp-movie-collector'); ?></label>
+                <label for="movie-studio"><?php esc_html_e('Studio', 'wp-movie-collector'); ?></label>
                 <input type="text" id="movie-studio" name="movie[studio]" class="regular-text">
             </div>
             
             <div class="form-group">
-                <label for="movie-actors"><?php _e('Actors', 'wp-movie-collector'); ?></label>
+                <label for="movie-actors"><?php esc_html_e('Actors', 'wp-movie-collector'); ?></label>
                 <textarea id="movie-actors" name="movie[actors]"></textarea>
-                <p class="description"><?php _e('Enter actors separated by commas.', 'wp-movie-collector'); ?></p>
+                <p class="description"><?php esc_html_e('Enter actors separated by commas.', 'wp-movie-collector'); ?></p>
             </div>
             
             <div class="form-group">
-                <label for="movie-genre"><?php _e('Genre', 'wp-movie-collector'); ?></label>
+                <label for="movie-genre"><?php esc_html_e('Genre', 'wp-movie-collector'); ?></label>
                 <input type="text" id="movie-genre" name="movie[genre]" class="regular-text">
-                <p class="description"><?php _e('Enter genres separated by commas.', 'wp-movie-collector'); ?></p>
+                <p class="description"><?php esc_html_e('Enter genres separated by commas.', 'wp-movie-collector'); ?></p>
             </div>
             
             <div class="form-group">
-                <label for="movie-special-features"><?php _e('Special Features', 'wp-movie-collector'); ?></label>
+                <label for="movie-special-features"><?php esc_html_e('Special Features', 'wp-movie-collector'); ?></label>
                 <textarea id="movie-special-features" name="movie[special_features]"></textarea>
-                <p class="description"><?php _e('Enter special features like director\'s commentary, deleted scenes, etc.', 'wp-movie-collector'); ?></p>
+                <p class="description"><?php esc_html_e('Enter special features like director\'s commentary, deleted scenes, etc.', 'wp-movie-collector'); ?></p>
             </div>
             
             <div class="form-group">
-                <label for="movie-cover-image"><?php _e('Cover Image', 'wp-movie-collector'); ?></label>
+                <label for="movie-cover-image"><?php esc_html_e('Cover Image', 'wp-movie-collector'); ?></label>
                 <div class="wp-movie-collector-image-upload-container">
                     <div class="image-preview"></div>
                     <input type="hidden" id="movie-cover-image-id" name="movie[cover_image_id]" class="image-id-field">
-                    <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text image-url-field" placeholder="<?php _e('Image URL or upload', 'wp-movie-collector'); ?>">
-                    <button type="button" class="button wp-movie-collector-upload-image-button"><?php _e('Upload Image', 'wp-movie-collector'); ?></button>
-                    <button type="button" class="button wp-movie-collector-remove-image-button" style="display:none;"><?php _e('Remove Image', 'wp-movie-collector'); ?></button>
-                    <p class="description"><?php _e('Upload an image or enter a URL for the movie cover.', 'wp-movie-collector'); ?></p>
+                    <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_html_e('Image URL or upload', 'wp-movie-collector'); ?>">
+                    <button type="button" class="button wp-movie-collector-upload-image-button"><?php esc_html_e('Upload Image', 'wp-movie-collector'); ?></button>
+                    <button type="button" class="button wp-movie-collector-remove-image-button" style="display:none;"><?php esc_html_e('Remove Image', 'wp-movie-collector'); ?></button>
+                    <p class="description"><?php esc_html_e('Upload an image or enter a URL for the movie cover.', 'wp-movie-collector'); ?></p>
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="movie-description"><?php _e('Description', 'wp-movie-collector'); ?></label>
+                <label for="movie-description"><?php esc_html_e('Description', 'wp-movie-collector'); ?></label>
                 <textarea id="movie-description" name="movie[description]"></textarea>
             </div>
             
             <div class="form-group">
-                <label for="movie-acquisition-date"><?php _e('Acquisition Date', 'wp-movie-collector'); ?></label>
+                <label for="movie-acquisition-date"><?php esc_html_e('Acquisition Date', 'wp-movie-collector'); ?></label>
                 <input type="date" id="movie-acquisition-date" name="movie[acquisition_date]" class="regular-text">
-                <p class="description"><?php _e('When did you acquire this movie?', 'wp-movie-collector'); ?></p>
+                <p class="description"><?php esc_html_e('When did you acquire this movie?', 'wp-movie-collector'); ?></p>
             </div>
             
             <div class="form-group">
-                <label for="movie-box-set"><?php _e('Part of Box Set?', 'wp-movie-collector'); ?></label>
+                <label for="movie-box-set"><?php esc_html_e('Part of Box Set?', 'wp-movie-collector'); ?></label>
                 <select id="movie-box-set" name="movie[box_set_id]">
-                    <option value=""><?php _e('Not part of a box set', 'wp-movie-collector'); ?></option>
+                    <option value=""><?php esc_html_e('Not part of a box set', 'wp-movie-collector'); ?></option>
                     <?php
                     global $wpdb;
                     $db = new WP_Movie_Collector_DB();
@@ -179,16 +184,16 @@
             </div>
             
             <div class="form-group">
-                <label for="movie-custom-notes"><?php _e('Custom Notes', 'wp-movie-collector'); ?></label>
+                <label for="movie-custom-notes"><?php esc_html_e('Custom Notes', 'wp-movie-collector'); ?></label>
                 <textarea id="movie-custom-notes" name="movie[custom_notes]"></textarea>
-                <p class="description"><?php _e('Any personal notes about this movie.', 'wp-movie-collector'); ?></p>
+                <p class="description"><?php esc_html_e('Any personal notes about this movie.', 'wp-movie-collector'); ?></p>
             </div>
             
             <input type="hidden" id="movie-api-source" name="movie[api_source]" value="">
             
             <p class="submit">
                 <button type="submit" class="button button-primary" name="wp_movie_collector_add_movie_submit">
-                    <?php _e('Add Movie', 'wp-movie-collector'); ?>
+                    <?php esc_html_e('Add Movie', 'wp-movie-collector'); ?>
                 </button>
             </p>
         </form>
@@ -204,7 +209,7 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-barcode-result').html('<p><?php _e('Looking up barcode...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-barcode-result').html('<p><?php esc_html_e('Looking up barcode...', 'wp-movie-collector'); ?></p>');
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -216,7 +221,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-movie-collector-barcode-result').html('<p class="success"><?php _e('Movie found! Filling in details...', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-barcode-result').html('<p class="success"><?php esc_html_e('Movie found! Filling in details...', 'wp-movie-collector'); ?></p>');
                     
                     // Fill in form with movie details
                     fillMovieForm(response.data);
@@ -233,7 +238,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function() {
-                $('#wp-movie-collector-barcode-result').html('<p class="error"><?php _e('Error looking up barcode. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-barcode-result').html('<p class="error"><?php esc_html_e('Error looking up barcode. Please try again.', 'wp-movie-collector'); ?></p>');
             }
         });
     });
@@ -245,7 +250,7 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-search-results').html('<p><?php _e('Searching...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Searching...', 'wp-movie-collector'); ?></p>');
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -258,7 +263,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success && response.data.length > 0) {
                     var resultsHtml = '<div class="wp-movie-collector-search-results">';
-                    resultsHtml += '<h4><?php _e('Search Results', 'wp-movie-collector'); ?></h4>';
+                    resultsHtml += '<h4><?php esc_html_e('Search Results', 'wp-movie-collector'); ?></h4>';
                     resultsHtml += '<ul>';
                     
                     $.each(response.data, function(index, movie) {
@@ -293,11 +298,11 @@ jQuery(document).ready(function($) {
                         });
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html('<p class="error"><?php _e('No movies found matching that title.', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html('<p class="error"><?php esc_html_e('No movies found matching that title.', 'wp-movie-collector'); ?></p>');
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html('<p class="error"><?php _e('Error searching for movie. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-search-results').html('<p class="error"><?php esc_html_e('Error searching for movie. Please try again.', 'wp-movie-collector'); ?></p>');
             }
         });
     });
@@ -332,7 +337,7 @@ jQuery(document).ready(function($) {
      * Search TMDB for more details about the movie
      */
     function searchTMDBForMoreDetails(title, year) {
-        $('#wp-movie-collector-search-results').html('<p><?php _e('Searching for additional movie details...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Searching for additional movie details...', 'wp-movie-collector'); ?></p>');
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -348,7 +353,7 @@ jQuery(document).ready(function($) {
                     // Get details for the first match
                     var movieId = response.data[0].id;
                     
-                    $('#wp-movie-collector-search-results').html('<p><?php _e('Found match, retrieving full details...', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Found match, retrieving full details...', 'wp-movie-collector'); ?></p>');
                     
                     $.ajax({
                         url: wp_movie_collector_admin.ajax_url,
@@ -369,29 +374,29 @@ jQuery(document).ready(function($) {
                                 fillMovieFormWithTMDBData(tmdbMovie, barcode);
                                 
                                 $('#wp-movie-collector-search-results').html(
-                                    '<p class="success"><?php _e('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector'); ?></p>'
+                                    '<p class="success"><?php esc_html_e('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector'); ?></p>'
                                 );
                             } else {
                                 $('#wp-movie-collector-search-results').html(
-                                    '<p class="error"><?php _e('Error retrieving full movie details.', 'wp-movie-collector'); ?></p>'
+                                    '<p class="error"><?php esc_html_e('Error retrieving full movie details.', 'wp-movie-collector'); ?></p>'
                                 );
                             }
                         },
                         error: function() {
                             $('#wp-movie-collector-search-results').html(
-                                '<p class="error"><?php _e('Error connecting to server.', 'wp-movie-collector'); ?></p>'
+                                '<p class="error"><?php esc_html_e('Error connecting to server.', 'wp-movie-collector'); ?></p>'
                             );
                         }
                     });
                 } else {
                     $('#wp-movie-collector-search-results').html(
-                        '<p class="error"><?php _e('No additional movie details found.', 'wp-movie-collector'); ?></p>'
+                        '<p class="error"><?php esc_html_e('No additional movie details found.', 'wp-movie-collector'); ?></p>'
                     );
                 }
             },
             error: function() {
                 $('#wp-movie-collector-search-results').html(
-                    '<p class="error"><?php _e('Error searching for additional movie details.', 'wp-movie-collector'); ?></p>'
+                    '<p class="error"><?php esc_html_e('Error searching for additional movie details.', 'wp-movie-collector'); ?></p>'
                 );
             }
         });

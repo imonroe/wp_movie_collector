@@ -13,7 +13,8 @@ $paged = get_query_var('paged') ? get_query_var('paged') : 1;
 // Get filter values from URL
 $filter_format = isset($_GET['format']) ? sanitize_text_field($_GET['format']) : '';
 $filter_genre = isset($_GET['genre']) ? sanitize_text_field($_GET['genre']) : '';
-$filter_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
+$raw_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
+$filter_year = ($raw_year >= 1900 && $raw_year <= intval(date('Y')) + 1) ? $raw_year : 0;
 $filter_director = isset($_GET['director']) ? sanitize_text_field($_GET['director']) : '';
 $filter_studio = isset($_GET['studio']) ? sanitize_text_field($_GET['studio']) : '';
 $search_term = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
@@ -22,11 +23,15 @@ $search_term = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '
 $db = new WP_Movie_Collector_DB();
 
 // Build search criteria
+// Whitelist orderby/order to prevent SQL injection
+$allowed_orderby = array('title', 'release_year', 'id', 'created_at', 'acquisition_date', 'format', 'director');
+$allowed_order = array('ASC', 'DESC');
+
 $criteria = array(
     'per_page' => $per_page,
     'page' => $paged,
-    'orderby' => isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'title',
-    'order' => isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'ASC',
+    'orderby' => isset($_GET['orderby']) && in_array($_GET['orderby'], $allowed_orderby, true) ? $_GET['orderby'] : 'title',
+    'order' => isset($_GET['order']) && in_array(strtoupper($_GET['order']), $allowed_order, true) ? strtoupper($_GET['order']) : 'ASC',
 );
 
 if (!empty($filter_format)) {

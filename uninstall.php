@@ -52,5 +52,5 @@ $tables = array(
 );
 
 foreach ($tables as $table) {
-    $wpdb->query("DROP TABLE IF EXISTS $table");
+    $wpdb->query("DROP TABLE IF EXISTS `{$table}`");
 }

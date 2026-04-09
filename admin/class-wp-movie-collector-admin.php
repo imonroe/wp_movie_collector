@@ -1533,4 +1533,30 @@ public function add_plugin_admin_menu() {
 
         wp_send_json_success($movie);
     }
+
+    /**
+     * AJAX handler for clearing API cache.
+     *
+     * @since    1.0.0
+     */
+    public function ajax_clear_api_cache() {
+        if (!isset($_GET['wp_movie_collector_nonce']) || !wp_verify_nonce($_GET['wp_movie_collector_nonce'], 'wp_movie_collector_clear_cache')) {
+            wp_die(__('Security check failed.', 'wp-movie-collector'));
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have permission to perform this action.', 'wp-movie-collector'));
+        }
+
+        $deleted = WP_Movie_Collector_API::clear_api_cache();
+
+        wp_safe_redirect(add_query_arg(
+            array(
+                'page' => 'wp-movie-collector-settings',
+                'cache_cleared' => $deleted,
+            ),
+            admin_url('admin.php')
+        ));
+        exit;
+    }
 }

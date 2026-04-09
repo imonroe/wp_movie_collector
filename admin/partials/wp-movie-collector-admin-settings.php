@@ -1,6 +1,16 @@
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-    
+
+    <?php if (isset($_GET['cache_cleared'])) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php printf(
+                /* translators: %d: number of cached items cleared */
+                __('API cache cleared successfully. %d cached items removed.', 'wp-movie-collector'),
+                intval($_GET['cache_cleared'])
+            ); ?></p>
+        </div>
+    <?php endif; ?>
+
     <form method="post" action="options.php">
         <?php
         settings_fields('wp_movie_collector_settings');
@@ -97,6 +107,19 @@
                     </p>
                     <p class="description">
                         <?php _e('This will attempt to recreate any missing database tables.', 'wp-movie-collector'); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Clear API Cache', 'wp-movie-collector'); ?></th>
+                <td>
+                    <p>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-ajax.php?action=wp_movie_collector_clear_api_cache'), 'wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>" class="button" id="wp-movie-collector-clear-cache">
+                            <?php _e('Clear API Cache', 'wp-movie-collector'); ?>
+                        </a>
+                    </p>
+                    <p class="description">
+                        <?php _e('This will clear all cached API responses (movie searches, details, and barcode lookups).', 'wp-movie-collector'); ?>
                     </p>
                 </td>
             </tr>

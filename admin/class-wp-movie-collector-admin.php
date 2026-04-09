@@ -1540,23 +1540,21 @@ public function add_plugin_admin_menu() {
      * @since    1.0.0
      */
     public function ajax_clear_api_cache() {
-        if (!isset($_POST['wp_movie_collector_nonce']) || !wp_verify_nonce($_POST['wp_movie_collector_nonce'], 'wp_movie_collector_clear_cache')) {
-            wp_die(__('Security check failed.', 'wp-movie-collector'));
+        $redirect_url = admin_url('admin.php?page=wp-movie-collector-settings');
+
+        if (!isset($_POST['wp_movie_collector_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['wp_movie_collector_nonce'])), 'wp_movie_collector_clear_cache')) {
+            wp_safe_redirect(add_query_arg('cache_error', 'nonce', $redirect_url));
+            exit;
         }
 
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have permission to perform this action.', 'wp-movie-collector'));
+            wp_safe_redirect(add_query_arg('cache_error', 'permission', $redirect_url));
+            exit;
         }
 
-        $deleted = WP_Movie_Collector_API::clear_api_cache();
+        WP_Movie_Collector_API::clear_api_cache();
 
-        wp_safe_redirect(add_query_arg(
-            array(
-                'page' => 'wp-movie-collector-settings',
-                'cache_cleared' => $deleted,
-            ),
-            admin_url('admin.php')
-        ));
+        wp_safe_redirect(add_query_arg('cache_cleared', '1', $redirect_url));
         exit;
     }
 }

@@ -29,6 +29,9 @@ class ApiCacheTest extends TestCase {
 	 * Set up the test fixture.
 	 */
 	protected function setUp(): void {
+		if ( ! class_exists( 'WP_Movie_Collector_API' ) ) {
+			$this->fail( 'WP_Movie_Collector_API class does not exist or could not be autoloaded.' );
+		}
 		$this->reflection = new ReflectionClass( 'WP_Movie_Collector_API' );
 	}
 

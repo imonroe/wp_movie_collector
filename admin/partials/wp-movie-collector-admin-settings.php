@@ -3,11 +3,13 @@
 
     <?php if (isset($_GET['cache_cleared'])) : ?>
         <div class="notice notice-success is-dismissible">
-            <p><?php printf(
-                /* translators: %d: number of cached items cleared */
-                __('API cache cleared successfully. %d cached items removed.', 'wp-movie-collector'),
-                absint($_GET['cache_cleared'])
-            ); ?></p>
+            <p><?php echo esc_html__('API cache invalidated successfully. Cached responses will be refreshed on next request.', 'wp-movie-collector'); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['cache_error'])) : ?>
+        <div class="notice notice-error is-dismissible">
+            <p><?php echo esc_html__('Failed to clear API cache. Please try again.', 'wp-movie-collector'); ?></p>
         </div>
     <?php endif; ?>
 

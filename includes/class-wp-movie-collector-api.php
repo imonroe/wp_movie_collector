@@ -61,7 +61,7 @@ class WP_Movie_Collector_API {
         }
 
         // Check the cache first
-        $cache_key = 'wp_movie_search_' . md5($title . '_' . $year);
+        $cache_key = self::make_cache_key('wp_movie_search_', md5($title . '_' . $year));
         if (!$bypass_cache) {
             $cached_results = get_transient($cache_key);
 
@@ -92,7 +92,7 @@ class WP_Movie_Collector_API {
                 return $response;
             }
 
-            self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+            set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
 
             return $fallback_results;
         }
@@ -105,7 +105,7 @@ class WP_Movie_Collector_API {
 
             // Cache the fallback results if successful
             if (!is_wp_error($fallback_results)) {
-                self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
             }
 
             return $fallback_results;
@@ -119,13 +119,13 @@ class WP_Movie_Collector_API {
 
             // Cache the fallback results if successful
             if (!is_wp_error($fallback_results)) {
-                self::set_api_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
+                set_transient($cache_key, $fallback_results, HOUR_IN_SECONDS * 12);
             }
 
             return $fallback_results;
         }
 
-        self::set_api_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
+        set_transient($cache_key, $data['results'], HOUR_IN_SECONDS * 24);
 
         return $data['results'];
     }
@@ -183,7 +183,7 @@ class WP_Movie_Collector_API {
             return new WP_Error('no_api_key', __('TMDb API key is not set.', 'wp-movie-collector'));
         }
 
-        $cache_key = 'wp_movie_details_' . intval($tmdb_id);
+        $cache_key = self::make_cache_key('wp_movie_details_', intval($tmdb_id));
         if (!$bypass_cache) {
             $cached_result = get_transient($cache_key);
             if (false !== $cached_result) {
@@ -207,7 +207,7 @@ class WP_Movie_Collector_API {
         }
 
         $result = $this->format_movie_data($data);
-        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -300,7 +300,7 @@ class WP_Movie_Collector_API {
             return new WP_Error('invalid_barcode', __('Invalid barcode format.', 'wp-movie-collector'));
         }
 
-        $cache_key = 'wp_movie_barcode_' . $barcode;
+        $cache_key = self::make_cache_key('wp_movie_barcode_', $barcode);
         if (!$bypass_cache) {
             $cached_result = get_transient($cache_key);
 
@@ -387,7 +387,7 @@ class WP_Movie_Collector_API {
         // Format the data from BarcodeLookup
         $result = $this->format_barcode_data($product);
 
-        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -525,7 +525,7 @@ class WP_Movie_Collector_API {
             $movie['studio'] = implode(', ', $publishers);
         }
 
-        self::set_api_transient('wp_movie_barcode_' . $barcode, $movie, DAY_IN_SECONDS * 7);
+        set_transient(self::make_cache_key('wp_movie_barcode_', $barcode), $movie, DAY_IN_SECONDS * 7);
 
         return $movie;
     }
@@ -589,7 +589,7 @@ class WP_Movie_Collector_API {
             __('No movie found with this barcode.', 'wp-movie-collector')
         );
 
-        self::set_api_transient('wp_movie_barcode_' . $external_id, $error, HOUR_IN_SECONDS);
+        set_transient(self::make_cache_key('wp_movie_barcode_', $external_id), $error, HOUR_IN_SECONDS);
 
         return $error;
     }
@@ -607,7 +607,7 @@ class WP_Movie_Collector_API {
             return new WP_Error('no_api_key', __('OMDb API key is not set.', 'wp-movie-collector'));
         }
 
-        $cache_key = 'wp_movie_imdb_' . sanitize_key($imdb_id);
+        $cache_key = self::make_cache_key('wp_movie_imdb_', sanitize_key($imdb_id));
         if (!$bypass_cache) {
             $cached_result = get_transient($cache_key);
             if (false !== $cached_result) {
@@ -635,7 +635,7 @@ class WP_Movie_Collector_API {
         }
 
         $result = $this->format_omdb_movie_data($data);
-        self::set_api_transient($cache_key, $result, DAY_IN_SECONDS * 7);
+        set_transient($cache_key, $result, DAY_IN_SECONDS * 7);
 
         return $result;
     }
@@ -668,49 +668,34 @@ class WP_Movie_Collector_API {
     }
 
     /**
-     * Store a transient and register its key for later cache clearing.
+     * Build a versioned cache key.
      *
-     * Wraps set_transient() and tracks the key in an option so that
-     * clear_api_cache() can delete all cached entries regardless of
-     * whether the site uses a persistent object cache or the database.
+     * Includes a cache version number so that bumping the version
+     * instantly invalidates all prior cached entries. Works correctly
+     * with both database-backed transients and persistent object caches.
      *
      * @since    1.0.0
-     * @param    string    $key        The transient key.
-     * @param    mixed     $value      The transient value.
-     * @param    int       $expiration Time until expiration in seconds.
+     * @param    string    $prefix    The cache key prefix.
+     * @param    string    $suffix    The cache key suffix (unique identifier).
+     * @return   string              The versioned cache key.
      */
-    private static function set_api_transient($key, $value, $expiration) {
-        set_transient($key, $value, $expiration);
-
-        $tracked = get_option('wp_movie_collector_cache_keys', array());
-        if (!in_array($key, $tracked, true)) {
-            $tracked[] = $key;
-            update_option('wp_movie_collector_cache_keys', $tracked, false);
-        }
+    private static function make_cache_key($prefix, $suffix) {
+        $version = (int) get_option('wp_movie_collector_cache_version', 1);
+        return $prefix . $version . '_' . $suffix;
     }
 
     /**
-     * Clear all API response caches.
+     * Invalidate all API response caches.
      *
-     * Uses tracked transient keys so this works correctly with both
-     * database-backed transients and persistent object caches (Redis,
-     * Memcached, etc.).
+     * Bumps the internal cache version so that all previously cached
+     * entries are no longer matched by subsequent lookups. Old transients
+     * expire naturally via their TTL. This approach is atomic, avoids
+     * unbounded key tracking, and works with persistent object caches.
      *
      * @since    1.0.0
-     * @return   int    The number of transients deleted.
      */
     public static function clear_api_cache() {
-        $tracked = get_option('wp_movie_collector_cache_keys', array());
-        $deleted = 0;
-
-        foreach ($tracked as $key) {
-            if (delete_transient($key)) {
-                $deleted++;
-            }
-        }
-
-        delete_option('wp_movie_collector_cache_keys');
-
-        return $deleted;
+        $version = (int) get_option('wp_movie_collector_cache_version', 1);
+        update_option('wp_movie_collector_cache_version', $version + 1);
     }
 }

@@ -416,7 +416,7 @@ public function add_plugin_admin_menu() {
             $cover_image_id = intval($movie['cover_image_id']);
             // Verify attachment exists and is an image
             $attachment = get_post($cover_image_id);
-            if (!$attachment || $attachment->post_type !== 'attachment' || strpos($attachment->post_mime_type, 'image') === false) {
+            if (!$attachment || $attachment->post_type !== 'attachment' || strpos($attachment->post_mime_type ?? '', 'image') === false) {
                 $errors[] = __('Selected cover image is not valid.', 'wp-movie-collector');
             } else {
                 $sanitized['cover_image_id'] = $cover_image_id;
@@ -548,7 +548,7 @@ public function add_plugin_admin_menu() {
             $cover_image_id = intval($box_set['cover_image_id']);
             // Verify attachment exists and is an image
             $attachment = get_post($cover_image_id);
-            if (!$attachment || $attachment->post_type !== 'attachment' || strpos($attachment->post_mime_type, 'image') === false) {
+            if (!$attachment || $attachment->post_type !== 'attachment' || strpos($attachment->post_mime_type ?? '', 'image') === false) {
                 $errors[] = __('Selected cover image is not valid.', 'wp-movie-collector');
             } else {
                 $sanitized['cover_image_id'] = $cover_image_id;
@@ -1014,7 +1014,7 @@ public function add_plugin_admin_menu() {
 
         // Get file information
         $file_info = pathinfo($_FILES['import_file']['name']);
-        $file_extension = strtolower($file_info['extension']);
+        $file_extension = strtolower($file_info['extension'] ?? '');
 
         // Check file extension
         if (!in_array($file_extension, array('csv', 'json'))) {

@@ -359,7 +359,7 @@ jQuery(document).ready(function($) {
                     resultsHtml += '<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">';
                     resultsHtml += '<input type="hidden" name="action" value="wp_movie_collector_add_movies_to_box_set">';
                     resultsHtml += '<input type="hidden" name="box_set_id" value="' + boxSetId + '">';
-                    resultsHtml += '<?php wp_nonce_field('wp_movie_collector_add_movies', 'wp_movie_collector_nonce'); ?>';
+                    resultsHtml += <?php echo wp_json_encode(wp_nonce_field('wp_movie_collector_add_movies', 'wp_movie_collector_nonce', true, false)); ?>;
                     
                     resultsHtml += '<table class="wp-list-table widefat fixed striped">';
                     resultsHtml += '<thead><tr>';

@@ -73,7 +73,8 @@ if ( ! current_user_can( 'manage_options' ) ) {
                     );
                     
                     foreach ($tables as $table) {
-                        $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) === $table;
+                        $escaped_table = $wpdb->esc_like($table);
+                        $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $escaped_table)) === $table;
                         echo '<p>';
                         echo '<strong>' . esc_html($table) . '</strong>: ';
                         if ($exists) {

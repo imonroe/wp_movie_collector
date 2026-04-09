@@ -1,0 +1,32 @@
+FROM wordpress:php8.2-cli
+
+# Install system dependencies for testing.
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    subversion \
+    default-mysql-client \
+    libzip-dev \
+    && docker-php-ext-install zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Composer.
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory.
+WORKDIR /var/www/html/wp-content/plugins/wp-movie-collector
+
+# Copy composer files first for layer caching.
+COPY composer.json composer.lock ./
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --no-progress
+
+# Copy the full plugin and regenerate classmap autoloader.
+COPY . .
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-interaction --no-progress
+
+# Script that waits for MySQL, installs WP test suite, and runs PHPUnit.
+COPY bin/run-tests.sh /usr/local/bin/run-tests.sh
+RUN chmod +x /usr/local/bin/run-tests.sh
+
+ENTRYPOINT ["run-tests.sh"]

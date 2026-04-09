@@ -38,7 +38,9 @@
     "scripts": {
         "lint": "phpcs",
         "lint:fix": "phpcbf",
-        "test": "phpunit"
+        "test": "phpunit --testsuite unit",
+        "test:integration": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from phpunit phpunit",
+        "test:integration:down": "docker compose -f docker-compose.test.yml down -v"
     },
     "config": {
         "allow-plugins": {

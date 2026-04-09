@@ -33,4 +33,3 @@ if ( ! defined( 'WP_MOVIE_COLLECTOR_PLUGIN_URL' ) ) {
 	define( 'WP_MOVIE_COLLECTOR_PLUGIN_URL', 'http://example.com/wp-content/plugins/wp-movie-collector/' );
 }
 
-echo 'Unit test bootstrap loaded.' . PHP_EOL;

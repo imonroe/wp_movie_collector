@@ -924,7 +924,7 @@ public function add_plugin_admin_menu() {
         }
 
         // Get search query
-        $query = sanitize_text_field($_POST['query']);
+        $query = sanitize_text_field(wp_unslash($_POST['query']));
 
         // Search for movies
         global $wpdb;
@@ -974,8 +974,8 @@ public function add_plugin_admin_menu() {
         }
 
         // Get export type and format
-        $export_type = isset($_POST['export_type']) ? sanitize_text_field($_POST['export_type']) : 'all';
-        $export_format = isset($_POST['export_format']) ? sanitize_text_field($_POST['export_format']) : 'csv';
+        $export_type = isset($_POST['export_type']) ? sanitize_text_field(wp_unslash($_POST['export_type'])) : 'all';
+        $export_format = isset($_POST['export_format']) ? sanitize_text_field(wp_unslash($_POST['export_format'])) : 'csv';
 
         // Get data based on export type
         $data = $this->get_export_data($export_type);
@@ -1018,7 +1018,7 @@ public function add_plugin_admin_menu() {
         }
 
         // Get import type
-        $import_type = isset($_POST['import_type']) ? sanitize_text_field($_POST['import_type']) : 'append';
+        $import_type = isset($_POST['import_type']) ? sanitize_text_field(wp_unslash($_POST['import_type'])) : 'append';
 
         // Get file information
         $file_info = pathinfo($_FILES['import_file']['name']);
@@ -1030,13 +1030,25 @@ public function add_plugin_admin_menu() {
             exit;
         }
 
-        // Verify MIME type matches expected content
-        $allowed_mimes = array('text/csv', 'text/plain', 'application/json', 'application/csv');
-        $file_type = wp_check_filetype($_FILES['import_file']['name'], array(
-            'csv' => 'text/csv',
-            'json' => 'application/json',
-        ));
-        if (empty($file_type['ext'])) {
+        // Verify file extension and MIME type using the uploaded temporary file
+        $allowed_mimes = array(
+            'csv' => array('text/csv', 'text/plain', 'application/csv'),
+            'json' => array('application/json', 'text/plain'),
+        );
+        $file_type = wp_check_filetype_and_ext(
+            $_FILES['import_file']['tmp_name'],
+            $_FILES['import_file']['name'],
+            array(
+                'csv' => 'text/csv',
+                'json' => 'application/json',
+            )
+        );
+        if (
+            empty($file_type['ext']) ||
+            $file_type['ext'] !== $file_extension ||
+            (! empty($file_type['type']) && isset($allowed_mimes[$file_extension]) &&
+             ! in_array($file_type['type'], $allowed_mimes[$file_extension], true))
+        ) {
             wp_redirect(add_query_arg('error', 'invalid_format', admin_url('admin.php?page=wp-movie-collector-import-export')));
             exit;
         }
@@ -1480,7 +1492,7 @@ public function add_plugin_admin_menu() {
             wp_send_json_error(__('No barcode provided.', 'wp-movie-collector'));
         }
 
-        $barcode = sanitize_text_field($_POST['barcode']);
+        $barcode = sanitize_text_field(wp_unslash($_POST['barcode']));
 
         // First check if we already have this barcode in our database
         $db = new WP_Movie_Collector_DB();
@@ -1522,7 +1534,7 @@ public function add_plugin_admin_menu() {
             wp_send_json_error(__('No title provided.', 'wp-movie-collector'));
         }
 
-        $title = sanitize_text_field($_POST['title']);
+        $title = sanitize_text_field(wp_unslash($_POST['title']));
         $year = isset($_POST['year']) ? intval($_POST['year']) : null;
 
         // Search for movie via API

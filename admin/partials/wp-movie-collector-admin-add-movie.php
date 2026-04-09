@@ -49,7 +49,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <h3><?php esc_html_e('Scan Barcode', 'wp-movie-collector'); ?></h3>
             <p><?php esc_html_e('Use a barcode scanner or enter a barcode manually to quickly add a movie.', 'wp-movie-collector'); ?></p>
             <div class="wp-movie-collector-barcode-input">
-                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php esc_html_e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
+                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php esc_attr_e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
                 <button type="button" id="wp-movie-collector-lookup-barcode" class="button"><?php esc_html_e('Lookup', 'wp-movie-collector'); ?></button>
             </div>
             <div id="wp-movie-collector-barcode-result"></div>
@@ -59,7 +59,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <h3><?php esc_html_e('Search Movie Database', 'wp-movie-collector'); ?></h3>
             <p><?php esc_html_e('Search for a movie title to retrieve metadata.', 'wp-movie-collector'); ?></p>
             <div class="wp-movie-collector-search-input">
-                <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_html_e('Search movie title...', 'wp-movie-collector'); ?>">
+                <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_attr_e('Search movie title...', 'wp-movie-collector'); ?>">
                 <button type="button" id="wp-movie-collector-search-movie" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
             </div>
             <div id="wp-movie-collector-search-results"></div>
@@ -147,7 +147,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 <div class="wp-movie-collector-image-upload-container">
                     <div class="image-preview"></div>
                     <input type="hidden" id="movie-cover-image-id" name="movie[cover_image_id]" class="image-id-field">
-                    <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_html_e('Image URL or upload', 'wp-movie-collector'); ?>">
+                    <input type="url" id="movie-cover-image-url" name="movie[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_attr_e('Image URL or upload', 'wp-movie-collector'); ?>">
                     <button type="button" class="button wp-movie-collector-upload-image-button"><?php esc_html_e('Upload Image', 'wp-movie-collector'); ?></button>
                     <button type="button" class="button wp-movie-collector-remove-image-button" style="display:none;"><?php esc_html_e('Remove Image', 'wp-movie-collector'); ?></button>
                     <p class="description"><?php esc_html_e('Upload an image or enter a URL for the movie cover.', 'wp-movie-collector'); ?></p>
@@ -202,6 +202,13 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 <script>
 jQuery(document).ready(function($) {
+    // Escape HTML entities to prevent XSS when inserting dynamic text into DOM
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
     // Barcode lookup
     $('#wp-movie-collector-lookup-barcode').on('click', function() {
         var barcode = $('#wp-movie-collector-barcode').val();
@@ -209,7 +216,7 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-barcode-result').html('<p><?php esc_html_e('Looking up barcode...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p>' . esc_html__('Looking up barcode...', 'wp-movie-collector') . '</p>'); ?>);
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -221,7 +228,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-movie-collector-barcode-result').html('<p class="success"><?php esc_html_e('Movie found! Filling in details...', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Movie found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
                     
                     // Fill in form with movie details
                     fillMovieForm(response.data);
@@ -234,11 +241,11 @@ jQuery(document).ready(function($) {
                         searchTMDBForMoreDetails(response.data.title, response.data.release_year);
                     }
                 } else {
-                    $('#wp-movie-collector-barcode-result').html('<p class="error">' + response.data + '</p>');
+                    $('#wp-movie-collector-barcode-result').html('<p class="error"></p>').find('p').text(response.data);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-barcode-result').html('<p class="error"><?php esc_html_e('Error looking up barcode. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error looking up barcode. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
             }
         });
     });
@@ -250,7 +257,7 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Searching...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching...', 'wp-movie-collector') . '</p>'); ?>);
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -263,13 +270,13 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success && response.data.length > 0) {
                     var resultsHtml = '<div class="wp-movie-collector-search-results">';
-                    resultsHtml += '<h4><?php esc_html_e('Search Results', 'wp-movie-collector'); ?></h4>';
+                    resultsHtml += '<h4>' + <?php echo wp_json_encode(esc_html__('Search Results', 'wp-movie-collector')); ?> + '</h4>';
                     resultsHtml += '<ul>';
                     
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<li>';
-                        resultsHtml += '<a href="#" class="wp-movie-collector-select-movie" data-movie-id="' + movie.id + '">';
-                        resultsHtml += movie.title + ' (' + movie.release_year + ')';
+                        resultsHtml += '<a href="#" class="wp-movie-collector-select-movie" data-movie-id="' + parseInt(movie.id) + '">';
+                        resultsHtml += escHtml(movie.title) + ' (' + escHtml(movie.release_year) + ')';
                         resultsHtml += '</a>';
                         resultsHtml += '</li>';
                     });
@@ -298,11 +305,11 @@ jQuery(document).ready(function($) {
                         });
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html('<p class="error"><?php esc_html_e('No movies found matching that title.', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('No movies found matching that title.', 'wp-movie-collector') . '</p>'); ?>);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html('<p class="error"><?php esc_html_e('Error searching for movie. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for movie. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
             }
         });
     });
@@ -337,7 +344,7 @@ jQuery(document).ready(function($) {
      * Search TMDB for more details about the movie
      */
     function searchTMDBForMoreDetails(title, year) {
-        $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Searching for additional movie details...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching for additional movie details...', 'wp-movie-collector') . '</p>'); ?>);
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -353,7 +360,7 @@ jQuery(document).ready(function($) {
                     // Get details for the first match
                     var movieId = response.data[0].id;
                     
-                    $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Found match, retrieving full details...', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Found match, retrieving full details...', 'wp-movie-collector') . '</p>'); ?>);
                     
                     $.ajax({
                         url: wp_movie_collector_admin.ajax_url,

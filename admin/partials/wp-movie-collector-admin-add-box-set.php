@@ -49,7 +49,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <h3><?php esc_html_e('Scan Barcode', 'wp-movie-collector'); ?></h3>
             <p><?php esc_html_e('Use a barcode scanner or enter a barcode manually to quickly add a box set.', 'wp-movie-collector'); ?></p>
             <div class="wp-movie-collector-barcode-input">
-                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php esc_html_e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
+                <input type="text" id="wp-movie-collector-barcode" class="regular-text" placeholder="<?php esc_attr_e('Scan or enter barcode...', 'wp-movie-collector'); ?>">
                 <button type="button" id="wp-movie-collector-lookup-barcode" class="button"><?php esc_html_e('Lookup', 'wp-movie-collector'); ?></button>
             </div>
             <div id="wp-movie-collector-barcode-result"></div>
@@ -109,7 +109,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 <div class="wp-movie-collector-image-upload-container">
                     <div class="image-preview"></div>
                     <input type="hidden" id="box-set-cover-image-id" name="box_set[cover_image_id]" class="image-id-field">
-                    <input type="url" id="box-set-cover-image-url" name="box_set[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_html_e('Image URL or upload', 'wp-movie-collector'); ?>">
+                    <input type="url" id="box-set-cover-image-url" name="box_set[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_attr_e('Image URL or upload', 'wp-movie-collector'); ?>">
                     <button type="button" class="button wp-movie-collector-upload-image-button"><?php esc_html_e('Upload Image', 'wp-movie-collector'); ?></button>
                     <button type="button" class="button wp-movie-collector-remove-image-button" style="display:none;"><?php esc_html_e('Remove Image', 'wp-movie-collector'); ?></button>
                     <p class="description"><?php esc_html_e('Upload an image or enter a URL for the box set cover.', 'wp-movie-collector'); ?></p>
@@ -164,8 +164,8 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-barcode-result').html('<p><?php esc_html_e('Looking up barcode...', 'wp-movie-collector'); ?></p>');
-        
+        $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p>' . esc_html__('Looking up barcode...', 'wp-movie-collector') . '</p>'); ?>);
+
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
             type: 'POST',
@@ -176,15 +176,15 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-movie-collector-barcode-result').html('<p class="success"><?php esc_html_e('Box set found! Filling in details...', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Box set found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
                     // Fill in form with box set details
                     fillBoxSetForm(response.data);
                 } else {
-                    $('#wp-movie-collector-barcode-result').html('<p class="error">' + response.data + '</p>');
+                    $('#wp-movie-collector-barcode-result').html('<p class="error"></p>').find('p').text(response.data);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-barcode-result').html('<p class="error"><?php esc_html_e('Error looking up barcode. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error looking up barcode. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
             }
         });
     });

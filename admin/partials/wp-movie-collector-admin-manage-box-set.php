@@ -326,6 +326,13 @@ jQuery(document).ready(function($) {
         $('input[name="movie_ids[]"]').prop('checked', $(this).prop('checked'));
     });
     
+    // Escape HTML entities to prevent XSS when inserting dynamic text into DOM
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
     // Movie search functionality
     $('#wp-movie-collector-search-movies').on('click', function() {
         var searchQuery = $('#wp-movie-collector-movie-search').val();
@@ -335,7 +342,7 @@ jQuery(document).ready(function($) {
         
         var boxSetId = <?php echo esc_js($box_set_id); ?>;
         
-        $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('Searching...', 'wp-movie-collector'); ?></p>');
+        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching...', 'wp-movie-collector') . '</p>'); ?>);
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -348,7 +355,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
-                    var resultsHtml = '<h4><?php esc_html_e('Search Results', 'wp-movie-collector'); ?></h4>';
+                    var resultsHtml = '<h4>' + <?php echo wp_json_encode(esc_html__('Search Results', 'wp-movie-collector')); ?> + '</h4>';
                     resultsHtml += '<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">';
                     resultsHtml += '<input type="hidden" name="action" value="wp_movie_collector_add_movies_to_box_set">';
                     resultsHtml += '<input type="hidden" name="box_set_id" value="' + boxSetId + '">';
@@ -357,22 +364,22 @@ jQuery(document).ready(function($) {
                     resultsHtml += '<table class="wp-list-table widefat fixed striped">';
                     resultsHtml += '<thead><tr>';
                     resultsHtml += '<th width="20"><input type="checkbox" id="select-all-search-results"></th>';
-                    resultsHtml += '<th><?php esc_html_e('Title', 'wp-movie-collector'); ?></th>';
-                    resultsHtml += '<th><?php esc_html_e('Release Year', 'wp-movie-collector'); ?></th>';
-                    resultsHtml += '<th><?php esc_html_e('Format', 'wp-movie-collector'); ?></th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Title', 'wp-movie-collector')); ?> + '</th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Release Year', 'wp-movie-collector')); ?> + '</th>';
+                    resultsHtml += '<th>' + <?php echo wp_json_encode(esc_html__('Format', 'wp-movie-collector')); ?> + '</th>';
                     resultsHtml += '</tr></thead><tbody>';
                     
                     $.each(response.data, function(index, movie) {
                         resultsHtml += '<tr>';
-                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + movie.id + '"></td>';
-                        resultsHtml += '<td>' + movie.title + '</td>';
-                        resultsHtml += '<td>' + movie.release_year + '</td>';
-                        resultsHtml += '<td>' + movie.format + '</td>';
+                        resultsHtml += '<td><input type="checkbox" name="movie_ids[]" value="' + parseInt(movie.id) + '"></td>';
+                        resultsHtml += '<td>' + escHtml(movie.title) + '</td>';
+                        resultsHtml += '<td>' + escHtml(movie.release_year) + '</td>';
+                        resultsHtml += '<td>' + escHtml(movie.format) + '</td>';
                         resultsHtml += '</tr>';
                     });
                     
                     resultsHtml += '</tbody></table>';
-                    resultsHtml += '<p class="submit"><button type="submit" class="button button-primary"><?php esc_html_e('Add Selected Movies to Box Set', 'wp-movie-collector'); ?></button></p>';
+                    resultsHtml += '<p class="submit"><button type="submit" class="button button-primary">' + <?php echo wp_json_encode(esc_html__('Add Selected Movies to Box Set', 'wp-movie-collector')); ?> + '</button></p>';
                     resultsHtml += '</form>';
                     
                     $('#wp-movie-collector-search-results').html(resultsHtml);
@@ -382,11 +389,11 @@ jQuery(document).ready(function($) {
                         $(this).closest('form').find('input[name="movie_ids[]"]').prop('checked', $(this).prop('checked'));
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html('<p><?php esc_html_e('No movies found matching your search.', 'wp-movie-collector'); ?></p>');
+                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('No movies found matching your search.', 'wp-movie-collector') . '</p>'); ?>);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html('<p class="error"><?php esc_html_e('Error searching for movies. Please try again.', 'wp-movie-collector'); ?></p>');
+                $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for movies. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
             }
         });
     });

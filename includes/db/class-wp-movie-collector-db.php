@@ -120,6 +120,32 @@ class WP_Movie_Collector_DB {
 		if ( empty( $index_exists ) ) {
 			$wpdb->query( "ALTER TABLE $relationships_table ADD INDEX box_set_order (box_set_id, display_order)" );
 		}
+
+		// Add composite index (title, release_year) on movies table for duplicate detection.
+		$movies_table = $this->get_movies_table();
+		$index_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM `{$movies_table}` WHERE Key_name = %s",
+				'title_year'
+			)
+		);
+
+		if ( empty( $index_exists ) ) {
+			$wpdb->query( "ALTER TABLE $movies_table ADD INDEX title_year (title, release_year)" );
+		}
+
+		// Add composite index (title, release_year) on box sets table for duplicate detection.
+		$box_sets_table = $this->get_box_sets_table();
+		$index_exists   = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM `{$box_sets_table}` WHERE Key_name = %s",
+				'title_year'
+			)
+		);
+
+		if ( empty( $index_exists ) ) {
+			$wpdb->query( "ALTER TABLE $box_sets_table ADD INDEX title_year (title, release_year)" );
+		}
 	}
 
 	/**
@@ -157,7 +183,8 @@ class WP_Movie_Collector_DB {
             KEY release_year (release_year),
             KEY format (format),
             KEY box_set_id (box_set_id),
-            KEY cover_image_id (cover_image_id)
+            KEY cover_image_id (cover_image_id),
+            KEY title_year (title, release_year)
         ) $charset_collate;
 
         CREATE TABLE $this->box_sets_table (
@@ -180,7 +207,8 @@ class WP_Movie_Collector_DB {
             KEY barcode (barcode),
             KEY release_year (release_year),
             KEY format (format),
-            KEY cover_image_id (cover_image_id)
+            KEY cover_image_id (cover_image_id),
+            KEY title_year (title, release_year)
         ) $charset_collate;
 
         CREATE TABLE $this->relationships_table (

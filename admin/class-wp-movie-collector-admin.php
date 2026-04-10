@@ -1875,25 +1875,45 @@ class WP_Movie_Collector_Admin {
 			wp_send_json_error( __( 'No barcode provided.', 'wp-movie-collector' ) );
 		}
 
-		$barcode = sanitize_text_field( wp_unslash( $_POST['barcode'] ) );
-		$context = isset( $_POST['context'] ) ? sanitize_text_field( wp_unslash( $_POST['context'] ) ) : 'movie';
+		$barcode       = sanitize_text_field( wp_unslash( $_POST['barcode'] ) );
+		$valid_contexts = array( 'movie', 'box_set' );
+		$context        = isset( $_POST['context'] ) ? sanitize_text_field( wp_unslash( $_POST['context'] ) ) : 'movie';
+		if ( ! in_array( $context, $valid_contexts, true ) ) {
+			$context = 'movie';
+		}
 
 		$db = new WP_Movie_Collector_DB();
 
-		// Check if barcode already exists in the database.
+		// Check if barcode already exists in the database (check both tables).
 		$movie   = $db->get_movie_by_barcode( $barcode );
 		$box_set = $db->get_box_set_by_barcode( $barcode );
 
-		if ( 'box_set' === $context && $box_set ) {
-			$box_set['existing_in_db'] = true;
-			$box_set['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
-			wp_send_json_success( $box_set );
+		// Prioritize the matching context, but return either if found.
+		if ( $box_set ) {
+			$box_set['existing_in_db']  = true;
+			$box_set['existing_type']   = 'box_set';
+			$box_set['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
+			if ( 'box_set' === $context ) {
+				wp_send_json_success( $box_set );
+			}
 		}
 
-		if ( 'movie' === $context && $movie ) {
-			$movie['existing_in_db'] = true;
-			$movie['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
+		if ( $movie ) {
+			$movie['existing_in_db']  = true;
+			$movie['existing_type']   = 'movie';
+			$movie['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
+			if ( 'movie' === $context ) {
+				wp_send_json_success( $movie );
+			}
+		}
+
+		// Return cross-type match if the barcode exists in the other table.
+		if ( $movie ) {
 			wp_send_json_success( $movie );
+		}
+
+		if ( $box_set ) {
+			wp_send_json_success( $box_set );
 		}
 
 		// If not in our database, try to look it up via API.

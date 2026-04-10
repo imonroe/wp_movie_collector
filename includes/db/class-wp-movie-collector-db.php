@@ -230,10 +230,11 @@ class WP_Movie_Collector_DB {
 	 * Insert a movie into the database.
 	 *
 	 * @since    1.0.0
-	 * @param    array $movie    The movie data.
-	 * @return   int|false          The movie ID on success, false on failure.
+	 * @param    array $movie                     The movie data.
+	 * @param    bool  $skip_cache_invalidation   Optional. Whether to skip invalidating the stats cache after insert. Default false.
+	 * @return   int|false                        The movie ID on success, false on failure.
 	 */
-	public function insert_movie( $movie ) {
+	public function insert_movie( $movie, $skip_cache_invalidation = false ) {
 		global $wpdb;
 
 		// Set timestamps
@@ -243,6 +244,9 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->movies_table, $movie );
 
 		if ( $result ) {
+			if ( ! $skip_cache_invalidation ) {
+				$this->invalidate_stats_cache();
+			}
 			return $wpdb->insert_id;
 		}
 
@@ -268,6 +272,10 @@ class WP_Movie_Collector_DB {
 			$movie,
 			array( 'id' => $movie_id )
 		);
+
+		if ( $result > 0 ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -391,6 +399,10 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $movie_id )
 		);
 
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
+
 		return $result !== false;
 	}
 
@@ -398,10 +410,11 @@ class WP_Movie_Collector_DB {
 	 * Insert a box set into the database.
 	 *
 	 * @since    1.0.0
-	 * @param    array $box_set    The box set data.
-	 * @return   int|false            The box set ID on success, false on failure.
+	 * @param    array $box_set                    The box set data.
+	 * @param    bool  $skip_cache_invalidation   Whether to skip stats cache invalidation. Default false.
+	 * @return   int|false                        The box set ID on success, false on failure.
 	 */
-	public function insert_box_set( $box_set ) {
+	public function insert_box_set( $box_set, $skip_cache_invalidation = false ) {
 		global $wpdb;
 
 		// Set timestamps
@@ -411,6 +424,9 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->box_sets_table, $box_set );
 
 		if ( $result ) {
+			if ( ! $skip_cache_invalidation ) {
+				$this->invalidate_stats_cache();
+			}
 			return $wpdb->insert_id;
 		}
 
@@ -436,6 +452,10 @@ class WP_Movie_Collector_DB {
 			$box_set,
 			array( 'id' => $box_set_id )
 		);
+
+		if ( $result > 0 ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -558,6 +578,10 @@ class WP_Movie_Collector_DB {
 			$this->box_sets_table,
 			array( 'id' => $box_set_id )
 		);
+
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -821,6 +845,138 @@ class WP_Movie_Collector_DB {
 		}
 
 		return (int) $wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Get comprehensive collection statistics.
+	 *
+	 * @since    1.1.0
+	 * @return   array    Associative array of collection statistics.
+	 */
+	public function get_collection_stats() {
+		$cached = get_transient( 'wp_movie_collector_stats' );
+		if (
+			is_array( $cached ) &&
+			array_key_exists( 'total_movies', $cached ) &&
+			array_key_exists( 'total_box_sets', $cached ) &&
+			array_key_exists( 'format_breakdown', $cached )
+		) {
+			return $cached;
+		}
+
+		if ( false !== $cached ) {
+			delete_transient( 'wp_movie_collector_stats' );
+		}
+
+		global $wpdb;
+
+		$stats = array();
+
+		// Total counts.
+		$stats['total_movies']   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->movies_table}" );
+		$stats['total_box_sets'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->box_sets_table}" );
+
+		// Format breakdown for movies.
+		$format_rows               = $wpdb->get_results(
+			"SELECT format, COUNT(*) as count FROM {$this->movies_table} WHERE format IS NOT NULL AND TRIM(format) != '' GROUP BY format ORDER BY count DESC",
+			ARRAY_A
+		);
+		$stats['format_breakdown'] = array();
+		if ( $format_rows ) {
+			foreach ( $format_rows as $row ) {
+				$stats['format_breakdown'][ $row['format'] ] = (int) $row['count'];
+			}
+		}
+
+		// Top genres (from comma-separated genre field).
+		$all_genres   = $wpdb->get_col( "SELECT genre FROM {$this->movies_table} WHERE genre != ''" );
+		$genre_counts = array();
+		if ( $all_genres ) {
+			foreach ( $all_genres as $genre_string ) {
+				$genres = array_map( 'trim', explode( ',', $genre_string ) );
+				foreach ( $genres as $genre ) {
+					if ( '' !== $genre ) {
+						$genre_counts[ $genre ] = isset( $genre_counts[ $genre ] ) ? $genre_counts[ $genre ] + 1 : 1;
+					}
+				}
+			}
+			arsort( $genre_counts );
+		}
+		$stats['top_genres'] = array_slice( $genre_counts, 0, 5, true );
+
+		// Top directors.
+		$director_rows          = $wpdb->get_results(
+			"SELECT director, COUNT(*) as count FROM {$this->movies_table} WHERE director != '' GROUP BY director ORDER BY count DESC LIMIT 5",
+			ARRAY_A
+		);
+		$stats['top_directors'] = array();
+		if ( $director_rows ) {
+			foreach ( $director_rows as $row ) {
+				$stats['top_directors'][ $row['director'] ] = (int) $row['count'];
+			}
+		}
+
+		// Top studios.
+		$studio_rows          = $wpdb->get_results(
+			"SELECT studio, COUNT(*) as count FROM {$this->movies_table} WHERE studio != '' GROUP BY studio ORDER BY count DESC LIMIT 5",
+			ARRAY_A
+		);
+		$stats['top_studios'] = array();
+		if ( $studio_rows ) {
+			foreach ( $studio_rows as $row ) {
+				$stats['top_studios'][ $row['studio'] ] = (int) $row['count'];
+			}
+		}
+
+		// Unique counts.
+		$stats['unique_directors'] = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT director) FROM {$this->movies_table} WHERE director != ''" );
+		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
+
+		// Recent additions (last 30 days). Use current_time() to match how created_at is stored.
+		$recent_cutoff           = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
+		$recent_movies           = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",
+				$recent_cutoff
+			)
+		);
+		$recent_box_sets         = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->box_sets_table} WHERE created_at >= %s",
+				$recent_cutoff
+			)
+		);
+		$stats['recent_count']   = $recent_movies + $recent_box_sets;
+
+		// Year range across the whole collection, ignoring invalid years (0/NULL).
+		$year_range = $wpdb->get_row(
+			"
+			SELECT MIN(release_year) AS earliest_year, MAX(release_year) AS latest_year
+			FROM (
+				SELECT release_year FROM {$this->movies_table} WHERE release_year IS NOT NULL AND release_year > 0
+				UNION ALL
+				SELECT release_year FROM {$this->box_sets_table} WHERE release_year IS NOT NULL AND release_year > 0
+			) AS collection_years
+			",
+			ARRAY_A
+		);
+		$stats['earliest_year'] = $year_range ? $year_range['earliest_year'] : null;
+		$stats['latest_year']   = $year_range ? $year_range['latest_year'] : null;
+
+		set_transient( 'wp_movie_collector_stats', $stats, HOUR_IN_SECONDS );
+
+		return $stats;
+	}
+
+	/**
+	 * Invalidate the collection statistics cache.
+	 *
+	 * Call this after any movie or box set insert, update, or delete.
+	 *
+	 * @since    1.1.0
+	 */
+	public function invalidate_stats_cache() {
+		delete_transient( 'wp_movie_collector_stats' );
 	}
 
 	/**

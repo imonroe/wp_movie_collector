@@ -158,6 +158,36 @@ public function add_plugin_admin_menu() {
         array($this, 'display_plugin_admin_edit_movie')
     );
 
+    // All Box Sets submenu
+    add_submenu_page(
+        'wp-movie-collector-dashboard',
+        __( 'All Box Sets', 'wp-movie-collector' ),
+        __( 'All Box Sets', 'wp-movie-collector' ),
+        'manage_options',
+        'wp-movie-collector-box-sets',
+        array( $this, 'display_plugin_admin_box_sets' )
+    );
+
+    // Hidden submenu page for editing a box set
+    add_submenu_page(
+        null,
+        __( 'Edit Box Set', 'wp-movie-collector' ),
+        __( 'Edit Box Set', 'wp-movie-collector' ),
+        'manage_options',
+        'wp-movie-collector-edit-box-set',
+        array( $this, 'display_plugin_admin_edit_box_set' )
+    );
+
+    // Hidden submenu page for managing movies in a box set
+    add_submenu_page(
+        null,
+        __( 'Manage Box Set', 'wp-movie-collector' ),
+        __( 'Manage Box Set', 'wp-movie-collector' ),
+        'manage_options',
+        'wp-movie-collector-manage-box-set',
+        array( $this, 'display_plugin_admin_manage_box_set' )
+    );
+
     // Remove "All Box Sets" if it still appears
     add_action('admin_menu', function() {
         remove_submenu_page('wp-movie-collector-dashboard', 'edit.php?post_type=box_set');
@@ -674,10 +704,11 @@ public function add_plugin_admin_menu() {
      * Validate and sanitize box set form data.
      *
      * @since    1.0.0
-     * @param    array    $box_set    The raw box set data from the form.
-     * @return   array                The validated and sanitized box set data.
+     * @param    array    $box_set       The raw box set data from the form.
+     * @param    int      $box_set_id    Optional box set ID for edit context.
+     * @return   array                   The validated and sanitized box set data.
      */
-    private function validate_and_sanitize_box_set_data($box_set) {
+    private function validate_and_sanitize_box_set_data( $box_set, $box_set_id = 0 ) {
         $sanitized = array();
         $errors = array();
 
@@ -774,9 +805,12 @@ public function add_plugin_admin_menu() {
 
         // If there are validation errors, redirect back with error message
         if (!empty($errors)) {
-            // Store errors in transient
             set_transient('wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5); // 5 minutes expiration
-            wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-add-box-set')));
+            if ( $box_set_id ) {
+                wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
+            } else {
+                wp_safe_redirect(add_query_arg('error', 'validation', admin_url('admin.php?page=wp-movie-collector-add-box-set')));
+            }
             exit;
         }
 
@@ -826,16 +860,73 @@ public function add_plugin_admin_menu() {
     }
 
     /**
+     * Process the edit box set form via admin-post.php.
+     *
+     * @since    1.0.0
+     */
+    public function process_edit_box_set_form() {
+        // Check nonce.
+        if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_update_box_set' ) ) {
+            wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        // Check user capabilities.
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+        }
+
+        // Get box set ID.
+        $box_set_id = isset( $_POST['box_set_id'] ) ? intval( $_POST['box_set_id'] ) : 0;
+
+        if ( ! $box_set_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_box_set', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
+        }
+
+        // Verify box set exists.
+        $db = new WP_Movie_Collector_DB();
+        $existing = $db->get_box_set( $box_set_id );
+
+        if ( ! $existing ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_box_set', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
+        }
+
+        // Ensure the box set payload exists and has the expected structure.
+        if ( ! isset( $_POST['box_set'] ) || ! is_array( $_POST['box_set'] ) ) {
+            wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
+            exit;
+        }
+
+        // Validate and sanitize box set data.
+        $box_set = $this->validate_and_sanitize_box_set_data( wp_unslash( $_POST['box_set'] ), $box_set_id );
+
+        // Ensure clearable optional fields are explicitly persisted.
+        if ( ! isset( $box_set['cover_image_id'] ) ) {
+            $box_set['cover_image_id'] = 0;
+        }
+        if ( ! isset( $box_set['acquisition_date'] ) ) {
+            $box_set['acquisition_date'] = null;
+        }
+
+        // Update the box set in the database.
+        $result = $db->update_box_set( $box_set_id, $box_set );
+
+        if ( $result ) {
+            wp_safe_redirect( add_query_arg( 'message', 'box_set_updated', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
+        }
+
+        wp_safe_redirect( add_query_arg( 'error', 'db_error', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
+        exit;
+    }
+
+    /**
      * Process the add movies to box set form.
      *
      * @since    1.0.0
      */
     public function process_add_movies_to_box_set() {
-        // Check if this is an add movies request
-        if (!isset($_POST['action']) || sanitize_text_field(wp_unslash($_POST['action'])) !== 'wp_movie_collector_add_movies_to_box_set') {
-            return;
-        }
-
         // Check nonce
         if (!isset($_POST['wp_movie_collector_nonce']) || !wp_verify_nonce(wp_unslash($_POST['wp_movie_collector_nonce']), 'wp_movie_collector_add_movies')) {
             wp_die(__('Security check failed.', 'wp-movie-collector'));
@@ -900,94 +991,82 @@ public function add_plugin_admin_menu() {
     }
 
     /**
-     * Process removing a movie from a box set.
+     * Process removing a movie from a box set via admin-post.php.
      *
      * @since    1.0.0
      */
     public function process_remove_movie_from_box_set() {
-        // Check if this is a remove movie request
-        if (!isset($_GET['action']) || sanitize_text_field(wp_unslash($_GET['action'])) !== 'wp_movie_collector_remove_movie') {
-            return;
+        // Get and validate IDs first for clearer error messages.
+        $movie_id   = isset( $_POST['movie_id'] ) ? intval( $_POST['movie_id'] ) : 0;
+        $box_set_id = isset( $_POST['box_set_id'] ) ? intval( $_POST['box_set_id'] ) : 0;
+
+        if ( ! $movie_id || ! $box_set_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
         }
 
-        // Get movie ID and box set ID
-        $movie_id = isset($_GET['movie_id']) ? intval($_GET['movie_id']) : 0;
-        $box_set_id = isset($_GET['box_set_id']) ? intval($_GET['box_set_id']) : 0;
-
-        // Check nonce
-        if (!isset($_GET['wp_movie_collector_nonce']) || !wp_verify_nonce(wp_unslash($_GET['wp_movie_collector_nonce']), 'wp_movie_collector_remove_movie_' . $movie_id)) {
-            wp_die(__('Security check failed.', 'wp-movie-collector'));
+        // Check nonce.
+        if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_remove_movie_' . $movie_id . '_' . $box_set_id ) ) {
+            wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
         }
 
-        // Check user capabilities
-        if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to perform this action.', 'wp-movie-collector'));
+        // Check user capabilities.
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
         }
 
-        // Get database instance
+        // Get database instance.
         $db = new WP_Movie_Collector_DB();
 
-        // Check if box set exists
-        $box_set = $db->get_box_set($box_set_id);
-        if (!$box_set) {
-            wp_safe_redirect(add_query_arg('error', 'invalid_box_set', admin_url('admin.php?page=wp-movie-collector-dashboard')));
-            exit;
-        }
+        // Remove movie from box set.
+        $result = $db->remove_movie_from_box_set( $movie_id, $box_set_id );
 
-        // Check if movie exists
-        $movie = $db->get_movie($movie_id);
-        if (!$movie) {
-            wp_safe_redirect(add_query_arg('error', 'invalid_movie', admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id)));
-            exit;
-        }
-
-        // Remove movie from box set
-        $result = $db->remove_movie_from_box_set($movie_id, $box_set_id);
-
-        // Redirect back to manage box set page
-        if ($result) {
-            wp_safe_redirect(add_query_arg('message', 'movie_removed', admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id)));
+        if ( $result ) {
+            wp_safe_redirect( add_query_arg( 'message', 'movie_removed', admin_url( 'admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id ) ) );
         } else {
-            wp_safe_redirect(add_query_arg('error', 'remove_failed', admin_url('admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id)));
+            wp_safe_redirect( add_query_arg( 'error', 'remove_failed', admin_url( 'admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id ) ) );
         }
         exit;
     }
 
     /**
-     * Process deleting a box set.
+     * Process deleting a box set via admin-post.php.
      *
      * @since    1.0.0
      */
     public function process_delete_box_set() {
-        // Check if this is a delete box set request
-        if (!isset($_GET['action']) || sanitize_text_field(wp_unslash($_GET['action'])) !== 'wp_movie_collector_delete_box_set') {
-            return;
+        // Get and validate box set ID first.
+        $box_set_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
+
+        if ( ! $box_set_id ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_box_set', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
         }
 
-        // Get box set ID
-        $box_set_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-        // Check nonce
-        if (!isset($_GET['wp_movie_collector_nonce']) || !wp_verify_nonce(wp_unslash($_GET['wp_movie_collector_nonce']), 'wp_movie_collector_delete_box_set_' . $box_set_id)) {
-            wp_die(__('Security check failed.', 'wp-movie-collector'));
+        // Check nonce.
+        if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_delete_box_set_' . $box_set_id ) ) {
+            wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
         }
 
-        // Check user capabilities
-        if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to perform this action.', 'wp-movie-collector'));
+        // Check user capabilities.
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
         }
 
-        // Get database instance
+        // Get database instance.
         $db = new WP_Movie_Collector_DB();
 
-        // Delete the box set
-        $result = $db->delete_box_set($box_set_id);
+        // Delete the box set.
+        $result = $db->delete_box_set( $box_set_id );
 
-        // Redirect back to box sets page
-        if ($result) {
-            wp_safe_redirect(add_query_arg('message', 'box_set_deleted', admin_url('admin.php?page=wp-movie-collector-dashboard')));
+        // Redirect back to box sets page.
+        $default_redirect = admin_url( 'admin.php?page=wp-movie-collector-box-sets' );
+        $redirect_to      = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( sanitize_url( wp_unslash( $_POST['redirect_to'] ) ), $default_redirect ) : $default_redirect;
+
+        if ( $result ) {
+            wp_safe_redirect( add_query_arg( 'message', 'box_set_deleted', $redirect_to ) );
         } else {
-            wp_safe_redirect(add_query_arg('error', 'delete_failed', admin_url('admin.php?page=wp-movie-collector-dashboard')));
+            wp_safe_redirect( add_query_arg( 'error', 'delete_failed', $redirect_to ) );
         }
         exit;
     }
@@ -998,11 +1077,6 @@ public function add_plugin_admin_menu() {
      * @since    1.0.0
      */
     public function process_reorder_movies() {
-        // Check if this is a reorder movies request
-        if (!isset($_POST['action']) || sanitize_text_field(wp_unslash($_POST['action'])) !== 'wp_movie_collector_reorder_movies') {
-            return;
-        }
-
         // Check nonce
         if (!isset($_POST['wp_movie_collector_nonce']) || !wp_verify_nonce(wp_unslash($_POST['wp_movie_collector_nonce']), 'wp_movie_collector_reorder_movies')) {
             wp_die(__('Security check failed.', 'wp-movie-collector'));
@@ -1041,12 +1115,6 @@ public function add_plugin_admin_menu() {
         global $wpdb;
         $relationship_table = $db->get_relationships_table();
         $success = true;
-
-        // Add display_order column if it doesn't exist
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$relationship_table}` WHERE Field = %s", 'display_order'));
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE `{$relationship_table}` ADD COLUMN display_order INT DEFAULT 0");
-        }
 
         // Begin transaction
         $wpdb->query('START TRANSACTION');

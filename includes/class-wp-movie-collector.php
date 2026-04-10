@@ -94,7 +94,12 @@ class WP_Movie_Collector {
         $this->loader->add_action('admin_init', $plugin_admin, 'process_edit_movie_form');
         $this->loader->add_action('admin_post_wp_movie_collector_delete_movie', $plugin_admin, 'process_delete_movie');
         $this->loader->add_action('admin_init', $plugin_admin, 'process_add_box_set_form');
-        
+        $this->loader->add_action('admin_post_wp_movie_collector_update_box_set', $plugin_admin, 'process_edit_box_set_form');
+        $this->loader->add_action('admin_post_wp_movie_collector_delete_box_set', $plugin_admin, 'process_delete_box_set');
+        $this->loader->add_action('admin_post_wp_movie_collector_add_movies_to_box_set', $plugin_admin, 'process_add_movies_to_box_set');
+        $this->loader->add_action('admin_post_wp_movie_collector_remove_movie', $plugin_admin, 'process_remove_movie_from_box_set');
+        $this->loader->add_action('admin_post_wp_movie_collector_reorder_movies', $plugin_admin, 'process_reorder_movies');
+
         // Register import/export handlers
         $this->loader->add_action('admin_post_wp_movie_collector_export_movies', $plugin_admin, 'process_export_movies');
         $this->loader->add_action('admin_post_wp_movie_collector_import_movies', $plugin_admin, 'process_import_movies');
@@ -105,6 +110,7 @@ class WP_Movie_Collector {
         $this->loader->add_action('wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search');
         $this->loader->add_action('wp_ajax_wp_movie_collector_get_movie_details', $plugin_admin, 'ajax_get_movie_details');
         $this->loader->add_action('wp_ajax_wp_movie_collector_clear_api_cache', $plugin_admin, 'ajax_clear_api_cache');
+        $this->loader->add_action('wp_ajax_wp_movie_collector_search_available_movies', $plugin_admin, 'ajax_search_available_movies');
 
         // Admin notices for API issues
         $this->loader->add_action('admin_notices', $plugin_admin, 'display_api_issue_notices');

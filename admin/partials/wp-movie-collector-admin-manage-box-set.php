@@ -42,6 +42,18 @@ if ( ! current_user_can( 'manage_options' ) ) {
 			case 'invalid_movie':
 				$error_message = __( 'Invalid movie ID.', 'wp-movie-collector' );
 				break;
+			case 'remove_failed':
+				$error_message = __( 'Failed to remove movie from box set.', 'wp-movie-collector' );
+				break;
+			case 'reorder_failed':
+				$error_message = __( 'Failed to reorder movies.', 'wp-movie-collector' );
+				break;
+			case 'no_movies_selected':
+				$error_message = __( 'No movies were selected to add.', 'wp-movie-collector' );
+				break;
+			case 'no_movie_order':
+				$error_message = __( 'No movie order data was provided.', 'wp-movie-collector' );
+				break;
 			default:
 				$error_message = __( 'An unknown error occurred. Please try again.', 'wp-movie-collector' );
 				break;

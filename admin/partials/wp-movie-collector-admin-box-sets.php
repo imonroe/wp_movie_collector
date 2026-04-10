@@ -13,6 +13,18 @@ $box_sets = $db->search_box_sets(
 		'order'   => 'ASC',
 	)
 );
+
+// Fetch all movie counts in a single query to avoid N+1.
+$movie_counts = array();
+if ( ! empty( $box_sets ) ) {
+	$counts_results = $wpdb->get_results(
+		"SELECT box_set_id, COUNT(*) as movie_count FROM {$db->get_relationships_table()} GROUP BY box_set_id",
+		ARRAY_A
+	);
+	foreach ( $counts_results as $row ) {
+		$movie_counts[ $row['box_set_id'] ] = intval( $row['movie_count'] );
+	}
+}
 ?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'All Box Sets', 'wp-movie-collector' ); ?></h1>
@@ -78,12 +90,7 @@ $box_sets = $db->search_box_sets(
 			<?php if ( ! empty( $box_sets ) ) : ?>
 				<?php
 				foreach ( $box_sets as $box_set ) :
-					$movie_count = $wpdb->get_var(
-						$wpdb->prepare(
-							"SELECT COUNT(*) FROM {$db->get_relationships_table()} WHERE box_set_id = %d",
-							$box_set['id']
-						)
-					);
+					$movie_count = isset( $movie_counts[ $box_set['id'] ] ) ? $movie_counts[ $box_set['id'] ] : 0;
 					?>
 				<tr>
 					<td class="title column-title has-row-actions column-primary" data-colname="<?php esc_attr_e( 'Title', 'wp-movie-collector' ); ?>">

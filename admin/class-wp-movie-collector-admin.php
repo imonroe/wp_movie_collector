@@ -319,6 +319,12 @@ public function add_plugin_admin_menu() {
             wp_die(__('You do not have sufficient permissions to perform this action.', 'wp-movie-collector'));
         }
 
+        // Ensure the movie payload exists and has the expected structure.
+        if ( ! isset( $_POST['movie'] ) || ! is_array( $_POST['movie'] ) ) {
+            wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-movie' ) ) );
+            exit;
+        }
+
         // Validate and sanitize movie data
         $movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ) );
 
@@ -361,6 +367,12 @@ public function add_plugin_admin_menu() {
         // Check user capabilities
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to perform this action.', 'wp-movie-collector'));
+        }
+
+        // Ensure the box set payload exists and has the expected structure.
+        if ( ! isset( $_POST['box_set'] ) || ! is_array( $_POST['box_set'] ) ) {
+            wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-box-set' ) ) );
+            exit;
         }
 
         // Validate and sanitize box set data

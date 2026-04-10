@@ -1776,13 +1776,13 @@ class WP_Movie_Collector_Admin {
 			unset( $item['id'] );
 			unset( $item['type'] );
 
-			// Import the item
+			// Import the item (skip per-row cache invalidation during bulk import)
 			if ( $type === 'box_set' ) {
 				// Store box sets to process after movies
 				$box_sets[] = $item;
 			} else {
 				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item );
+				$movie_id = $db->insert_movie( $item, true );
 				if ( $movie_id ) {
 					++$count;
 					$movies[ $item['title'] ] = $movie_id;
@@ -1792,11 +1792,14 @@ class WP_Movie_Collector_Admin {
 
 		// Process box sets after movies (to handle relationships)
 		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set );
+			$box_set_id = $db->insert_box_set( $box_set, true );
 			if ( $box_set_id ) {
 				++$count;
 			}
 		}
+
+		// Invalidate stats cache once after all imports complete.
+		$db->invalidate_stats_cache();
 
 		fclose( $handle );
 		return $count;
@@ -1855,13 +1858,13 @@ class WP_Movie_Collector_Admin {
 			unset( $item['id'] );
 			unset( $item['type'] );
 
-			// Import the item
+			// Import the item (skip per-row cache invalidation during bulk import)
 			if ( $type === 'box_set' ) {
 				// Store box sets to process after movies
 				$box_sets[] = $item;
 			} else {
 				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item );
+				$movie_id = $db->insert_movie( $item, true );
 				if ( $movie_id ) {
 					++$count;
 					$movies[ $item['title'] ] = $movie_id;
@@ -1871,11 +1874,14 @@ class WP_Movie_Collector_Admin {
 
 		// Process box sets after movies (to handle relationships)
 		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set );
+			$box_set_id = $db->insert_box_set( $box_set, true );
 			if ( $box_set_id ) {
 				++$count;
 			}
 		}
+
+		// Invalidate stats cache once after all imports complete.
+		$db->invalidate_stats_cache();
 
 		return $count;
 	}

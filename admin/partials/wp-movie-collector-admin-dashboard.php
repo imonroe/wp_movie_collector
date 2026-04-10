@@ -68,9 +68,9 @@ if ( ! current_user_can( 'manage_options' ) ) {
 				<p><?php esc_html_e( 'Studios', 'wp-movie-collector' ); ?></p>
 			</div>
 
-			<?php if ( $stats['recent_movies_count'] > 0 ) : ?>
+			<?php if ( $stats['recent_count'] > 0 ) : ?>
 			<div class="wp-movie-collector-stat-box wp-movie-collector-stat-highlight">
-				<h2><?php echo intval( $stats['recent_movies_count'] ); ?></h2>
+				<h2><?php echo intval( $stats['recent_count'] ); ?></h2>
 				<p><?php esc_html_e( 'Added (30 days)', 'wp-movie-collector' ); ?></p>
 			</div>
 			<?php endif; ?>
@@ -189,7 +189,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 					<input type="text" id="wp-movie-collector-dashboard-barcode" class="regular-text" placeholder="<?php esc_attr_e( 'Scan or enter barcode...', 'wp-movie-collector' ); ?>">
 					<button type="button" id="wp-movie-collector-dashboard-lookup" class="button"><?php esc_html_e( 'Lookup', 'wp-movie-collector' ); ?></button>
 				</div>
-				<div id="wp-movie-collector-dashboard-barcode-result"></div>
+				<div id="wp-movie-collector-dashboard-barcode-result" role="status" aria-live="polite" aria-atomic="true"></div>
 			</div>
 
 			<div class="wp-movie-collector-widget">

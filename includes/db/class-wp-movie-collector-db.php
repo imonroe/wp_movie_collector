@@ -233,7 +233,7 @@ class WP_Movie_Collector_DB {
 	 * @param    array $movie    The movie data.
 	 * @return   int|false          The movie ID on success, false on failure.
 	 */
-	public function insert_movie( $movie ) {
+	public function insert_movie( $movie, $skip_cache_invalidation = false ) {
 		global $wpdb;
 
 		// Set timestamps
@@ -243,7 +243,9 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->movies_table, $movie );
 
 		if ( $result ) {
-			$this->invalidate_stats_cache();
+			if ( ! $skip_cache_invalidation ) {
+				$this->invalidate_stats_cache();
+			}
 			return $wpdb->insert_id;
 		}
 
@@ -410,7 +412,7 @@ class WP_Movie_Collector_DB {
 	 * @param    array $box_set    The box set data.
 	 * @return   int|false            The box set ID on success, false on failure.
 	 */
-	public function insert_box_set( $box_set ) {
+	public function insert_box_set( $box_set, $skip_cache_invalidation = false ) {
 		global $wpdb;
 
 		// Set timestamps
@@ -420,7 +422,9 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->box_sets_table, $box_set );
 
 		if ( $result ) {
-			$this->invalidate_stats_cache();
+			if ( ! $skip_cache_invalidation ) {
+				$this->invalidate_stats_cache();
+			}
 			return $wpdb->insert_id;
 		}
 
@@ -918,13 +922,20 @@ class WP_Movie_Collector_DB {
 		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
 
 		// Recent additions (last 30 days). Use current_time() to match how created_at is stored.
-		$recent_cutoff                = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
-		$stats['recent_movies_count'] = (int) $wpdb->get_var(
+		$recent_cutoff           = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
+		$recent_movies           = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",
 				$recent_cutoff
 			)
 		);
+		$recent_box_sets         = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->box_sets_table} WHERE created_at >= %s",
+				$recent_cutoff
+			)
+		);
+		$stats['recent_count']   = $recent_movies + $recent_box_sets;
 
 		// Year range.
 		$stats['earliest_year'] = $wpdb->get_var( "SELECT MIN(release_year) FROM {$this->movies_table}" );

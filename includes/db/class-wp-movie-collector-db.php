@@ -243,6 +243,7 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->movies_table, $movie );
 
 		if ( $result ) {
+			$this->invalidate_stats_cache();
 			return $wpdb->insert_id;
 		}
 
@@ -268,6 +269,10 @@ class WP_Movie_Collector_DB {
 			$movie,
 			array( 'id' => $movie_id )
 		);
+
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -391,6 +396,10 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $movie_id )
 		);
 
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
+
 		return $result !== false;
 	}
 
@@ -411,6 +420,7 @@ class WP_Movie_Collector_DB {
 		$result = $wpdb->insert( $this->box_sets_table, $box_set );
 
 		if ( $result ) {
+			$this->invalidate_stats_cache();
 			return $wpdb->insert_id;
 		}
 
@@ -436,6 +446,10 @@ class WP_Movie_Collector_DB {
 			$box_set,
 			array( 'id' => $box_set_id )
 		);
+
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -558,6 +572,10 @@ class WP_Movie_Collector_DB {
 			$this->box_sets_table,
 			array( 'id' => $box_set_id )
 		);
+
+		if ( $result !== false ) {
+			$this->invalidate_stats_cache();
+		}
 
 		return $result !== false;
 	}
@@ -830,6 +848,11 @@ class WP_Movie_Collector_DB {
 	 * @return   array    Associative array of collection statistics.
 	 */
 	public function get_collection_stats() {
+		$cached = get_transient( 'wp_movie_collector_stats' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
 		global $wpdb;
 
 		$stats = array();
@@ -839,7 +862,7 @@ class WP_Movie_Collector_DB {
 		$stats['total_box_sets'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->box_sets_table}" );
 
 		// Format breakdown for movies.
-		$format_rows          = $wpdb->get_results(
+		$format_rows               = $wpdb->get_results(
 			"SELECT format, COUNT(*) as count FROM {$this->movies_table} GROUP BY format ORDER BY count DESC",
 			ARRAY_A
 		);
@@ -851,7 +874,7 @@ class WP_Movie_Collector_DB {
 		}
 
 		// Top genres (from comma-separated genre field).
-		$all_genres = $wpdb->get_col( "SELECT genre FROM {$this->movies_table} WHERE genre != ''" );
+		$all_genres   = $wpdb->get_col( "SELECT genre FROM {$this->movies_table} WHERE genre != ''" );
 		$genre_counts = array();
 		if ( $all_genres ) {
 			foreach ( $all_genres as $genre_string ) {
@@ -867,7 +890,7 @@ class WP_Movie_Collector_DB {
 		$stats['top_genres'] = array_slice( $genre_counts, 0, 5, true );
 
 		// Top directors.
-		$director_rows        = $wpdb->get_results(
+		$director_rows          = $wpdb->get_results(
 			"SELECT director, COUNT(*) as count FROM {$this->movies_table} WHERE director != '' GROUP BY director ORDER BY count DESC LIMIT 5",
 			ARRAY_A
 		);
@@ -879,7 +902,7 @@ class WP_Movie_Collector_DB {
 		}
 
 		// Top studios.
-		$studio_rows        = $wpdb->get_results(
+		$studio_rows          = $wpdb->get_results(
 			"SELECT studio, COUNT(*) as count FROM {$this->movies_table} WHERE studio != '' GROUP BY studio ORDER BY count DESC LIMIT 5",
 			ARRAY_A
 		);
@@ -894,11 +917,12 @@ class WP_Movie_Collector_DB {
 		$stats['unique_directors'] = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT director) FROM {$this->movies_table} WHERE director != ''" );
 		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
 
-		// Recent additions (last 30 days).
+		// Recent additions (last 30 days). Use current_time() to match how created_at is stored.
+		$recent_cutoff                = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
 		$stats['recent_movies_count'] = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",
-				gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) )
+				$recent_cutoff
 			)
 		);
 
@@ -906,7 +930,20 @@ class WP_Movie_Collector_DB {
 		$stats['earliest_year'] = $wpdb->get_var( "SELECT MIN(release_year) FROM {$this->movies_table}" );
 		$stats['latest_year']   = $wpdb->get_var( "SELECT MAX(release_year) FROM {$this->movies_table}" );
 
+		set_transient( 'wp_movie_collector_stats', $stats, HOUR_IN_SECONDS );
+
 		return $stats;
+	}
+
+	/**
+	 * Invalidate the collection statistics cache.
+	 *
+	 * Call this after any movie or box set insert, update, or delete.
+	 *
+	 * @since    1.1.0
+	 */
+	public function invalidate_stats_cache() {
+		delete_transient( 'wp_movie_collector_stats' );
 	}
 
 	/**

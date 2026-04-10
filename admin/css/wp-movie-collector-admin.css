@@ -8,6 +8,7 @@
 
 .wp-movie-collector-stats {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
     margin-bottom: 30px;
 }
@@ -46,6 +47,7 @@
 /* Dashboard row layout */
 .wp-movie-collector-dashboard-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
     margin-bottom: 20px;
 }
@@ -348,4 +350,24 @@
 
 .wp-movie-collector-box-set-movies {
     margin-top: 20px;
+}
+
+/* Responsive breakpoints */
+@media screen and (max-width: 782px) {
+    .wp-movie-collector-stats,
+    .wp-movie-collector-dashboard-row {
+        flex-direction: column;
+    }
+
+    .wp-movie-collector-stat-box {
+        max-width: none;
+    }
+
+    .wp-movie-collector-widget {
+        min-width: 0;
+    }
+
+    .wp-movie-collector-search-input {
+        flex-direction: column;
+    }
 }

@@ -76,10 +76,10 @@ if ( ! current_user_can( 'manage_options' ) ) {
 			<?php endif; ?>
 		</div>
 
-		<?php if ( ! empty( $stats['format_breakdown'] ) ) : ?>
 		<div class="wp-movie-collector-dashboard-row">
 			<div class="wp-movie-collector-widget">
 				<h3><?php esc_html_e( 'Format Breakdown', 'wp-movie-collector' ); ?></h3>
+				<?php if ( ! empty( $stats['format_breakdown'] ) ) : ?>
 				<table class="wp-movie-collector-stats-table">
 					<tbody>
 						<?php foreach ( $stats['format_breakdown'] as $format => $count ) : ?>
@@ -87,12 +87,15 @@ if ( ! current_user_can( 'manage_options' ) ) {
 							<td><?php echo esc_html( $format ); ?></td>
 							<td class="wp-movie-collector-stats-count"><?php echo intval( $count ); ?></td>
 							<td class="wp-movie-collector-stats-bar-cell">
-								<div class="wp-movie-collector-stats-bar" style="width: <?php echo esc_attr( round( ( $count / $stats['total_movies'] ) * 100 ) ); ?>%;"></div>
+								<div class="wp-movie-collector-stats-bar" style="width: <?php echo esc_attr( $stats['total_movies'] > 0 ? round( ( $count / $stats['total_movies'] ) * 100 ) : 0 ); ?>%;"></div>
 							</td>
 						</tr>
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+				<?php else : ?>
+				<p class="wp-movie-collector-empty-state"><?php esc_html_e( 'No format data available yet.', 'wp-movie-collector' ); ?></p>
+				<?php endif; ?>
 			</div>
 
 			<div class="wp-movie-collector-widget">
@@ -169,7 +172,6 @@ if ( ! current_user_can( 'manage_options' ) ) {
 				<?php endif; ?>
 			</div>
 		</div>
-		<?php endif; ?>
 
 		<div class="wp-movie-collector-dashboard-row">
 			<div class="wp-movie-collector-widget">
@@ -183,6 +185,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 				<h4><?php esc_html_e( 'Quick Scan', 'wp-movie-collector' ); ?></h4>
 				<div class="wp-movie-collector-barcode-input">
+					<label for="wp-movie-collector-dashboard-barcode" class="screen-reader-text"><?php esc_html_e( 'Barcode', 'wp-movie-collector' ); ?></label>
 					<input type="text" id="wp-movie-collector-dashboard-barcode" class="regular-text" placeholder="<?php esc_attr_e( 'Scan or enter barcode...', 'wp-movie-collector' ); ?>">
 					<button type="button" id="wp-movie-collector-dashboard-lookup" class="button"><?php esc_html_e( 'Lookup', 'wp-movie-collector' ); ?></button>
 				</div>

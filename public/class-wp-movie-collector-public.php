@@ -183,17 +183,23 @@ class WP_Movie_Collector_Public {
         $total_items = 0;
 
         // Build search criteria. Support combined "sort" key (e.g. "title-ASC")
-        // as well as separate orderby/order keys.
+        // as well as separate orderby/order keys. Validate against whitelists.
+        $allowed_orderby = array( 'title', 'release_year', 'created_at', 'acquisition_date', 'format', 'director' );
+        $allowed_order   = array( 'ASC', 'DESC' );
+
         $orderby = 'title';
         $order   = 'ASC';
         if ( ! empty( $sanitized_args['sort'] ) ) {
             $sort_parts = explode( '-', $sanitized_args['sort'], 2 );
-            $orderby    = isset( $sort_parts[0] ) ? $sort_parts[0] : 'title';
-            $order      = isset( $sort_parts[1] ) ? $sort_parts[1] : 'ASC';
+            $orderby    = isset( $sort_parts[0] ) ? sanitize_key( $sort_parts[0] ) : 'title';
+            $order      = isset( $sort_parts[1] ) ? strtoupper( $sort_parts[1] ) : 'ASC';
         } elseif ( ! empty( $sanitized_args['orderby'] ) ) {
-            $orderby = $sanitized_args['orderby'];
-            $order   = isset( $sanitized_args['order'] ) ? $sanitized_args['order'] : 'ASC';
+            $orderby = sanitize_key( $sanitized_args['orderby'] );
+            $order   = isset( $sanitized_args['order'] ) ? strtoupper( $sanitized_args['order'] ) : 'ASC';
         }
+
+        $orderby = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'title';
+        $order   = in_array( $order, $allowed_order, true ) ? $order : 'ASC';
 
         $criteria = array(
             'per_page' => $per_page,

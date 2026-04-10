@@ -23,8 +23,11 @@ $search_term = isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['se
 $db = new WP_Movie_Collector_DB();
 
 // Build search criteria
-// Whitelist orderby/order to prevent SQL injection
-$allowed_orderby = array('title', 'release_year', 'created_at', 'acquisition_date', 'format', 'director');
+// Whitelist orderby/order to prevent SQL injection. Director only applies to movies.
+$allowed_orderby = array('title', 'release_year', 'created_at', 'acquisition_date', 'format');
+if ( $type !== 'box_sets' ) {
+    $allowed_orderby[] = 'director';
+}
 $allowed_order = array('ASC', 'DESC');
 
 // Shortcode attributes provide defaults; normalize and validate, then fall back to title/ASC.
@@ -109,6 +112,15 @@ if ( $type === 'all' ) {
     );
 } else {
     $total_pages = (int) ceil( $total_items / $per_page );
+}
+
+// Count items on the current page for the "has results" check.
+$current_page_items = 0;
+if ( isset( $results['movies'] ) ) {
+    $current_page_items += count( $results['movies'] );
+}
+if ( isset( $results['box_sets'] ) ) {
+    $current_page_items += count( $results['box_sets'] );
 }
 
 // Get filter options for dropdowns
@@ -243,7 +255,7 @@ $studios = get_terms(array(
         </form>
     </div>
     
-    <?php if ($total_items > 0) : ?>
+    <?php if ($current_page_items > 0) : ?>
         <!-- Results Grid -->
         <div class="wp-movie-collector-grid">
             <?php if (isset($results['movies']) && !empty($results['movies'])) : ?>

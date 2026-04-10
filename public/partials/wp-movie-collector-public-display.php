@@ -24,7 +24,7 @@ $db = new WP_Movie_Collector_DB();
 
 // Build search criteria
 // Whitelist orderby/order to prevent SQL injection
-$allowed_orderby = array('title', 'release_year', 'id', 'created_at', 'acquisition_date', 'format', 'director');
+$allowed_orderby = array('title', 'release_year', 'created_at', 'acquisition_date', 'format', 'director');
 $allowed_order = array('ASC', 'DESC');
 
 // Shortcode attributes provide defaults; validate them, then fall back to title/ASC.
@@ -47,8 +47,9 @@ if ( isset( $_GET['sort'] ) ) {
 $current_orderby = in_array( $raw_orderby, $allowed_orderby, true ) ? $raw_orderby : $default_orderby;
 $current_order   = in_array( strtoupper( $raw_order ), $allowed_order, true ) ? strtoupper( $raw_order ) : $default_order;
 
-// Build a combined sort key for the dropdown (e.g. "title-ASC").
+// Build combined sort keys for the dropdown and for determining when to persist sort in URLs.
 $current_sort = $current_orderby . '-' . $current_order;
+$default_sort = $default_orderby . '-' . $default_order;
 
 $criteria = array(
     'per_page' => $per_page,
@@ -81,18 +82,18 @@ if (!empty($search_term)) {
     $criteria['title'] = $search_term;
 }
 
-// Get the results based on the type
+// Get the results and total counts for pagination.
 $results = array();
 $total_items = 0;
 
 if ($type === 'movies' || $type === 'all') {
     $results['movies'] = $db->search_movies($criteria);
-    $total_items += count($results['movies']);
+    $total_items += $db->count_movies($criteria);
 }
 
 if ($type === 'box_sets' || $type === 'all') {
     $results['box_sets'] = $db->search_box_sets($criteria);
-    $total_items += count($results['box_sets']);
+    $total_items += $db->count_box_sets($criteria);
 }
 
 // Get filter options for dropdowns
@@ -125,7 +126,7 @@ $studios = get_terms(array(
     <!-- Search Bar -->
     <div class="wp-movie-collector-search">
         <form method="get" action="<?php echo esc_url(get_permalink()); ?>">
-            <?php if ( $current_sort !== 'title-ASC' ) : ?>
+            <?php if ( $current_sort !== $default_sort ) : ?>
                 <input type="hidden" name="sort" value="<?php echo esc_attr( $current_sort ); ?>">
             <?php endif; ?>
             <input type="text" name="search" placeholder="<?php esc_attr_e('Search your collection...', 'wp-movie-collector'); ?>" value="<?php echo esc_attr($search_term); ?>">
@@ -206,7 +207,7 @@ $studios = get_terms(array(
                     'acquisition_date-ASC'   => __('Acquired (Oldest)', 'wp-movie-collector'),
                     'format-ASC'             => __('Format', 'wp-movie-collector'),
                 );
-                // Director sort only applies to movies, not box sets.
+                // Director sort only applies to movies; hide when showing box sets only.
                 if ( $type !== 'box_sets' ) {
                     $sort_options['director-ASC'] = __( 'Director', 'wp-movie-collector' );
                 }
@@ -322,7 +323,7 @@ $studios = get_terms(array(
                 if ( ! empty( $filter_studio ) ) {
                     $query_args['studio'] = $filter_studio;
                 }
-                if ( $current_sort !== 'title-ASC' ) {
+                if ( $current_sort !== $default_sort ) {
                     $query_args['sort'] = $current_sort;
                 }
 

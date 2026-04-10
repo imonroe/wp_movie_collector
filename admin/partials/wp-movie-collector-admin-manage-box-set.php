@@ -108,7 +108,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 				$movies = $db->get_movies_in_box_set( $box_set_id );
 
 				if ( empty( $movies ) ) {
-					echo '<p>' . __( 'No movies in this box set yet.', 'wp-movie-collector' ) . '</p>';
+					echo '<p>' . esc_html__( 'No movies in this box set yet.', 'wp-movie-collector' ) . '</p>';
 				} else {
 					?>
 				<table class="wp-list-table widefat fixed striped">
@@ -200,7 +200,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 					);
 
 					if ( empty( $available_movies ) ) {
-						echo '<p>' . __( 'No available movies found. Add some movies first!', 'wp-movie-collector' ) . '</p>';
+						echo '<p>' . esc_html__( 'No available movies found. Add some movies first!', 'wp-movie-collector' ) . '</p>';
 					} else {
 						?>
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

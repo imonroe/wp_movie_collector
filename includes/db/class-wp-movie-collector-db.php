@@ -178,7 +178,8 @@ class WP_Movie_Collector_DB {
             display_order int(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             KEY movie_id (movie_id),
-            KEY box_set_id (box_set_id)
+            KEY box_set_id (box_set_id),
+            KEY box_set_order (box_set_id, display_order)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -435,12 +436,21 @@ class WP_Movie_Collector_DB {
             return $existing;
         }
         
+        // Get the next display_order value for this box set.
+        $next_order = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COALESCE(MAX(display_order), 0) + 1 FROM $this->relationships_table WHERE box_set_id = %d",
+                $box_set_id
+            )
+        );
+
         // Add the relationship
         $result = $wpdb->insert(
             $this->relationships_table,
             array(
                 'movie_id' => $movie_id,
-                'box_set_id' => $box_set_id
+                'box_set_id' => $box_set_id,
+                'display_order' => $next_order,
             )
         );
         

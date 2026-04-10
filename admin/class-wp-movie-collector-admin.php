@@ -1018,6 +1018,12 @@ public function add_plugin_admin_menu() {
         // Get database instance.
         $db = new WP_Movie_Collector_DB();
 
+        // Verify box set and movie exist before attempting removal.
+        if ( ! $db->get_box_set( $box_set_id ) || ! $db->get_movie( $movie_id ) ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id ) ) );
+            exit;
+        }
+
         // Remove movie from box set.
         $result = $db->remove_movie_from_box_set( $movie_id, $box_set_id );
 
@@ -1055,6 +1061,12 @@ public function add_plugin_admin_menu() {
 
         // Get database instance.
         $db = new WP_Movie_Collector_DB();
+
+        // Verify box set exists before attempting deletion.
+        if ( ! $db->get_box_set( $box_set_id ) ) {
+            wp_safe_redirect( add_query_arg( 'error', 'invalid_box_set', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+            exit;
+        }
 
         // Delete the box set.
         $result = $db->delete_box_set( $box_set_id );

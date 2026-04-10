@@ -141,7 +141,7 @@ if ( ! $box_set ) {
 						<?php endif; ?>
 					</div>
 					<input type="hidden" id="box-set-cover-image-id" name="box_set[cover_image_id]" class="image-id-field" value="<?php echo ! empty( $box_set['cover_image_id'] ) ? intval( $box_set['cover_image_id'] ) : ''; ?>">
-					<input type="url" id="box-set-cover-image-url" name="box_set[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_attr_e( 'Image URL or upload', 'wp-movie-collector' ); ?>" value="<?php echo esc_attr( $box_set['cover_image_url'] ); ?>">
+					<input type="url" id="box-set-cover-image-url" name="box_set[cover_image_url]" class="regular-text image-url-field" placeholder="<?php esc_attr_e( 'Image URL or upload', 'wp-movie-collector' ); ?>" value="<?php echo esc_url( $box_set['cover_image_url'] ); ?>">
 					<button type="button" class="button wp-movie-collector-upload-image-button"><?php esc_html_e( 'Upload Image', 'wp-movie-collector' ); ?></button>
 					<button type="button" class="button wp-movie-collector-remove-image-button" <?php echo empty( $box_set['cover_image_url'] ) ? 'style="display:none;"' : ''; ?>><?php esc_html_e( 'Remove Image', 'wp-movie-collector' ); ?></button>
 					<p class="description"><?php esc_html_e( 'Upload an image or enter a URL for the box set cover.', 'wp-movie-collector' ); ?></p>

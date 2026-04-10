@@ -487,7 +487,7 @@ class WP_Movie_Collector_DB {
                 "SELECT m.* FROM $this->movies_table m
                 JOIN $this->relationships_table r ON m.id = r.movie_id
                 WHERE r.box_set_id = %d
-                ORDER BY m.title ASC",
+                ORDER BY r.display_order ASC, m.title ASC",
                 $box_set_id
             ),
             ARRAY_A

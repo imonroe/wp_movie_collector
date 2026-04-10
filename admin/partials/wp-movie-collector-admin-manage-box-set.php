@@ -99,49 +99,52 @@ if ( ! current_user_can( 'manage_options' ) ) {
 					echo '<p>' . __( 'No movies in this box set yet.', 'wp-movie-collector' ) . '</p>';
 				} else {
 					?>
+				<table class="wp-list-table widefat fixed striped">
+					<thead>
+						<tr>
+							<th width="20"><?php esc_html_e( 'Order', 'wp-movie-collector' ); ?></th>
+							<th><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
+							<th><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
+							<th><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
+							<th><?php esc_html_e( 'Actions', 'wp-movie-collector' ); ?></th>
+						</tr>
+					</thead>
+					<tbody id="sortable-movies">
+						<?php foreach ( $movies as $index => $movie ) : ?>
+						<tr class="movie-item" data-movie-id="<?php echo esc_attr( $movie['id'] ); ?>">
+							<td>
+								<span class="dashicons dashicons-move"></span>
+							</td>
+							<td><?php echo esc_html( $movie['title'] ); ?></td>
+							<td><?php echo esc_html( $movie['release_year'] ); ?></td>
+							<td><?php echo esc_html( $movie['format'] ); ?></td>
+							<td>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+									<input type="hidden" name="action" value="wp_movie_collector_remove_movie">
+									<input type="hidden" name="movie_id" value="<?php echo intval( $movie['id'] ); ?>">
+									<input type="hidden" name="box_set_id" value="<?php echo intval( $box_set_id ); ?>">
+									<?php wp_nonce_field( 'wp_movie_collector_remove_movie_' . intval( $movie['id'] ) . '_' . intval( $box_set_id ), 'wp_movie_collector_nonce' ); ?>
+									<button type="submit"
+										class="button button-small button-link-delete"
+										onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to remove this movie from the box set?', 'wp-movie-collector' ) ); ?>');">
+										<?php esc_html_e( 'Remove', 'wp-movie-collector' ); ?>
+									</button>
+								</form>
+							</td>
+						</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="wp-movie-collector-reorder-movies-form">
 					<input type="hidden" name="action" value="wp_movie_collector_reorder_movies">
 					<input type="hidden" name="box_set_id" value="<?php echo esc_attr( $box_set_id ); ?>">
 					<?php wp_nonce_field( 'wp_movie_collector_reorder_movies', 'wp_movie_collector_nonce' ); ?>
-					
-					<table class="wp-list-table widefat fixed striped">
-						<thead>
-							<tr>
-								<th width="20"><?php esc_html_e( 'Order', 'wp-movie-collector' ); ?></th>
-								<th><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
-								<th><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
-								<th><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
-								<th><?php esc_html_e( 'Actions', 'wp-movie-collector' ); ?></th>
-							</tr>
-						</thead>
-						<tbody id="sortable-movies">
-							<?php foreach ( $movies as $index => $movie ) : ?>
-							<tr class="movie-item" data-movie-id="<?php echo esc_attr( $movie['id'] ); ?>">
-								<td>
-									<span class="dashicons dashicons-move"></span>
-									<input type="hidden" name="movie_order[]" value="<?php echo esc_attr( $movie['id'] ); ?>">
-								</td>
-								<td><?php echo esc_html( $movie['title'] ); ?></td>
-								<td><?php echo esc_html( $movie['release_year'] ); ?></td>
-								<td><?php echo esc_html( $movie['format'] ); ?></td>
-								<td>
-									<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
-										<input type="hidden" name="action" value="wp_movie_collector_remove_movie">
-										<input type="hidden" name="movie_id" value="<?php echo intval( $movie['id'] ); ?>">
-										<input type="hidden" name="box_set_id" value="<?php echo intval( $box_set_id ); ?>">
-										<?php wp_nonce_field( 'wp_movie_collector_remove_movie_' . intval( $movie['id'] ) . '_' . intval( $box_set_id ), 'wp_movie_collector_nonce' ); ?>
-										<button type="submit"
-											class="button button-small button-link-delete"
-											onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to remove this movie from the box set?', 'wp-movie-collector' ) ); ?>');">
-											<?php esc_html_e( 'Remove', 'wp-movie-collector' ); ?>
-										</button>
-									</form>
-								</td>
-							</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-					
+					<div id="wp-movie-collector-reorder-inputs">
+						<?php foreach ( $movies as $movie ) : ?>
+						<input type="hidden" name="movie_order[]" value="<?php echo esc_attr( $movie['id'] ); ?>">
+						<?php endforeach; ?>
+					</div>
 					<p class="submit">
 						<button type="submit" class="button button-primary">
 							<?php esc_html_e( 'Save Order', 'wp-movie-collector' ); ?>
@@ -170,14 +173,6 @@ if ( ! current_user_can( 'manage_options' ) ) {
 					<h4><?php esc_html_e( 'Available Movies', 'wp-movie-collector' ); ?></h4>
 					
 					<?php
-					// Get movies not in this box set
-					$existing_movie_ids = array_map(
-						function ( $movie ) {
-							return $movie['id'];
-						},
-						$movies
-					);
-
 					$available_movies = $wpdb->get_results(
 						$wpdb->prepare(
 							"SELECT * FROM {$db->get_movies_table()} 
@@ -325,9 +320,11 @@ jQuery(document).ready(function($) {
 		$('#sortable-movies').sortable({
 			handle: '.dashicons-move',
 			update: function(event, ui) {
-				// Update the hidden input values after sorting
-				$('#sortable-movies tr').each(function(index) {
-					$(this).find('input[name="movie_order[]"]').val($(this).data('movie-id'));
+				// Rebuild hidden inputs in the separate reorder form to match new order
+				var $container = $('#wp-movie-collector-reorder-inputs');
+				$container.empty();
+				$('#sortable-movies tr').each(function() {
+					$container.append('<input type="hidden" name="movie_order[]" value="' + parseInt($(this).data('movie-id'), 10) + '">');
 				});
 			}
 		});
@@ -393,8 +390,11 @@ jQuery(document).ready(function($) {
 					$('#select-all-search-results').on('change', function() {
 						$(this).closest('form').find('input[name="movie_ids[]"]').prop('checked', $(this).prop('checked'));
 					});
-				} else {
+				} else if (response.success && response.data.length === 0) {
 					$('#wp-movie-collector-search-results').html(<?php echo wp_json_encode( '<p>' . esc_html__( 'No movies found matching your search.', 'wp-movie-collector' ) . '</p>' ); ?>);
+				} else {
+					var errorMsg = (response.data && typeof response.data === 'string') ? response.data : <?php echo wp_json_encode( esc_html__( 'An error occurred. Please try again.', 'wp-movie-collector' ) ); ?>;
+					$('#wp-movie-collector-search-results').html('<p class="error">' + $('<span>').text(errorMsg).html() + '</p>');
 				}
 			},
 			error: function() {

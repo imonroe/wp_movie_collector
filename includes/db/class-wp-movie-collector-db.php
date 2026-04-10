@@ -106,7 +106,19 @@ class WP_Movie_Collector_DB {
         $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$relationships_table}` WHERE Field = %s", 'display_order'));
         
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $relationships_table ADD COLUMN display_order int(11) DEFAULT 0");
+            $wpdb->query("ALTER TABLE $relationships_table ADD COLUMN display_order int(11) NOT NULL DEFAULT 0");
+        }
+
+        // Add composite index (box_set_id, display_order) if missing.
+        $index_exists = $wpdb->get_results(
+            $wpdb->prepare(
+                "SHOW INDEX FROM `{$relationships_table}` WHERE Key_name = %s",
+                'box_set_order'
+            )
+        );
+
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE $relationships_table ADD INDEX box_set_order (box_set_id, display_order)");
         }
     }
     
@@ -175,9 +187,11 @@ class WP_Movie_Collector_DB {
             id bigint(20) NOT NULL AUTO_INCREMENT,
             movie_id bigint(20) NOT NULL,
             box_set_id bigint(20) NOT NULL,
+            display_order int(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             KEY movie_id (movie_id),
-            KEY box_set_id (box_set_id)
+            KEY box_set_id (box_set_id),
+            KEY box_set_order (box_set_id, display_order)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -434,12 +448,21 @@ class WP_Movie_Collector_DB {
             return $existing;
         }
         
+        // Get the next display_order value for this box set.
+        $next_order = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COALESCE(MAX(display_order), 0) + 1 FROM $this->relationships_table WHERE box_set_id = %d",
+                $box_set_id
+            )
+        );
+
         // Add the relationship
         $result = $wpdb->insert(
             $this->relationships_table,
             array(
                 'movie_id' => $movie_id,
-                'box_set_id' => $box_set_id
+                'box_set_id' => $box_set_id,
+                'display_order' => $next_order,
             )
         );
         
@@ -487,7 +510,7 @@ class WP_Movie_Collector_DB {
                 "SELECT m.* FROM $this->movies_table m
                 JOIN $this->relationships_table r ON m.id = r.movie_id
                 WHERE r.box_set_id = %d
-                ORDER BY m.title ASC",
+                ORDER BY r.display_order ASC, m.title ASC",
                 $box_set_id
             ),
             ARRAY_A

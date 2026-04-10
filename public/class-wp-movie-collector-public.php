@@ -79,6 +79,8 @@ class WP_Movie_Collector_Public {
         $atts = shortcode_atts(array(
             'type' => 'all', // all, movies, box_sets
             'per_page' => 12,
+            'orderby' => '',
+            'order' => '',
         ), $atts, 'movie_collection');
 
         // Start output buffering
@@ -180,12 +182,24 @@ class WP_Movie_Collector_Public {
         $results = array();
         $total_items = 0;
 
-        // Build search criteria
+        // Build search criteria. Support combined "sort" key (e.g. "title-ASC")
+        // as well as separate orderby/order keys.
+        $orderby = 'title';
+        $order   = 'ASC';
+        if ( ! empty( $sanitized_args['sort'] ) ) {
+            $sort_parts = explode( '-', $sanitized_args['sort'], 2 );
+            $orderby    = isset( $sort_parts[0] ) ? $sort_parts[0] : 'title';
+            $order      = isset( $sort_parts[1] ) ? $sort_parts[1] : 'ASC';
+        } elseif ( ! empty( $sanitized_args['orderby'] ) ) {
+            $orderby = $sanitized_args['orderby'];
+            $order   = isset( $sanitized_args['order'] ) ? $sanitized_args['order'] : 'ASC';
+        }
+
         $criteria = array(
             'per_page' => $per_page,
-            'page' => $page,
-            'orderby' => isset($sanitized_args['orderby']) ? $sanitized_args['orderby'] : 'title',
-            'order' => isset($sanitized_args['order']) ? $sanitized_args['order'] : 'ASC',
+            'page'     => $page,
+            'orderby'  => $orderby,
+            'order'    => $order,
         );
 
         // Add any filter criteria from args

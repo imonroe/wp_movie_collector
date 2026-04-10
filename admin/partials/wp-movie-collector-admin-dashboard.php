@@ -16,6 +16,12 @@ if ( ! current_user_can( 'manage_options' ) ) {
             case 'movie_added':
                 $message = __('Movie added successfully!', 'wp-movie-collector');
                 break;
+            case 'movie_updated':
+                $message = __('Movie updated successfully!', 'wp-movie-collector');
+                break;
+            case 'movie_deleted':
+                $message = __('Movie deleted successfully!', 'wp-movie-collector');
+                break;
             case 'box_set_added':
                 $message = __('Box set added successfully!', 'wp-movie-collector');
                 break;
@@ -69,14 +75,29 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 <?php
                 // Get recent movies
                 $recent_movies = $wpdb->get_results($wpdb->prepare("SELECT id, title FROM {$db->get_movies_table()} ORDER BY created_at DESC LIMIT %d", 5), ARRAY_A);
-                
+
                 if ($recent_movies) :
                 ?>
                 <ul>
                     <?php foreach ($recent_movies as $movie) : ?>
-                    <li><a href="#"><?php echo esc_html($movie['title']); ?></a></li>
+                    <li>
+                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) ) ); ?>"><?php echo esc_html($movie['title']); ?></a>
+                        <div class="row-actions">
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) ) ); ?>"><?php esc_html_e( 'Edit', 'wp-movie-collector' ); ?></a> |
+                            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+                                <input type="hidden" name="action" value="wp_movie_collector_delete_movie">
+                                <input type="hidden" name="id" value="<?php echo intval( $movie['id'] ); ?>">
+                                <input type="hidden" name="redirect_to" value="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-dashboard' ) ); ?>">
+                                <?php wp_nonce_field( 'wp_movie_collector_delete_movie_' . intval( $movie['id'] ), 'wp_movie_collector_nonce' ); ?>
+                                <button type="submit"
+                                        onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this movie? This action cannot be undone.', 'wp-movie-collector' ) ); ?>');"
+                                        style="color:#b32d2e; background:none; border:none; padding:0; cursor:pointer; text-decoration:underline;"><?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?></button>
+                            </form>
+                        </div>
+                    </li>
                     <?php endforeach; ?>
                 </ul>
+                <p><a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-movies' ) ); ?>"><?php esc_html_e( 'View All Movies', 'wp-movie-collector' ); ?></a></p>
                 <?php else : ?>
                 <p><?php esc_html_e('No movies yet. Why not add one?', 'wp-movie-collector'); ?></p>
                 <?php endif; ?>

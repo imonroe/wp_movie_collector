@@ -273,7 +273,7 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $movie_id )
 		);
 
-		if ( $result !== false ) {
+		if ( $result > 0 ) {
 			$this->invalidate_stats_cache();
 		}
 
@@ -453,7 +453,7 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $box_set_id )
 		);
 
-		if ( $result !== false ) {
+		if ( $result > 0 ) {
 			$this->invalidate_stats_cache();
 		}
 
@@ -855,8 +855,17 @@ class WP_Movie_Collector_DB {
 	 */
 	public function get_collection_stats() {
 		$cached = get_transient( 'wp_movie_collector_stats' );
-		if ( false !== $cached ) {
+		if (
+			is_array( $cached ) &&
+			array_key_exists( 'total_movies', $cached ) &&
+			array_key_exists( 'total_box_sets', $cached ) &&
+			array_key_exists( 'format_breakdown', $cached )
+		) {
 			return $cached;
+		}
+
+		if ( false !== $cached ) {
+			delete_transient( 'wp_movie_collector_stats' );
 		}
 
 		global $wpdb;

@@ -824,6 +824,92 @@ class WP_Movie_Collector_DB {
 	}
 
 	/**
+	 * Get comprehensive collection statistics.
+	 *
+	 * @since    1.1.0
+	 * @return   array    Associative array of collection statistics.
+	 */
+	public function get_collection_stats() {
+		global $wpdb;
+
+		$stats = array();
+
+		// Total counts.
+		$stats['total_movies']   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->movies_table}" );
+		$stats['total_box_sets'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->box_sets_table}" );
+
+		// Format breakdown for movies.
+		$format_rows          = $wpdb->get_results(
+			"SELECT format, COUNT(*) as count FROM {$this->movies_table} GROUP BY format ORDER BY count DESC",
+			ARRAY_A
+		);
+		$stats['format_breakdown'] = array();
+		if ( $format_rows ) {
+			foreach ( $format_rows as $row ) {
+				$stats['format_breakdown'][ $row['format'] ] = (int) $row['count'];
+			}
+		}
+
+		// Top genres (from comma-separated genre field).
+		$all_genres = $wpdb->get_col( "SELECT genre FROM {$this->movies_table} WHERE genre != ''" );
+		$genre_counts = array();
+		if ( $all_genres ) {
+			foreach ( $all_genres as $genre_string ) {
+				$genres = array_map( 'trim', explode( ',', $genre_string ) );
+				foreach ( $genres as $genre ) {
+					if ( '' !== $genre ) {
+						$genre_counts[ $genre ] = isset( $genre_counts[ $genre ] ) ? $genre_counts[ $genre ] + 1 : 1;
+					}
+				}
+			}
+			arsort( $genre_counts );
+		}
+		$stats['top_genres'] = array_slice( $genre_counts, 0, 5, true );
+
+		// Top directors.
+		$director_rows        = $wpdb->get_results(
+			"SELECT director, COUNT(*) as count FROM {$this->movies_table} WHERE director != '' GROUP BY director ORDER BY count DESC LIMIT 5",
+			ARRAY_A
+		);
+		$stats['top_directors'] = array();
+		if ( $director_rows ) {
+			foreach ( $director_rows as $row ) {
+				$stats['top_directors'][ $row['director'] ] = (int) $row['count'];
+			}
+		}
+
+		// Top studios.
+		$studio_rows        = $wpdb->get_results(
+			"SELECT studio, COUNT(*) as count FROM {$this->movies_table} WHERE studio != '' GROUP BY studio ORDER BY count DESC LIMIT 5",
+			ARRAY_A
+		);
+		$stats['top_studios'] = array();
+		if ( $studio_rows ) {
+			foreach ( $studio_rows as $row ) {
+				$stats['top_studios'][ $row['studio'] ] = (int) $row['count'];
+			}
+		}
+
+		// Unique counts.
+		$stats['unique_directors'] = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT director) FROM {$this->movies_table} WHERE director != ''" );
+		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
+
+		// Recent additions (last 30 days).
+		$stats['recent_movies_count'] = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",
+				gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) )
+			)
+		);
+
+		// Year range.
+		$stats['earliest_year'] = $wpdb->get_var( "SELECT MIN(release_year) FROM {$this->movies_table}" );
+		$stats['latest_year']   = $wpdb->get_var( "SELECT MAX(release_year) FROM {$this->movies_table}" );
+
+		return $stats;
+	}
+
+	/**
 	 * Search box sets by criteria.
 	 *
 	 * @since    1.0.0

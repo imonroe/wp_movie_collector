@@ -29,13 +29,29 @@
     color: #0073aa;
 }
 
-.wp-movie-collector-actions {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
+.wp-movie-collector-stat-box p {
+    margin: 5px 0 0;
+    color: #666;
+    font-size: 13px;
 }
 
-.wp-movie-collector-action-box {
+.wp-movie-collector-stat-highlight {
+    border-color: #00a32a;
+}
+
+.wp-movie-collector-stat-highlight h2 {
+    color: #00a32a;
+}
+
+/* Dashboard row layout */
+.wp-movie-collector-dashboard-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Widget base */
+.wp-movie-collector-widget {
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -44,33 +60,134 @@
     flex: 1;
 }
 
-.wp-movie-collector-action-box h3 {
+.wp-movie-collector-widget-full {
+    flex: 1 1 100%;
+}
+
+.wp-movie-collector-widget h3 {
     margin-top: 0;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
 }
 
-.wp-movie-collector-action-box .button {
+.wp-movie-collector-widget h4 {
+    margin: 15px 0 8px;
+    font-size: 13px;
+}
+
+/* Quick actions */
+.wp-movie-collector-quick-actions .button {
     margin-right: 10px;
     margin-bottom: 10px;
 }
 
-.wp-movie-collector-action-box ul {
-    margin-left: 1.5em;
+/* Statistics tables */
+.wp-movie-collector-stats-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.wp-movie-collector-search {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.wp-movie-collector-stats-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
 }
 
-.wp-movie-collector-search h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+.wp-movie-collector-stats-table tr:last-child td {
+    border-bottom: none;
+}
+
+.wp-movie-collector-stats-count {
+    width: 40px;
+    text-align: right;
+    font-weight: 600;
+    color: #0073aa;
+}
+
+.wp-movie-collector-stats-bar-cell {
+    width: 40%;
+}
+
+.wp-movie-collector-stats-bar {
+    height: 12px;
+    background: #0073aa;
+    border-radius: 3px;
+    min-width: 4px;
+}
+
+/* Recent movies list */
+.wp-movie-collector-recent-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.wp-movie-collector-recent-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.wp-movie-collector-recent-list li:last-child {
+    border-bottom: none;
+}
+
+.wp-movie-collector-recent-list a {
+    text-decoration: none;
+}
+
+.wp-movie-collector-meta {
+    color: #999;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.wp-movie-collector-delete-btn {
+    color: #b32d2e;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* API status */
+.wp-movie-collector-api-status {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wp-movie-collector-api-status td {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.wp-movie-collector-api-status tr:last-child td {
+    border-bottom: none;
+}
+
+.wp-movie-collector-status-configured {
+    color: #00a32a;
+    font-weight: 600;
+}
+
+.wp-movie-collector-status-missing {
+    color: #d63638;
+}
+
+/* Empty state */
+.wp-movie-collector-empty-state {
+    color: #999;
+    font-style: italic;
+}
+
+/* Search input */
+.wp-movie-collector-search-input {
+    display: flex;
+    gap: 10px;
+}
+
+.wp-movie-collector-search-input input {
+    flex: 1;
 }
 
 /* Form styles */

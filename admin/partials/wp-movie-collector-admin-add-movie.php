@@ -362,16 +362,27 @@ jQuery(document).ready(function($) {
                 },
                 success: function(response) {
                     if (response.success && response.data.has_duplicates) {
-                        var match = response.data.barcode_match || response.data.title_matches[0];
-                        var msg;
-                        if (response.data.barcode_match) {
+                        var match, msg, editUrl;
+                        if (response.data.cross_type_match) {
+                            match = response.data.cross_type_match;
+                            msg = <?php echo wp_json_encode( esc_html__( 'A box set with this barcode already exists in your collection:', 'wp-movie-collector' ) ); ?>;
+                            msg += ' ' + match.title + ' (' + (match.release_year || '') + ')';
+                            editUrl = <?php echo wp_json_encode( admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' ) ); ?> + parseInt(match.id, 10);
+                            $('#wp-movie-collector-duplicate-edit-link').text(<?php echo wp_json_encode( esc_html__( 'Edit Existing Box Set', 'wp-movie-collector' ) ); ?>);
+                        } else if (response.data.barcode_match) {
+                            match = response.data.barcode_match;
                             msg = <?php echo wp_json_encode( esc_html__( 'A movie with this barcode already exists in your collection:', 'wp-movie-collector' ) ); ?>;
+                            msg += ' ' + match.title + ' (' + (match.release_year || '') + ')';
+                            editUrl = <?php echo wp_json_encode( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' ) ); ?> + parseInt(match.id, 10);
+                            $('#wp-movie-collector-duplicate-edit-link').text(<?php echo wp_json_encode( esc_html__( 'Edit Existing Movie', 'wp-movie-collector' ) ); ?>);
                         } else {
+                            match = response.data.title_matches[0];
                             msg = <?php echo wp_json_encode( esc_html__( 'A movie with this title and year already exists:', 'wp-movie-collector' ) ); ?>;
+                            msg += ' ' + match.title + ' (' + (match.release_year || '') + ')';
+                            editUrl = <?php echo wp_json_encode( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' ) ); ?> + parseInt(match.id, 10);
+                            $('#wp-movie-collector-duplicate-edit-link').text(<?php echo wp_json_encode( esc_html__( 'Edit Existing Movie', 'wp-movie-collector' ) ); ?>);
                         }
-                        msg += ' ' + match.title + ' (' + match.release_year + ')';
                         $('#wp-movie-collector-duplicate-message').text(msg);
-                        var editUrl = '<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' ) ); ?>' + parseInt(match.id, 10);
                         $('#wp-movie-collector-duplicate-edit-link').attr('href', editUrl);
                         $('#wp-movie-collector-duplicate-warning').show();
                     } else {

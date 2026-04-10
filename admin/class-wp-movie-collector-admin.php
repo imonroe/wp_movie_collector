@@ -715,6 +715,19 @@ class WP_Movie_Collector_Admin {
 					$existing['id']
 				);
 			}
+
+			// Cross-type barcode check: also look in box sets table.
+			if ( empty( $errors ) && ! empty( $sanitized['barcode'] ) ) {
+				$box_set_dupes = $dup_db->find_duplicate_box_sets( '', 0, $sanitized['barcode'] );
+				if ( ! empty( $box_set_dupes['barcode_match'] ) ) {
+					$errors[] = sprintf(
+						/* translators: 1: box set title, 2: box set ID */
+						__( 'A box set with this barcode already exists: "%1$s" (ID: %2$d). If you want to add it anyway, check "Allow duplicate".', 'wp-movie-collector' ),
+						$box_set_dupes['barcode_match']['title'],
+						$box_set_dupes['barcode_match']['id']
+					);
+				}
+			}
 		}
 
 		// If there are validation errors, redirect back with error message.
@@ -861,6 +874,19 @@ class WP_Movie_Collector_Admin {
 					$existing['release_year'],
 					$existing['id']
 				);
+			}
+
+			// Cross-type barcode check: also look in movies table.
+			if ( empty( $errors ) && ! empty( $sanitized['barcode'] ) ) {
+				$movie_dupes = $dup_db->find_duplicate_movies( '', 0, $sanitized['barcode'] );
+				if ( ! empty( $movie_dupes['barcode_match'] ) ) {
+					$errors[] = sprintf(
+						/* translators: 1: movie title, 2: movie ID */
+						__( 'A movie with this barcode already exists: "%1$s" (ID: %2$d). If you want to add it anyway, check "Allow duplicate".', 'wp-movie-collector' ),
+						$movie_dupes['barcode_match']['title'],
+						$movie_dupes['barcode_match']['id']
+					);
+				}
 			}
 		}
 
@@ -2023,13 +2049,24 @@ class WP_Movie_Collector_Admin {
 		$db         = new WP_Movie_Collector_DB();
 		$duplicates = $db->find_duplicate_movies( $title, $year, $barcode, $exclude_id );
 
-		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] );
+		// Cross-type barcode check: also look in box sets table.
+		$cross_type_match = null;
+		if ( empty( $duplicates['barcode_match'] ) && ! empty( $barcode ) ) {
+			$box_set_dupes = $db->find_duplicate_box_sets( '', 0, $barcode );
+			if ( ! empty( $box_set_dupes['barcode_match'] ) ) {
+				$cross_type_match       = $box_set_dupes['barcode_match'];
+				$cross_type_match['type'] = 'box_set';
+			}
+		}
+
+		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] ) || ! empty( $cross_type_match );
 
 		wp_send_json_success(
 			array(
-				'has_duplicates' => $has_duplicates,
-				'barcode_match'  => $duplicates['barcode_match'],
-				'title_matches'  => $duplicates['title_matches'],
+				'has_duplicates'   => $has_duplicates,
+				'barcode_match'    => $duplicates['barcode_match'],
+				'title_matches'    => $duplicates['title_matches'],
+				'cross_type_match' => $cross_type_match,
 			)
 		);
 	}
@@ -2061,13 +2098,24 @@ class WP_Movie_Collector_Admin {
 		$db         = new WP_Movie_Collector_DB();
 		$duplicates = $db->find_duplicate_box_sets( $title, $year, $barcode, $exclude_id );
 
-		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] );
+		// Cross-type barcode check: also look in movies table.
+		$cross_type_match = null;
+		if ( empty( $duplicates['barcode_match'] ) && ! empty( $barcode ) ) {
+			$movie_dupes = $db->find_duplicate_movies( '', 0, $barcode );
+			if ( ! empty( $movie_dupes['barcode_match'] ) ) {
+				$cross_type_match       = $movie_dupes['barcode_match'];
+				$cross_type_match['type'] = 'movie';
+			}
+		}
+
+		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] ) || ! empty( $cross_type_match );
 
 		wp_send_json_success(
 			array(
-				'has_duplicates' => $has_duplicates,
-				'barcode_match'  => $duplicates['barcode_match'],
-				'title_matches'  => $duplicates['title_matches'],
+				'has_duplicates'   => $has_duplicates,
+				'barcode_match'    => $duplicates['barcode_match'],
+				'title_matches'    => $duplicates['title_matches'],
+				'cross_type_match' => $cross_type_match,
 			)
 		);
 	}

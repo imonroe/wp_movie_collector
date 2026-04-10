@@ -190,7 +190,19 @@ if ( ! current_user_can( 'manage_options' ) ) {
             </div>
             
             <input type="hidden" id="movie-api-source" name="movie[api_source]" value="">
-            
+
+            <div id="wp-movie-collector-duplicate-warning" class="notice notice-warning inline" style="display:none;">
+                <p id="wp-movie-collector-duplicate-message"></p>
+                <p><a id="wp-movie-collector-duplicate-edit-link" href="#" class="button button-small"><?php esc_html_e( 'Edit Existing Movie', 'wp-movie-collector' ); ?></a></p>
+            </div>
+
+            <div class="form-group">
+                <label for="movie-allow-duplicate">
+                    <input type="checkbox" id="movie-allow-duplicate" name="movie[allow_duplicate]" value="1">
+                    <?php esc_html_e( 'Allow duplicate (I own multiple copies)', 'wp-movie-collector' ); ?>
+                </label>
+            </div>
+
             <p class="submit">
                 <button type="submit" class="button button-primary" name="wp_movie_collector_add_movie_submit">
                     <?php esc_html_e('Add Movie', 'wp-movie-collector'); ?>
@@ -217,21 +229,28 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'wp_movie_collector_barcode_lookup',
                 barcode: barcode,
+                context: 'movie',
                 nonce: wp_movie_collector_admin.nonce
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Movie found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
-                    
-                    // Fill in form with movie details
-                    fillMovieForm(response.data);
-                    
-                    // If we got a title from barcode lookup but have limited metadata,
-                    // automatically search for more details from TMDB
-                    if (response.data.api_source === 'BarcodeLookup' && response.data.title && 
-                        (!response.data.director || !response.data.actors || !response.data.description || 
-                         (response.data.description && response.data.description.length < 50))) {
-                        searchTMDBForMoreDetails(response.data.title, response.data.release_year);
+                    if (response.data.existing_in_db) {
+                        var msg = <?php echo wp_json_encode( esc_html__( 'This barcode already exists in your collection.', 'wp-movie-collector' ) ); ?>;
+                        $('#wp-movie-collector-barcode-result').html(
+                            '<p class="notice notice-warning">' + wpMovieCollectorEscHtml(msg) +
+                            ' <a href="' + wpMovieCollectorEscHtml(response.data.edit_url) + '" class="button button-small">' +
+                            <?php echo wp_json_encode( esc_html__( 'Edit Existing Movie', 'wp-movie-collector' ) ); ?> + '</a></p>'
+                        );
+                        fillMovieForm(response.data);
+                    } else {
+                        $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Movie found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
+                        fillMovieForm(response.data);
+
+                        if (response.data.api_source === 'BarcodeLookup' && response.data.title &&
+                            (!response.data.director || !response.data.actors || !response.data.description ||
+                             (response.data.description && response.data.description.length < 50))) {
+                            searchTMDBForMoreDetails(response.data.title, response.data.release_year);
+                        }
                     }
                 } else {
                     $('#wp-movie-collector-barcode-result').html('<p class="error"></p>').find('p').text(response.data);
@@ -307,6 +326,55 @@ jQuery(document).ready(function($) {
         });
     });
     
+    // Check for duplicates via AJAX when title or year changes.
+    var duplicateCheckTimer;
+    function checkForDuplicateMovie() {
+        clearTimeout(duplicateCheckTimer);
+        duplicateCheckTimer = setTimeout(function() {
+            var title = $('#movie-title').val();
+            var year = $('#movie-release-year').val();
+            var barcode = $('#movie-barcode').val();
+
+            if (!title && !barcode) {
+                $('#wp-movie-collector-duplicate-warning').hide();
+                return;
+            }
+
+            $.ajax({
+                url: wp_movie_collector_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'wp_movie_collector_check_duplicate_movie',
+                    title: title,
+                    year: year,
+                    barcode: barcode,
+                    nonce: wp_movie_collector_admin.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.has_duplicates) {
+                        var match = response.data.barcode_match || response.data.title_matches[0];
+                        var msg;
+                        if (response.data.barcode_match) {
+                            msg = <?php echo wp_json_encode( esc_html__( 'A movie with this barcode already exists in your collection:', 'wp-movie-collector' ) ); ?>;
+                        } else {
+                            msg = <?php echo wp_json_encode( esc_html__( 'A movie with this title and year already exists:', 'wp-movie-collector' ) ); ?>;
+                        }
+                        msg += ' ' + wpMovieCollectorEscHtml(match.title) + ' (' + wpMovieCollectorEscHtml(match.release_year) + ')';
+                        $('#wp-movie-collector-duplicate-message').text('');
+                        $('#wp-movie-collector-duplicate-message').html(wpMovieCollectorEscHtml(msg));
+                        var editUrl = '<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' ) ); ?>' + parseInt(match.id, 10);
+                        $('#wp-movie-collector-duplicate-edit-link').attr('href', editUrl);
+                        $('#wp-movie-collector-duplicate-warning').show();
+                    } else {
+                        $('#wp-movie-collector-duplicate-warning').hide();
+                    }
+                }
+            });
+        }, 500);
+    }
+
+    $('#movie-title, #movie-release-year, #movie-barcode').on('change blur', checkForDuplicateMovie);
+
     // Fill movie form with data
     function fillMovieForm(movie) {
         $('#movie-title').val(movie.title || '');

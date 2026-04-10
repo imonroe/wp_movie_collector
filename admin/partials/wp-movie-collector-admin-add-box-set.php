@@ -140,7 +140,19 @@ if ( ! current_user_can( 'manage_options' ) ) {
             </div>
             
             <input type="hidden" id="box-set-api-source" name="box_set[api_source]" value="">
-            
+
+            <div id="wp-movie-collector-duplicate-warning" class="notice notice-warning inline" style="display:none;">
+                <p id="wp-movie-collector-duplicate-message"></p>
+                <p><a id="wp-movie-collector-duplicate-edit-link" href="#" class="button button-small"><?php esc_html_e( 'Edit Existing Box Set', 'wp-movie-collector' ); ?></a></p>
+            </div>
+
+            <div class="form-group">
+                <label for="box-set-allow-duplicate">
+                    <input type="checkbox" id="box-set-allow-duplicate" name="box_set[allow_duplicate]" value="1">
+                    <?php esc_html_e( 'Allow duplicate (I own multiple copies)', 'wp-movie-collector' ); ?>
+                </label>
+            </div>
+
             <p class="submit">
                 <button type="submit" class="button button-primary" name="wp_movie_collector_add_box_set_submit">
                     <?php esc_html_e('Add Box Set', 'wp-movie-collector'); ?>
@@ -172,13 +184,23 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'wp_movie_collector_barcode_lookup',
                 barcode: barcode,
+                context: 'box_set',
                 nonce: wp_movie_collector_admin.nonce
             },
             success: function(response) {
                 if (response.success) {
-                    $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Box set found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
-                    // Fill in form with box set details
-                    fillBoxSetForm(response.data);
+                    if (response.data.existing_in_db) {
+                        var msg = <?php echo wp_json_encode( esc_html__( 'This barcode already exists in your collection.', 'wp-movie-collector' ) ); ?>;
+                        $('#wp-movie-collector-barcode-result').html(
+                            '<p class="notice notice-warning">' + wpMovieCollectorEscHtml(msg) +
+                            ' <a href="' + wpMovieCollectorEscHtml(response.data.edit_url) + '" class="button button-small">' +
+                            <?php echo wp_json_encode( esc_html__( 'Edit Existing Box Set', 'wp-movie-collector' ) ); ?> + '</a></p>'
+                        );
+                        fillBoxSetForm(response.data);
+                    } else {
+                        $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Box set found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
+                        fillBoxSetForm(response.data);
+                    }
                 } else {
                     $('#wp-movie-collector-barcode-result').html('<p class="error"></p>').find('p').text(response.data);
                 }
@@ -188,7 +210,55 @@ jQuery(document).ready(function($) {
             }
         });
     });
-    
+
+    // Check for duplicates via AJAX when title or year changes.
+    var duplicateCheckTimer;
+    function checkForDuplicateBoxSet() {
+        clearTimeout(duplicateCheckTimer);
+        duplicateCheckTimer = setTimeout(function() {
+            var title = $('#box-set-title').val();
+            var year = $('#box-set-release-year').val();
+            var barcode = $('#box-set-barcode').val();
+
+            if (!title && !barcode) {
+                $('#wp-movie-collector-duplicate-warning').hide();
+                return;
+            }
+
+            $.ajax({
+                url: wp_movie_collector_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'wp_movie_collector_check_duplicate_box_set',
+                    title: title,
+                    year: year,
+                    barcode: barcode,
+                    nonce: wp_movie_collector_admin.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.has_duplicates) {
+                        var match = response.data.barcode_match || response.data.title_matches[0];
+                        var msg;
+                        if (response.data.barcode_match) {
+                            msg = <?php echo wp_json_encode( esc_html__( 'A box set with this barcode already exists in your collection:', 'wp-movie-collector' ) ); ?>;
+                        } else {
+                            msg = <?php echo wp_json_encode( esc_html__( 'A box set with this title and year already exists:', 'wp-movie-collector' ) ); ?>;
+                        }
+                        msg += ' ' + wpMovieCollectorEscHtml(match.title) + ' (' + wpMovieCollectorEscHtml(match.release_year) + ')';
+                        $('#wp-movie-collector-duplicate-message').html(wpMovieCollectorEscHtml(msg));
+                        var editUrl = '<?php echo esc_url( admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' ) ); ?>' + parseInt(match.id, 10);
+                        $('#wp-movie-collector-duplicate-edit-link').attr('href', editUrl);
+                        $('#wp-movie-collector-duplicate-warning').show();
+                    } else {
+                        $('#wp-movie-collector-duplicate-warning').hide();
+                    }
+                }
+            });
+        }, 500);
+    }
+
+    $('#box-set-title, #box-set-release-year, #box-set-barcode').on('change blur', checkForDuplicateBoxSet);
+
     // Fill box set form with data
     function fillBoxSetForm(box_set) {
         $('#box-set-title').val(box_set.title || '');

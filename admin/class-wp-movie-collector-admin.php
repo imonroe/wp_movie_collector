@@ -688,10 +688,39 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message
+		// Check for duplicates (only on add, and only when user hasn't overridden).
+		$allow_duplicate = ! empty( $movie['allow_duplicate'] );
+		if ( ! $movie_id && ! $allow_duplicate && empty( $errors ) ) {
+			$dup_db = new WP_Movie_Collector_DB();
+			$dupes  = $dup_db->find_duplicate_movies(
+				isset( $sanitized['title'] ) ? $sanitized['title'] : '',
+				isset( $sanitized['release_year'] ) ? $sanitized['release_year'] : 0,
+				isset( $sanitized['barcode'] ) ? $sanitized['barcode'] : ''
+			);
+
+			if ( ! empty( $dupes['barcode_match'] ) ) {
+				$errors[] = sprintf(
+					/* translators: 1: movie title, 2: movie ID */
+					__( 'A movie with this barcode already exists: "%1$s" (ID: %2$d). If you want to add it anyway, check "Allow duplicate".', 'wp-movie-collector' ),
+					$dupes['barcode_match']['title'],
+					$dupes['barcode_match']['id']
+				);
+			} elseif ( ! empty( $dupes['title_matches'] ) ) {
+				$existing = $dupes['title_matches'][0];
+				$errors[] = sprintf(
+					/* translators: 1: movie title, 2: release year, 3: movie ID */
+					__( 'A movie with the same title and year already exists: "%1$s" (%2$d), ID: %3$d. If you own multiple copies, check "Allow duplicate".', 'wp-movie-collector' ),
+					$existing['title'],
+					$existing['release_year'],
+					$existing['id']
+				);
+			}
+		}
+
+		// If there are validation errors, redirect back with error message.
 		if ( ! empty( $errors ) ) {
-			// Store errors in transient
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 ); // 5 minutes expiration
+			// Store errors in transient.
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
 			if ( $movie_id ) {
 				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
 			} else {
@@ -806,9 +835,38 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message
+		// Check for duplicates (only on add, and only when user hasn't overridden).
+		$allow_duplicate = ! empty( $box_set['allow_duplicate'] );
+		if ( ! $box_set_id && ! $allow_duplicate && empty( $errors ) ) {
+			$dup_db = new WP_Movie_Collector_DB();
+			$dupes  = $dup_db->find_duplicate_box_sets(
+				isset( $sanitized['title'] ) ? $sanitized['title'] : '',
+				isset( $sanitized['release_year'] ) ? $sanitized['release_year'] : 0,
+				isset( $sanitized['barcode'] ) ? $sanitized['barcode'] : ''
+			);
+
+			if ( ! empty( $dupes['barcode_match'] ) ) {
+				$errors[] = sprintf(
+					/* translators: 1: box set title, 2: box set ID */
+					__( 'A box set with this barcode already exists: "%1$s" (ID: %2$d). If you want to add it anyway, check "Allow duplicate".', 'wp-movie-collector' ),
+					$dupes['barcode_match']['title'],
+					$dupes['barcode_match']['id']
+				);
+			} elseif ( ! empty( $dupes['title_matches'] ) ) {
+				$existing = $dupes['title_matches'][0];
+				$errors[] = sprintf(
+					/* translators: 1: box set title, 2: release year, 3: box set ID */
+					__( 'A box set with the same title and year already exists: "%1$s" (%2$d), ID: %3$d. If you own multiple copies, check "Allow duplicate".', 'wp-movie-collector' ),
+					$existing['title'],
+					$existing['release_year'],
+					$existing['id']
+				);
+			}
+		}
+
+		// If there are validation errors, redirect back with error message.
 		if ( ! empty( $errors ) ) {
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 ); // 5 minutes expiration
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
 			if ( $box_set_id ) {
 				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
 			} else {
@@ -1818,16 +1876,27 @@ class WP_Movie_Collector_Admin {
 		}
 
 		$barcode = sanitize_text_field( wp_unslash( $_POST['barcode'] ) );
+		$context = isset( $_POST['context'] ) ? sanitize_text_field( wp_unslash( $_POST['context'] ) ) : 'movie';
 
-		// First check if we already have this barcode in our database
-		$db    = new WP_Movie_Collector_DB();
-		$movie = $db->get_movie_by_barcode( $barcode );
+		$db = new WP_Movie_Collector_DB();
 
-		if ( $movie ) {
+		// Check if barcode already exists in the database.
+		$movie   = $db->get_movie_by_barcode( $barcode );
+		$box_set = $db->get_box_set_by_barcode( $barcode );
+
+		if ( 'box_set' === $context && $box_set ) {
+			$box_set['existing_in_db'] = true;
+			$box_set['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
+			wp_send_json_success( $box_set );
+		}
+
+		if ( 'movie' === $context && $movie ) {
+			$movie['existing_in_db'] = true;
+			$movie['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
 			wp_send_json_success( $movie );
 		}
 
-		// If not in our database, try to look it up via API
+		// If not in our database, try to look it up via API.
 		$api    = new WP_Movie_Collector_API();
 		$result = $api->lookup_by_barcode( $barcode );
 
@@ -1905,6 +1974,82 @@ class WP_Movie_Collector_Admin {
 		}
 
 		wp_send_json_success( $movie );
+	}
+
+	/**
+	 * AJAX handler for checking duplicate movies.
+	 *
+	 * @since    1.0.0
+	 */
+	public function ajax_check_duplicate_movie() {
+		// Check nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['nonce'] ), 'wp_movie_collector_nonce' ) ) {
+			wp_send_json_error( __( 'Security check failed.', 'wp-movie-collector' ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'You do not have sufficient permissions.', 'wp-movie-collector' ) );
+		}
+
+		$title      = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$year       = isset( $_POST['year'] ) ? intval( $_POST['year'] ) : 0;
+		$barcode    = isset( $_POST['barcode'] ) ? sanitize_text_field( wp_unslash( $_POST['barcode'] ) ) : '';
+		$exclude_id = isset( $_POST['exclude_id'] ) ? intval( $_POST['exclude_id'] ) : 0;
+
+		if ( empty( $title ) && empty( $barcode ) ) {
+			wp_send_json_success( array( 'has_duplicates' => false ) );
+		}
+
+		$db         = new WP_Movie_Collector_DB();
+		$duplicates = $db->find_duplicate_movies( $title, $year, $barcode, $exclude_id );
+
+		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] );
+
+		wp_send_json_success(
+			array(
+				'has_duplicates' => $has_duplicates,
+				'barcode_match'  => $duplicates['barcode_match'],
+				'title_matches'  => $duplicates['title_matches'],
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for checking duplicate box sets.
+	 *
+	 * @since    1.0.0
+	 */
+	public function ajax_check_duplicate_box_set() {
+		// Check nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['nonce'] ), 'wp_movie_collector_nonce' ) ) {
+			wp_send_json_error( __( 'Security check failed.', 'wp-movie-collector' ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'You do not have sufficient permissions.', 'wp-movie-collector' ) );
+		}
+
+		$title      = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$year       = isset( $_POST['year'] ) ? intval( $_POST['year'] ) : 0;
+		$barcode    = isset( $_POST['barcode'] ) ? sanitize_text_field( wp_unslash( $_POST['barcode'] ) ) : '';
+		$exclude_id = isset( $_POST['exclude_id'] ) ? intval( $_POST['exclude_id'] ) : 0;
+
+		if ( empty( $title ) && empty( $barcode ) ) {
+			wp_send_json_success( array( 'has_duplicates' => false ) );
+		}
+
+		$db         = new WP_Movie_Collector_DB();
+		$duplicates = $db->find_duplicate_box_sets( $title, $year, $barcode, $exclude_id );
+
+		$has_duplicates = ! empty( $duplicates['barcode_match'] ) || ! empty( $duplicates['title_matches'] );
+
+		wp_send_json_success(
+			array(
+				'has_duplicates' => $has_duplicates,
+				'barcode_match'  => $duplicates['barcode_match'],
+				'title_matches'  => $duplicates['title_matches'],
+			)
+		);
 	}
 
 	/**

@@ -27,17 +27,17 @@ $db = new WP_Movie_Collector_DB();
 $allowed_orderby = array('title', 'release_year', 'created_at', 'acquisition_date', 'format', 'director');
 $allowed_order = array('ASC', 'DESC');
 
-// Shortcode attributes provide defaults; validate them, then fall back to title/ASC.
-$default_orderby = ! empty( $atts['orderby'] ) && in_array( $atts['orderby'], $allowed_orderby, true )
-    ? $atts['orderby'] : 'title';
-$default_order   = ! empty( $atts['order'] ) && in_array( strtoupper( $atts['order'] ), $allowed_order, true )
-    ? strtoupper( $atts['order'] ) : 'ASC';
+// Shortcode attributes provide defaults; normalize and validate, then fall back to title/ASC.
+$att_orderby     = ! empty( $atts['orderby'] ) ? sanitize_key( trim( $atts['orderby'] ) ) : '';
+$att_order       = ! empty( $atts['order'] ) ? strtoupper( trim( $atts['order'] ) ) : '';
+$default_orderby = in_array( $att_orderby, $allowed_orderby, true ) ? $att_orderby : 'title';
+$default_order   = in_array( $att_order, $allowed_order, true ) ? $att_order : 'ASC';
 
 // Parse sort from combined "sort" param (e.g. "title-ASC") or separate orderby/order params.
 if ( isset( $_GET['sort'] ) ) {
     $sort_parts  = explode( '-', sanitize_text_field( wp_unslash( $_GET['sort'] ) ), 2 );
-    $raw_orderby = isset( $sort_parts[0] ) ? $sort_parts[0] : $default_orderby;
-    $raw_order   = isset( $sort_parts[1] ) ? $sort_parts[1] : $default_order;
+    $raw_orderby = isset( $sort_parts[0] ) ? sanitize_key( trim( $sort_parts[0] ) ) : $default_orderby;
+    $raw_order   = isset( $sort_parts[1] ) ? strtoupper( trim( $sort_parts[1] ) ) : $default_order;
 } else {
     $raw_orderby = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : $default_orderby;
     $raw_order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : $default_order;
@@ -83,17 +83,32 @@ if (!empty($search_term)) {
 }
 
 // Get the results and total counts for pagination.
-$results = array();
-$total_items = 0;
+// When type=all, each type is paginated independently (separate LIMIT/OFFSET queries),
+// so total_pages should be the max of per-type page counts, not the sum.
+$results       = array();
+$total_movies  = 0;
+$total_box_sets_count = 0;
 
 if ($type === 'movies' || $type === 'all') {
     $results['movies'] = $db->search_movies($criteria);
-    $total_items += $db->count_movies($criteria);
+    $total_movies      = $db->count_movies($criteria);
 }
 
 if ($type === 'box_sets' || $type === 'all') {
-    $results['box_sets'] = $db->search_box_sets($criteria);
-    $total_items += $db->count_box_sets($criteria);
+    $results['box_sets']  = $db->search_box_sets($criteria);
+    $total_box_sets_count = $db->count_box_sets($criteria);
+}
+
+$total_items = $total_movies + $total_box_sets_count;
+
+// Compute total pages: use max of per-type page counts when showing both types.
+if ( $type === 'all' ) {
+    $total_pages = max(
+        (int) ceil( $total_movies / $per_page ),
+        (int) ceil( $total_box_sets_count / $per_page )
+    );
+} else {
+    $total_pages = (int) ceil( $total_items / $per_page );
 }
 
 // Get filter options for dropdowns
@@ -297,9 +312,7 @@ $studios = get_terms(array(
         <!-- Pagination -->
         <div class="wp-movie-collector-pagination">
             <?php
-            // Simple pagination — preserve filters and sort in links.
-            $total_pages = ceil($total_items / $per_page);
-
+            // Pagination — $total_pages was computed above; preserve filters and sort in links.
             if ($total_pages > 1) {
                 $current_page = max(1, $paged);
 

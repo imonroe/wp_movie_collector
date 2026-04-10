@@ -184,7 +184,11 @@ class WP_Movie_Collector_Public {
 
         // Build search criteria. Support combined "sort" key (e.g. "title-ASC")
         // as well as separate orderby/order keys. Validate against whitelists.
-        $allowed_orderby = array( 'title', 'release_year', 'created_at', 'acquisition_date', 'format', 'director' );
+        // Director only applies to movies, not box sets.
+        $allowed_orderby = array( 'title', 'release_year', 'created_at', 'acquisition_date', 'format' );
+        if ( $type !== 'box_sets' ) {
+            $allowed_orderby[] = 'director';
+        }
         $allowed_order   = array( 'ASC', 'DESC' );
 
         $orderby = 'title';

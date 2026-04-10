@@ -24,7 +24,8 @@ $db = new WP_Movie_Collector_DB();
 
 // Build search criteria
 // Whitelist orderby/order to prevent SQL injection. Director only applies to movies.
-$allowed_orderby = array('title', 'release_year', 'created_at', 'acquisition_date', 'format');
+// 'id' is allowed for backward compatibility (URL/shortcode) but not shown in the dropdown.
+$allowed_orderby = array('title', 'release_year', 'id', 'created_at', 'acquisition_date', 'format');
 if ( $type !== 'box_sets' ) {
     $allowed_orderby[] = 'director';
 }

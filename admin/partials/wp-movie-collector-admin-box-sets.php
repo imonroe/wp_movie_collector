@@ -110,7 +110,7 @@ if ( ! empty( $box_sets ) ) {
 									<?php esc_html_e( 'Manage Movies', 'wp-movie-collector' ); ?>
 								</a> |
 							</span>
-							<div class="trash" style="display:inline;">
+							<span class="trash">
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
 									<input type="hidden" name="action" value="wp_movie_collector_delete_box_set">
 									<input type="hidden" name="id" value="<?php echo intval( $box_set['id'] ); ?>">
@@ -122,7 +122,7 @@ if ( ! empty( $box_sets ) ) {
 										<?php esc_html_e( 'Delete', 'wp-movie-collector' ); ?>
 									</button>
 								</form>
-							</div>
+							</span>
 						</div>
 					</td>
 					<td data-colname="<?php esc_attr_e( 'Year', 'wp-movie-collector' ); ?>"><?php echo esc_html( $box_set['release_year'] ); ?></td>

@@ -1005,8 +1005,13 @@ class WP_Movie_Collector_Admin {
 		$movie_id   = isset( $_POST['movie_id'] ) ? intval( $_POST['movie_id'] ) : 0;
 		$box_set_id = isset( $_POST['box_set_id'] ) ? intval( $_POST['box_set_id'] ) : 0;
 
-		if ( ! $movie_id || ! $box_set_id ) {
-			wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+		if ( ! $box_set_id ) {
+			wp_safe_redirect( add_query_arg( 'error', 'invalid_box_set', admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) );
+			exit;
+		}
+
+		if ( ! $movie_id ) {
+			wp_safe_redirect( add_query_arg( 'error', 'invalid_movie', admin_url( 'admin.php?page=wp-movie-collector-manage-box-set&id=' . $box_set_id ) ) );
 			exit;
 		}
 

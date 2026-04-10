@@ -106,7 +106,19 @@ class WP_Movie_Collector_DB {
         $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$relationships_table}` WHERE Field = %s", 'display_order'));
         
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $relationships_table ADD COLUMN display_order int(11) DEFAULT 0");
+            $wpdb->query("ALTER TABLE $relationships_table ADD COLUMN display_order int(11) NOT NULL DEFAULT 0");
+        }
+
+        // Add composite index (box_set_id, display_order) if missing.
+        $index_exists = $wpdb->get_results(
+            $wpdb->prepare(
+                "SHOW INDEX FROM `{$relationships_table}` WHERE Key_name = %s",
+                'box_set_order'
+            )
+        );
+
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE $relationships_table ADD INDEX box_set_order (box_set_id, display_order)");
         }
     }
     

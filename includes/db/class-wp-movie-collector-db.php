@@ -878,7 +878,7 @@ class WP_Movie_Collector_DB {
 
 		// Format breakdown for movies.
 		$format_rows               = $wpdb->get_results(
-			"SELECT format, COUNT(*) as count FROM {$this->movies_table} GROUP BY format ORDER BY count DESC",
+			"SELECT format, COUNT(*) as count FROM {$this->movies_table} WHERE format IS NOT NULL AND TRIM(format) != '' GROUP BY format ORDER BY count DESC",
 			ARRAY_A
 		);
 		$stats['format_breakdown'] = array();
@@ -933,7 +933,7 @@ class WP_Movie_Collector_DB {
 		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
 
 		// Recent additions (last 30 days). Use current_time() to match how created_at is stored.
-		$recent_cutoff           = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
+		$recent_cutoff           = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
 		$recent_movies           = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",
@@ -948,9 +948,20 @@ class WP_Movie_Collector_DB {
 		);
 		$stats['recent_count']   = $recent_movies + $recent_box_sets;
 
-		// Year range.
-		$stats['earliest_year'] = $wpdb->get_var( "SELECT MIN(release_year) FROM {$this->movies_table}" );
-		$stats['latest_year']   = $wpdb->get_var( "SELECT MAX(release_year) FROM {$this->movies_table}" );
+		// Year range across the whole collection, ignoring invalid years (0/NULL).
+		$year_range = $wpdb->get_row(
+			"
+			SELECT MIN(release_year) AS earliest_year, MAX(release_year) AS latest_year
+			FROM (
+				SELECT release_year FROM {$this->movies_table} WHERE release_year IS NOT NULL AND release_year > 0
+				UNION ALL
+				SELECT release_year FROM {$this->box_sets_table} WHERE release_year IS NOT NULL AND release_year > 0
+			) AS collection_years
+			",
+			ARRAY_A
+		);
+		$stats['earliest_year'] = $year_range ? $year_range['earliest_year'] : null;
+		$stats['latest_year']   = $year_range ? $year_range['latest_year'] : null;
 
 		set_transient( 'wp_movie_collector_stats', $stats, HOUR_IN_SECONDS );
 

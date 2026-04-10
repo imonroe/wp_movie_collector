@@ -291,7 +291,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 			</div>
 		</div>
 
-		<?php if ( $stats['earliest_year'] && $stats['total_movies'] > 0 ) : ?>
+		<?php if ( $stats['earliest_year'] && ( $stats['total_movies'] > 0 || $stats['total_box_sets'] > 0 ) ) : ?>
 		<div class="wp-movie-collector-dashboard-row">
 			<div class="wp-movie-collector-widget wp-movie-collector-widget-full">
 				<h3><?php esc_html_e( 'Collection Summary', 'wp-movie-collector' ); ?></h3>

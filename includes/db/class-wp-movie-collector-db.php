@@ -230,8 +230,9 @@ class WP_Movie_Collector_DB {
 	 * Insert a movie into the database.
 	 *
 	 * @since    1.0.0
-	 * @param    array $movie    The movie data.
-	 * @return   int|false          The movie ID on success, false on failure.
+	 * @param    array $movie                     The movie data.
+	 * @param    bool  $skip_cache_invalidation   Optional. Whether to skip invalidating the stats cache after insert. Default false.
+	 * @return   int|false                        The movie ID on success, false on failure.
 	 */
 	public function insert_movie( $movie, $skip_cache_invalidation = false ) {
 		global $wpdb;
@@ -409,8 +410,9 @@ class WP_Movie_Collector_DB {
 	 * Insert a box set into the database.
 	 *
 	 * @since    1.0.0
-	 * @param    array $box_set    The box set data.
-	 * @return   int|false            The box set ID on success, false on failure.
+	 * @param    array $box_set                    The box set data.
+	 * @param    bool  $skip_cache_invalidation   Whether to skip stats cache invalidation. Default false.
+	 * @return   int|false                        The box set ID on success, false on failure.
 	 */
 	public function insert_box_set( $box_set, $skip_cache_invalidation = false ) {
 		global $wpdb;
@@ -922,7 +924,7 @@ class WP_Movie_Collector_DB {
 		$stats['unique_studios']   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT studio) FROM {$this->movies_table} WHERE studio != ''" );
 
 		// Recent additions (last 30 days). Use current_time() to match how created_at is stored.
-		$recent_cutoff           = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
+		$recent_cutoff           = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 30 * DAY_IN_SECONDS ) );
 		$recent_movies           = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$this->movies_table} WHERE created_at >= %s",

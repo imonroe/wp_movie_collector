@@ -10,7 +10,7 @@
  * Plugin Name:       WP Movie Collector
  * Plugin URI:        https://example.com/wp-movie-collector
  * Description:       A WordPress plugin for collecting and managing your movie collection.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            Your Name
  * Author URI:        https://example.com
  * License:           GPL-2.0+
@@ -25,7 +25,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('WP_MOVIE_COLLECTOR_VERSION', '1.0.0');
+define('WP_MOVIE_COLLECTOR_VERSION', '1.1.0');
 define('WP_MOVIE_COLLECTOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_MOVIE_COLLECTOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 

@@ -190,11 +190,17 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     if (response.data.existing_in_db) {
-                        var msg = <?php echo wp_json_encode( esc_html__( 'This barcode already exists in your collection.', 'wp-movie-collector' ) ); ?>;
+                        var existingType = response.data.existing_type || 'box_set';
+                        var editLabel = existingType === 'movie'
+                            ? <?php echo wp_json_encode( esc_html__( 'Edit Existing Movie', 'wp-movie-collector' ) ); ?>
+                            : <?php echo wp_json_encode( esc_html__( 'Edit Existing Box Set', 'wp-movie-collector' ) ); ?>;
+                        var msg = existingType === 'movie'
+                            ? <?php echo wp_json_encode( esc_html__( 'This barcode belongs to an existing movie in your collection.', 'wp-movie-collector' ) ); ?>
+                            : <?php echo wp_json_encode( esc_html__( 'This barcode already exists in your collection.', 'wp-movie-collector' ) ); ?>;
                         $('#wp-movie-collector-barcode-result').html(
                             '<p class="notice notice-warning">' + wpMovieCollectorEscHtml(msg) +
                             ' <a href="' + wpMovieCollectorEscHtml(response.data.edit_url) + '" class="button button-small">' +
-                            <?php echo wp_json_encode( esc_html__( 'Edit Existing Box Set', 'wp-movie-collector' ) ); ?> + '</a></p>'
+                            editLabel + '</a></p>'
                         );
                     } else {
                         $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Box set found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);

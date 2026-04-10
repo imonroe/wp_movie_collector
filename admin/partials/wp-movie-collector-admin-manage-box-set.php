@@ -71,8 +71,8 @@ if ( ! current_user_can( 'manage_options' ) ) {
 	$box_set = $db->get_box_set( $box_set_id );
 
 	if ( ! $box_set ) {
-		echo '<div class="notice notice-error"><p>' . __( 'Box set not found.', 'wp-movie-collector' ) . '</p></div>';
-		echo '<p><a href="' . admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) . '" class="button">' . __( 'Back to Box Sets', 'wp-movie-collector' ) . '</a></p>';
+		echo '<div class="notice notice-error"><p>' . esc_html__( 'Box set not found.', 'wp-movie-collector' ) . '</p></div>';
+		echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=wp-movie-collector-box-sets' ) ) . '" class="button">' . esc_html__( 'Back to Box Sets', 'wp-movie-collector' ) . '</a></p>';
 		return;
 	}
 	?>

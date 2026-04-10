@@ -175,6 +175,7 @@ class WP_Movie_Collector_DB {
             id bigint(20) NOT NULL AUTO_INCREMENT,
             movie_id bigint(20) NOT NULL,
             box_set_id bigint(20) NOT NULL,
+            display_order int(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             KEY movie_id (movie_id),
             KEY box_set_id (box_set_id)

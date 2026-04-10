@@ -243,9 +243,9 @@ jQuery(document).ready(function($) {
                             ? <?php echo wp_json_encode( esc_html__( 'This barcode belongs to an existing box set in your collection.', 'wp-movie-collector' ) ); ?>
                             : <?php echo wp_json_encode( esc_html__( 'This barcode already exists in your collection.', 'wp-movie-collector' ) ); ?>;
                         $('#wp-movie-collector-barcode-result').html(
-                            '<p class="notice notice-warning">' + wpMovieCollectorEscHtml(msg) +
+                            '<div class="notice notice-warning"><p>' + wpMovieCollectorEscHtml(msg) +
                             ' <a href="' + wpMovieCollectorEscHtml(response.data.edit_url) + '" class="button button-small">' +
-                            editLabel + '</a></p>'
+                            editLabel + '</a></p></div>'
                         );
                     } else {
                         $('#wp-movie-collector-barcode-result').html(<?php echo wp_json_encode('<p class="success">' . esc_html__('Movie found! Filling in details...', 'wp-movie-collector') . '</p>'); ?>);
@@ -336,6 +336,11 @@ jQuery(document).ready(function($) {
     function checkForDuplicateMovie() {
         clearTimeout(duplicateCheckTimer);
         duplicateCheckTimer = setTimeout(function() {
+            if ($('#movie-allow-duplicate').is(':checked')) {
+                $('#wp-movie-collector-duplicate-warning').hide();
+                return;
+            }
+
             var title = $('#movie-title').val();
             var year = $('#movie-release-year').val();
             var barcode = $('#movie-barcode').val();
@@ -378,6 +383,13 @@ jQuery(document).ready(function($) {
     }
 
     $('#movie-title, #movie-release-year, #movie-barcode').on('change blur', checkForDuplicateMovie);
+    $('#movie-allow-duplicate').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#wp-movie-collector-duplicate-warning').hide();
+        } else {
+            checkForDuplicateMovie();
+        }
+    });
 
     // Fill movie form with data
     function fillMovieForm(movie) {

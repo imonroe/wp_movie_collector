@@ -27,9 +27,11 @@ $db = new WP_Movie_Collector_DB();
 $allowed_orderby = array('title', 'release_year', 'id', 'created_at', 'acquisition_date', 'format', 'director');
 $allowed_order = array('ASC', 'DESC');
 
-// Shortcode attributes provide defaults; URL params override them.
-$default_orderby = ! empty( $atts['orderby'] ) ? $atts['orderby'] : 'title';
-$default_order   = ! empty( $atts['order'] ) ? strtoupper( $atts['order'] ) : 'ASC';
+// Shortcode attributes provide defaults; validate them, then fall back to title/ASC.
+$default_orderby = ! empty( $atts['orderby'] ) && in_array( $atts['orderby'], $allowed_orderby, true )
+    ? $atts['orderby'] : 'title';
+$default_order   = ! empty( $atts['order'] ) && in_array( strtoupper( $atts['order'] ), $allowed_order, true )
+    ? strtoupper( $atts['order'] ) : 'ASC';
 
 // Parse sort from combined "sort" param (e.g. "title-ASC") or separate orderby/order params.
 if ( isset( $_GET['sort'] ) ) {
@@ -41,8 +43,9 @@ if ( isset( $_GET['sort'] ) ) {
     $raw_order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : $default_order;
 }
 
-$current_orderby = in_array($raw_orderby, $allowed_orderby, true) ? $raw_orderby : 'title';
-$current_order = in_array(strtoupper($raw_order), $allowed_order, true) ? strtoupper($raw_order) : 'ASC';
+// Validate URL values; fall back to shortcode defaults (not hardcoded title/ASC).
+$current_orderby = in_array( $raw_orderby, $allowed_orderby, true ) ? $raw_orderby : $default_orderby;
+$current_order   = in_array( strtoupper( $raw_order ), $allowed_order, true ) ? strtoupper( $raw_order ) : $default_order;
 
 // Build a combined sort key for the dropdown (e.g. "title-ASC").
 $current_sort = $current_orderby . '-' . $current_order;
@@ -193,15 +196,20 @@ $studios = get_terms(array(
                 <label for="sort-filter"><?php esc_html_e('Sort By', 'wp-movie-collector'); ?></label>
                 <?php
                 $sort_options = array(
-                    'title-ASC'            => __('Title (A-Z)', 'wp-movie-collector'),
-                    'title-DESC'           => __('Title (Z-A)', 'wp-movie-collector'),
-                    'release_year-DESC'    => __('Year (Newest)', 'wp-movie-collector'),
-                    'release_year-ASC'     => __('Year (Oldest)', 'wp-movie-collector'),
-                    'created_at-DESC'      => __('Date Added (Newest)', 'wp-movie-collector'),
-                    'created_at-ASC'       => __('Date Added (Oldest)', 'wp-movie-collector'),
-                    'format-ASC'           => __('Format', 'wp-movie-collector'),
-                    'director-ASC'         => __('Director', 'wp-movie-collector'),
+                    'title-ASC'              => __('Title (A-Z)', 'wp-movie-collector'),
+                    'title-DESC'             => __('Title (Z-A)', 'wp-movie-collector'),
+                    'release_year-DESC'      => __('Year (Newest)', 'wp-movie-collector'),
+                    'release_year-ASC'       => __('Year (Oldest)', 'wp-movie-collector'),
+                    'created_at-DESC'        => __('Date Added (Newest)', 'wp-movie-collector'),
+                    'created_at-ASC'         => __('Date Added (Oldest)', 'wp-movie-collector'),
+                    'acquisition_date-DESC'  => __('Acquired (Newest)', 'wp-movie-collector'),
+                    'acquisition_date-ASC'   => __('Acquired (Oldest)', 'wp-movie-collector'),
+                    'format-ASC'             => __('Format', 'wp-movie-collector'),
                 );
+                // Director sort only applies to movies, not box sets.
+                if ( $type !== 'box_sets' ) {
+                    $sort_options['director-ASC'] = __( 'Director', 'wp-movie-collector' );
+                }
                 ?>
                 <select id="sort-filter" name="sort" class="wp-movie-collector-sort-select">
                     <?php foreach ($sort_options as $value => $label) : ?>
@@ -295,7 +303,6 @@ $studios = get_terms(array(
                 $current_page = max(1, $paged);
 
                 // Collect active query args so pagination links preserve them.
-                $base_url   = get_permalink();
                 $query_args = array();
                 if ( ! empty( $search_term ) ) {
                     $query_args['search'] = $search_term;
@@ -323,8 +330,8 @@ $studios = get_terms(array(
 
                 // Previous page
                 if ($current_page > 1) {
-                    $prev_args = array_merge( $query_args, array( 'paged' => $current_page - 1 ) );
-                    echo '<a class="page-numbers prev" href="' . esc_url( add_query_arg( $prev_args, $base_url ) ) . '">&laquo; ' . esc_html__('Previous', 'wp-movie-collector') . '</a>';
+                    $prev_url = add_query_arg( $query_args, get_pagenum_link( $current_page - 1 ) );
+                    echo '<a class="page-numbers prev" href="' . esc_url( $prev_url ) . '">&laquo; ' . esc_html__('Previous', 'wp-movie-collector') . '</a>';
                 }
 
                 // Page numbers
@@ -332,15 +339,15 @@ $studios = get_terms(array(
                     if ($i === $current_page) {
                         echo '<span class="page-numbers current">' . $i . '</span>';
                     } else {
-                        $page_args = array_merge( $query_args, array( 'paged' => $i ) );
-                        echo '<a class="page-numbers" href="' . esc_url( add_query_arg( $page_args, $base_url ) ) . '">' . $i . '</a>';
+                        $page_url = add_query_arg( $query_args, get_pagenum_link( $i ) );
+                        echo '<a class="page-numbers" href="' . esc_url( $page_url ) . '">' . $i . '</a>';
                     }
                 }
 
                 // Next page
                 if ($current_page < $total_pages) {
-                    $next_args = array_merge( $query_args, array( 'paged' => $current_page + 1 ) );
-                    echo '<a class="page-numbers next" href="' . esc_url( add_query_arg( $next_args, $base_url ) ) . '">' . esc_html__('Next', 'wp-movie-collector') . ' &raquo;</a>';
+                    $next_url = add_query_arg( $query_args, get_pagenum_link( $current_page + 1 ) );
+                    echo '<a class="page-numbers next" href="' . esc_url( $next_url ) . '">' . esc_html__('Next', 'wp-movie-collector') . ' &raquo;</a>';
                 }
 
                 echo '</div>';

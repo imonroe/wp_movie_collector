@@ -848,6 +848,47 @@ class WP_Movie_Collector_DB {
 	}
 
 	/**
+	 * Count box sets matching criteria.
+	 *
+	 * @since    1.1.0
+	 * @param    array $criteria    Search criteria.
+	 * @return   int                The number of matching box sets.
+	 */
+	public function count_box_sets( $criteria = array() ) {
+		global $wpdb;
+
+		$where  = array();
+		$values = array();
+
+		if ( ! empty( $criteria['title'] ) ) {
+			$where[]  = 'title LIKE %s';
+			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
+		}
+
+		if ( ! empty( $criteria['year'] ) ) {
+			$where[]  = 'release_year = %d';
+			$values[] = $criteria['year'];
+		}
+
+		if ( ! empty( $criteria['format'] ) ) {
+			$where[]  = 'format = %s';
+			$values[] = $criteria['format'];
+		}
+
+		$sql = "SELECT COUNT(*) FROM $this->box_sets_table";
+
+		if ( ! empty( $where ) ) {
+			$sql .= ' WHERE ' . implode( ' AND ', $where );
+		}
+
+		if ( ! empty( $values ) ) {
+			$sql = $wpdb->prepare( $sql, $values );
+		}
+
+		return (int) $wpdb->get_var( $sql );
+	}
+
+	/**
 	 * Get comprehensive collection statistics.
 	 *
 	 * @since    1.1.0

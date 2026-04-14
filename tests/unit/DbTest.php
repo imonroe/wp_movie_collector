@@ -628,7 +628,7 @@ class DbTest extends TestCase {
 
 		$this->wpdb->method( 'get_results' )
 			->willReturnCallback(
-				function ( $sql ) use ( &$captured_sql ) {
+				function ( $sql, ...$rest ) use ( &$captured_sql ) {
 					$captured_sql = $sql;
 					return array();
 				}
@@ -649,7 +649,7 @@ class DbTest extends TestCase {
 
 		$this->wpdb->method( 'get_results' )
 			->willReturnCallback(
-				function ( $sql ) use ( &$captured_sql ) {
+				function ( $sql, ...$rest ) use ( &$captured_sql ) {
 					$captured_sql = $sql;
 					return array();
 				}

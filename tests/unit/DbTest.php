@@ -36,6 +36,13 @@ class DbTest extends TestCase {
 	private WP_Movie_Collector_DB $db;
 
 	/**
+	 * The $wpdb value that existed before setUp replaced it (if any).
+	 *
+	 * @var mixed
+	 */
+	private mixed $previous_wpdb = null;
+
+	/**
 	 * Sample movie fixture.
 	 *
 	 * @var array<string, mixed>
@@ -66,6 +73,9 @@ class DbTest extends TestCase {
 			$this->fail( 'WP_Movie_Collector_DB class does not exist or could not be autoloaded.' );
 		}
 
+		// Preserve any pre-existing $wpdb so tearDown can restore it.
+		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+
 		$this->wpdb         = $this->createMock( Stub_Wpdb::class );
 		$this->wpdb->prefix = 'wp_';
 
@@ -78,7 +88,12 @@ class DbTest extends TestCase {
 	 * Tear down the test fixture.
 	 */
 	protected function tearDown(): void {
-		unset( $GLOBALS['wpdb'] );
+		// Restore the original $wpdb rather than always unsetting it.
+		if ( null === $this->previous_wpdb ) {
+			unset( $GLOBALS['wpdb'] );
+		} else {
+			$GLOBALS['wpdb'] = $this->previous_wpdb;
+		}
 		parent::tearDown();
 	}
 
@@ -575,13 +590,46 @@ class DbTest extends TestCase {
 	 * search_movies should build a LIKE clause for title and invoke prepare.
 	 */
 	public function test_search_movies_with_title_uses_like_clause(): void {
-		$this->wpdb->method( 'esc_like' )->willReturn( 'Thing' );
+		$prepare_args = array();
+
+		$this->wpdb->expects( $this->once() )
+			->method( 'esc_like' )
+			->with( 'Thing' )
+			->willReturn( 'Thing' );
+
 		$this->wpdb->expects( $this->atLeastOnce() )
 			->method( 'prepare' )
-			->willReturn( 'prepared SQL' );
+			->willReturnCallback(
+				function ( $sql, ...$args ) use ( &$prepare_args ) {
+					$prepare_args[] = array(
+						'sql'  => $sql,
+						'args' => $args,
+					);
+					return $sql;
+				}
+			);
+
 		$this->wpdb->method( 'get_results' )->willReturn( array() );
 
 		$this->db->search_movies( array( 'title' => 'Thing' ) );
+
+		// Find the prepare() call that contains the title LIKE predicate.
+		$title_like_call = null;
+		foreach ( $prepare_args as $call ) {
+			if ( is_string( $call['sql'] ) && false !== stripos( $call['sql'], 'title LIKE' ) ) {
+				$title_like_call = $call;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $title_like_call, 'Expected a prepare() call containing a title LIKE predicate.' );
+
+		// The LIKE value (%Thing%) should be in the prepare() arguments.
+		$args = $title_like_call['args'];
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = $args[0];
+		}
+		$this->assertContains( '%Thing%', $args );
 	}
 
 	/**

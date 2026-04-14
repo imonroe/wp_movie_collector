@@ -73,13 +73,15 @@ if ( ! function_exists( 'current_time' ) ) {
 	 * @return string|int     Formatted date string or Unix timestamp.
 	 */
 	function current_time( $type, $gmt = 0 ) {
+		// Use PHP's UTC offset (date('Z') returns seconds east of UTC).
+		$local_offset = $gmt ? 0 : (int) date( 'Z' );
 		if ( 'mysql' === $type || 'Y-m-d H:i:s' === $type ) {
-			return $gmt ? gmdate( 'Y-m-d H:i:s' ) : date( 'Y-m-d H:i:s' );
+			return gmdate( 'Y-m-d H:i:s', time() + $local_offset );
 		}
 		if ( 'timestamp' === $type || 'U' === $type ) {
-			return time();
+			return time() + $local_offset;
 		}
-		return $gmt ? gmdate( $type ) : date( $type );
+		return gmdate( $type, time() + $local_offset );
 	}
 }
 

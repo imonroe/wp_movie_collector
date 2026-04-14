@@ -229,9 +229,9 @@ class Stub_Wpdb {
 	 *
 	 * @param string|null $query  SQL query.
 	 * @param string      $output Output type constant.
-	 * @return array|object|null Query results, or null on failure.
+	 * @return array|null Query results, or null on failure.
 	 */
-	public function get_results( ?string $query = null, string $output = OBJECT ): array|object|null {
+	public function get_results( ?string $query = null, string $output = OBJECT ): array|null {
 		return array();
 	}
 

@@ -69,17 +69,17 @@ if ( ! function_exists( 'current_time' ) ) {
 	 * Polyfill for WordPress current_time().
 	 *
 	 * @param string $type    'mysql', 'timestamp', or a date format string.
-	 * @param bool   $gmt     Whether to use GMT time. Ignored in polyfill.
+	 * @param bool   $gmt     Whether to use GMT time.
 	 * @return string|int     Formatted date string or Unix timestamp.
 	 */
 	function current_time( $type, $gmt = 0 ) {
 		if ( 'mysql' === $type || 'Y-m-d H:i:s' === $type ) {
-			return gmdate( 'Y-m-d H:i:s' );
+			return $gmt ? gmdate( 'Y-m-d H:i:s' ) : date( 'Y-m-d H:i:s' );
 		}
 		if ( 'timestamp' === $type || 'U' === $type ) {
 			return time();
 		}
-		return gmdate( $type );
+		return $gmt ? gmdate( $type ) : date( $type );
 	}
 }
 
@@ -260,9 +260,9 @@ class Stub_Wpdb {
 	 * Perform a MySQL database query.
 	 *
 	 * @param string $query Database query.
-	 * @return int|bool Number of rows affected, or false on error.
+	 * @return int|false Number of rows affected, or false on error.
 	 */
-	public function query( string $query ): int|bool {
+	public function query( string $query ): int|false {
 		return 1;
 	}
 

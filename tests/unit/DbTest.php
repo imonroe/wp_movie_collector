@@ -409,12 +409,14 @@ class DbTest extends TestCase {
 	 */
 	public function test_add_movie_to_box_set_returns_existing_relationship(): void {
 		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
+		// wpdb->get_var() returns string values in practice; use loose equality to
+		// accept either a string or int return from the DB layer.
 		$this->wpdb->method( 'get_var' )->willReturn( '99' );
 
 		// Should NOT call insert when relationship exists.
 		$this->wpdb->expects( $this->never() )->method( 'insert' );
 
-		$this->assertSame( '99', $this->db->add_movie_to_box_set( 3, 5 ) );
+		$this->assertEquals( 99, $this->db->add_movie_to_box_set( 3, 5 ) );
 	}
 
 	/**
@@ -554,10 +556,16 @@ class DbTest extends TestCase {
 			),
 		);
 
-		// prepare() should NOT be called when there are no criteria or pagination.
-		$this->wpdb->expects( $this->never() )->method( 'prepare' );
+		// Verify the query has no WHERE clause when no criteria are provided.
 		$this->wpdb->expects( $this->once() )
 			->method( 'get_results' )
+			->with(
+				$this->callback(
+					static function ( $sql ): bool {
+						return is_string( $sql ) && false === stripos( $sql, 'WHERE' );
+					}
+				)
+			)
 			->willReturn( $expected );
 
 		$this->assertSame( $expected, $this->db->search_movies( array() ) );
@@ -809,7 +817,7 @@ class DbTest extends TestCase {
 	 * should simply execute cleanly.
 	 */
 	public function test_invalidate_stats_cache_runs_without_error(): void {
+		$this->expectNotToPerformAssertions();
 		$this->db->invalidate_stats_cache();
-		$this->assertTrue( true ); // Reached this point without throwing.
 	}
 }

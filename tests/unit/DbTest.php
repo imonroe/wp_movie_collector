@@ -579,7 +579,8 @@ class DbTest extends TestCase {
 					static function ( $sql ): bool {
 						return is_string( $sql ) && false === stripos( $sql, 'WHERE' );
 					}
-				)
+				),
+				ARRAY_A
 			)
 			->willReturn( $expected );
 

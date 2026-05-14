@@ -161,8 +161,9 @@ class ApiHttpTest extends TestCase {
 		$result = $api->search_movie_by_title( 'The Thing' );
 
 		$this->assertInstanceOf( WP_Error::class, $result );
-		// API_Client wraps the underlying error; the original message
-		// surfaces in the returned WP_Error's message.
+		// With retries disabled, API_Client returns the underlying
+		// wp_remote_get WP_Error as-is, so the original error message
+		// survives all the way through.
 		$this->assertSame( 'connection refused', $result->get_error_message() );
 	}
 

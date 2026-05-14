@@ -398,11 +398,17 @@ if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
 	/**
 	 * Polyfill for WordPress wp_remote_retrieve_response_code().
 	 *
-	 * @param array $response Response array.
-	 * @return int|string The HTTP status code (0 if not present).
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the code is missing.
+	 *
+	 * @param mixed $response Response array or WP_Error.
+	 * @return int|string The HTTP status code, or '' on error/missing.
 	 */
 	function wp_remote_retrieve_response_code( $response ) {
-		return $response['response']['code'] ?? 0;
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return '';
+		}
+		return $response['response']['code'] ?? '';
 	}
 }
 
@@ -410,10 +416,16 @@ if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
 	/**
 	 * Polyfill for WordPress wp_remote_retrieve_body().
 	 *
-	 * @param array $response Response array.
-	 * @return string The response body (empty string if not present).
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the body is missing.
+	 *
+	 * @param mixed $response Response array or WP_Error.
+	 * @return string The response body, or '' on error/missing.
 	 */
 	function wp_remote_retrieve_body( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return '';
+		}
 		return $response['body'] ?? '';
 	}
 }
@@ -422,12 +434,25 @@ if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
 	/**
 	 * Polyfill for WordPress wp_remote_retrieve_header().
 	 *
-	 * @param array  $response Response array.
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the header is missing. Header names are
+	 * compared case-insensitively, matching core.
+	 *
+	 * @param mixed  $response Response array or WP_Error.
 	 * @param string $header   Header name.
-	 * @return string Header value (empty string if not present).
+	 * @return string Header value, or '' on error/missing.
 	 */
 	function wp_remote_retrieve_header( $response, $header ) {
-		return $response['headers'][ $header ] ?? '';
+		if ( is_wp_error( $response ) || ! is_array( $response ) || empty( $response['headers'] ) ) {
+			return '';
+		}
+		$needle = strtolower( $header );
+		foreach ( $response['headers'] as $name => $value ) {
+			if ( strtolower( $name ) === $needle ) {
+				return $value;
+			}
+		}
+		return '';
 	}
 }
 
@@ -461,14 +486,17 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 *
 	 * Returns the override registered in $GLOBALS['wp_movie_test_filters']
 	 * for the named filter, or the passed-through value if no override
-	 * is registered.
+	 * is registered. Uses array_key_exists (rather than ??) so a test
+	 * can intentionally override a filter to null.
 	 *
 	 * @param string $tag   Filter name.
 	 * @param mixed  $value Value to filter.
 	 * @return mixed The (possibly overridden) value.
 	 */
 	function apply_filters( $tag, $value, ...$args ) {
-		return $GLOBALS['wp_movie_test_filters'][ $tag ] ?? $value;
+		return array_key_exists( $tag, $GLOBALS['wp_movie_test_filters'] )
+			? $GLOBALS['wp_movie_test_filters'][ $tag ]
+			: $value;
 	}
 }
 

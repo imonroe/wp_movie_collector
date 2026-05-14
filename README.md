@@ -1,5 +1,7 @@
 # WP Movie Collector
 
+[![CI](https://github.com/imonroe/wp_movie_collector/actions/workflows/ci.yml/badge.svg)](https://github.com/imonroe/wp_movie_collector/actions/workflows/ci.yml)
+
 A WordPress plugin designed to help you manage your physical movie collection.
 
 ## Description

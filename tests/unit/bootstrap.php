@@ -323,6 +323,184 @@ if ( ! function_exists( 'is_wp_error' ) ) {
 }
 
 /**
+ * In-memory queue of HTTP responses for unit tests.
+ *
+ * Tests push wp_remote_get-shaped response arrays (or WP_Error instances)
+ * into this queue; the wp_remote_get polyfill below pops the next entry
+ * for each request. Reset in setUp() for isolation.
+ *
+ * Each entry is either:
+ *   - array( 'response' => array( 'code' => int ),
+ *            'body' => string,
+ *            'headers' => array<string, string> )
+ *   - WP_Error
+ *
+ * @var array<int, array|\WP_Error>
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_http_queue'] ) ) {
+	$GLOBALS['wp_movie_test_http_queue'] = array();
+}
+
+/**
+ * Recorded URLs of every wp_remote_get call, in order.
+ *
+ * Tests can inspect this to assert the API hit the expected provider(s)
+ * and in the expected order. Reset in setUp() for isolation.
+ *
+ * @var array<int, string>
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_http_log'] ) ) {
+	$GLOBALS['wp_movie_test_http_log'] = array();
+}
+
+/**
+ * Per-filter override values for apply_filters().
+ *
+ * Tests can register a filter override (e.g. disable retries) by setting
+ * $GLOBALS['wp_movie_test_filters'][ $filter_name ] = $value. The polyfill
+ * below returns the override when present, or the passed-through value
+ * otherwise. Reset in setUp() for isolation.
+ *
+ * @var array<string, mixed>
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_filters'] ) ) {
+	$GLOBALS['wp_movie_test_filters'] = array();
+}
+
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	/**
+	 * Polyfill for WordPress wp_remote_get().
+	 *
+	 * Pops the next response from $GLOBALS['wp_movie_test_http_queue']
+	 * and records the URL in $GLOBALS['wp_movie_test_http_log']. Returns
+	 * a WP_Error when the queue is empty so tests fail loudly on
+	 * unexpected requests instead of silently making real network calls.
+	 *
+	 * @param string $url  Request URL.
+	 * @param array  $args wp_remote_get args (ignored by this polyfill).
+	 * @return array|\WP_Error The queued response.
+	 */
+	function wp_remote_get( $url, $args = array() ) {
+		$GLOBALS['wp_movie_test_http_log'][] = $url;
+
+		if ( empty( $GLOBALS['wp_movie_test_http_queue'] ) ) {
+			return new WP_Error(
+				'http_queue_empty',
+				'No queued HTTP response for URL: ' . $url
+			);
+		}
+
+		return array_shift( $GLOBALS['wp_movie_test_http_queue'] );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * Polyfill for WordPress wp_remote_retrieve_response_code().
+	 *
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the code is missing.
+	 *
+	 * @param mixed $response Response array or WP_Error.
+	 * @return int|string The HTTP status code, or '' on error/missing.
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return '';
+		}
+		return $response['response']['code'] ?? '';
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * Polyfill for WordPress wp_remote_retrieve_body().
+	 *
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the body is missing.
+	 *
+	 * @param mixed $response Response array or WP_Error.
+	 * @return string The response body, or '' on error/missing.
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) ) {
+			return '';
+		}
+		return $response['body'] ?? '';
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
+	/**
+	 * Polyfill for WordPress wp_remote_retrieve_header().
+	 *
+	 * Matches core behavior: returns an empty string when passed a
+	 * WP_Error or when the header is missing. Header names are
+	 * compared case-insensitively, matching core.
+	 *
+	 * @param mixed  $response Response array or WP_Error.
+	 * @param string $header   Header name.
+	 * @return string Header value, or '' on error/missing.
+	 */
+	function wp_remote_retrieve_header( $response, $header ) {
+		if ( is_wp_error( $response ) || ! is_array( $response ) || empty( $response['headers'] ) ) {
+			return '';
+		}
+		$needle = strtolower( $header );
+		foreach ( $response['headers'] as $name => $value ) {
+			if ( strtolower( $name ) === $needle ) {
+				return $value;
+			}
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Polyfill for WordPress add_query_arg().
+	 *
+	 * Supports the two call styles used by the plugin:
+	 *   add_query_arg( array( $key => $value, ... ), $url )
+	 *   add_query_arg( $key, $value, $url )
+	 *
+	 * @return string URL with the query args appended.
+	 */
+	function add_query_arg( ...$args ) {
+		if ( is_array( $args[0] ) ) {
+			$params = $args[0];
+			$url    = $args[1];
+		} else {
+			$params = array( $args[0] => $args[1] );
+			$url    = $args[2];
+		}
+
+		$separator = strpos( $url, '?' ) === false ? '?' : '&';
+		return $url . $separator . http_build_query( $params );
+	}
+}
+
+if ( ! function_exists( 'apply_filters' ) ) {
+	/**
+	 * Polyfill for WordPress apply_filters().
+	 *
+	 * Returns the override registered in $GLOBALS['wp_movie_test_filters']
+	 * for the named filter, or the passed-through value if no override
+	 * is registered. Uses array_key_exists (rather than ??) so a test
+	 * can intentionally override a filter to null.
+	 *
+	 * @param string $tag   Filter name.
+	 * @param mixed  $value Value to filter.
+	 * @return mixed The (possibly overridden) value.
+	 */
+	function apply_filters( $tag, $value, ...$args ) {
+		return array_key_exists( $tag, $GLOBALS['wp_movie_test_filters'] )
+			? $GLOBALS['wp_movie_test_filters'][ $tag ]
+			: $value;
+	}
+}
+
+/**
  * Stub class for the WordPress $wpdb global.
  *
  * Used in unit tests to mock database interactions. Tests use

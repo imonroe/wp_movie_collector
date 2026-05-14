@@ -10,11 +10,6 @@ jobs:
   lint-php:
     name: PHP Lint (PHPCS)
     runs-on: ubuntu-latest
-    # PHPCS runs against the full codebase and currently reports legacy
-    # violations from before WPCS was adopted. Marked non-blocking so the
-    # job surfaces violations without gating merges until the backlog is
-    # cleaned up; flip to blocking once the codebase is clean.
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,6 +33,12 @@ jobs:
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Run PHPCS
+        # Step-level continue-on-error: PHPCS currently reports a large
+        # backlog of legacy violations from before WPCS was adopted.
+        # Surface them without blocking the build; flip to blocking once
+        # the backlog clears. Scoping this to the step (not the whole
+        # job) ensures setup/install failures still fail the job.
+        continue-on-error: true
         run: composer run lint
 
   test-php:

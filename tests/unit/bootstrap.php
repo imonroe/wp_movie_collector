@@ -138,6 +138,163 @@ if ( ! function_exists( 'dbDelta' ) ) {
 	}
 }
 
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Polyfill for WordPress __() translation function.
+	 *
+	 * @param string $text   The string to translate.
+	 * @param string $domain Optional. Text domain.
+	 * @return string The same string, unchanged.
+	 */
+	function __( $text, $domain = 'default' ) {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	/**
+	 * Polyfill for WordPress sanitize_key().
+	 *
+	 * @param string $key The key to sanitize.
+	 * @return string Sanitized key (lowercase alphanumeric, underscore, hyphen).
+	 */
+	function sanitize_key( $key ) {
+		if ( ! is_scalar( $key ) ) {
+			return '';
+		}
+		return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );
+	}
+}
+
+/**
+ * In-memory options store for unit tests.
+ *
+ * Tests can populate $GLOBALS['wp_movie_test_options'] before instantiating
+ * code that calls get_option(). The polyfills below read from and write to
+ * this store. The store is intentionally simple — tests should reset it in
+ * setUp() if isolation between cases matters.
+ *
+ * @var array<string, mixed>
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_options'] ) ) {
+	$GLOBALS['wp_movie_test_options'] = array();
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * Polyfill for WordPress get_option().
+	 *
+	 * Reads from $GLOBALS['wp_movie_test_options']. Returns $default if unset.
+	 *
+	 * @param string $option  Option name.
+	 * @param mixed  $default Optional. Default value.
+	 * @return mixed The stored value or the default.
+	 */
+	function get_option( $option, $default = false ) {
+		return $GLOBALS['wp_movie_test_options'][ $option ] ?? $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * Polyfill for WordPress update_option().
+	 *
+	 * Writes to $GLOBALS['wp_movie_test_options'].
+	 *
+	 * @param string $option Option name.
+	 * @param mixed  $value  Value to store.
+	 * @return true
+	 */
+	function update_option( $option, $value ) {
+		$GLOBALS['wp_movie_test_options'][ $option ] = $value;
+		return true;
+	}
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	/**
+	 * Minimal polyfill for the WordPress WP_Error class.
+	 *
+	 * Supports the subset of the API surface used by plugin code under test:
+	 * construction with code/message/data and retrieval of those fields.
+	 */
+	class WP_Error {
+
+		/**
+		 * The error code.
+		 *
+		 * @var string|int
+		 */
+		private $code;
+
+		/**
+		 * The error message.
+		 *
+		 * @var string
+		 */
+		private $message;
+
+		/**
+		 * The error data.
+		 *
+		 * @var mixed
+		 */
+		private $data;
+
+		/**
+		 * Constructor.
+		 *
+		 * @param string|int $code    Error code.
+		 * @param string     $message Error message.
+		 * @param mixed      $data    Optional. Error data.
+		 */
+		public function __construct( $code = '', $message = '', $data = '' ) {
+			$this->code    = $code;
+			$this->message = $message;
+			$this->data    = $data;
+		}
+
+		/**
+		 * Get the error code.
+		 *
+		 * @return string|int
+		 */
+		public function get_error_code() {
+			return $this->code;
+		}
+
+		/**
+		 * Get the error message.
+		 *
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+
+		/**
+		 * Get the error data.
+		 *
+		 * @return mixed
+		 */
+		public function get_error_data() {
+			return $this->data;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * Polyfill for WordPress is_wp_error().
+	 *
+	 * @param mixed $thing The value to check.
+	 * @return bool True if $thing is a WP_Error.
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
 /**
  * Stub class for the WordPress $wpdb global.
  *

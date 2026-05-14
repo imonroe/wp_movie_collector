@@ -27,11 +27,12 @@ use WP_Movie_Collector_API;
 class ApiValidationTest extends TestCase {
 
 	/**
-	 * Reset the in-memory options store before each test.
+	 * Reset the in-memory options and transients stores before each test.
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$GLOBALS['wp_movie_test_options'] = array();
+		$GLOBALS['wp_movie_test_options']    = array();
+		$GLOBALS['wp_movie_test_transients'] = array();
 	}
 
 	/**
@@ -159,19 +160,26 @@ class ApiValidationTest extends TestCase {
 	}
 
 	/**
-	 * Test that the invalid_imdb_id check fires before any cache lookup.
+	 * Test that the invalid_imdb_id check fires before the cache lookup.
 	 *
-	 * If a malformed IMDb ID slipped past validation it could poison the
-	 * cache for subsequent valid lookups. The validation runs before the
-	 * get_transient call, so even a permissive cache should not affect the
-	 * return value for bad input.
+	 * Pre-populates the transient store with a sentinel value at the cache
+	 * key the API would use for the malformed ID, then asserts the API
+	 * returns the validation WP_Error rather than the cached sentinel —
+	 * which it can only do if validation runs first.
 	 */
 	public function test_get_movie_details_by_imdb_invalid_id_skips_cache(): void {
-		$api    = $this->api_with_keys( array( 'wp_movie_collector_omdb_api_key' => 'key' ) );
+		$api = $this->api_with_keys( array( 'wp_movie_collector_omdb_api_key' => 'key' ) );
+
+		// Cache key format mirrors WP_Movie_Collector_API::make_cache_key():
+		// "wp_movie_imdb_{version}_{sanitized-id}". Default version is 1.
+		// sanitize_key('tt12') is 'tt12'.
+		$sentinel = array( 'title' => 'Cached Sentinel' );
+		set_transient( 'wp_movie_imdb_1_tt12', $sentinel );
+
 		$result = $api->get_movie_details_by_imdb( 'tt12' );
 
 		$this->assertWpError( $result, 'invalid_imdb_id' );
-		$this->assertSame( 'Invalid IMDb ID.', $result->get_error_message() );
+		$this->assertNotSame( $sentinel, $result );
 	}
 
 	// ------------------------------------------------------------------
@@ -200,8 +208,8 @@ class ApiValidationTest extends TestCase {
 	}
 
 	/**
-	 * Test that clear_api_cache treats a non-integer stored version as the
-	 * default (int cast of false/null/'' yields 0, then +1 = 1).
+	 * Test that clear_api_cache coerces a non-numeric stored version to 0
+	 * before incrementing (int cast of a non-numeric string yields 0).
 	 */
 	public function test_clear_api_cache_coerces_non_int_version(): void {
 		$GLOBALS['wp_movie_test_options']['wp_movie_collector_cache_version'] = 'garbage';

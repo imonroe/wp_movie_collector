@@ -85,17 +85,34 @@ if ( ! function_exists( 'current_time' ) ) {
 	}
 }
 
+/**
+ * In-memory transient store for unit tests.
+ *
+ * Tests that need to assert cache-hit behavior can pre-populate
+ * $GLOBALS['wp_movie_test_transients'] with a sentinel value for a
+ * specific cache key. Tests should reset this store in setUp() if
+ * isolation between cases matters.
+ *
+ * @var array<string, mixed>
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_transients'] ) ) {
+	$GLOBALS['wp_movie_test_transients'] = array();
+}
+
 if ( ! function_exists( 'get_transient' ) ) {
 	/**
 	 * Polyfill for WordPress get_transient().
 	 *
-	 * Always returns false (cache miss) in unit tests.
+	 * Reads from $GLOBALS['wp_movie_test_transients']. Returns false
+	 * (cache miss) when the key is unset, matching WordPress semantics.
 	 *
 	 * @param string $transient Transient name.
-	 * @return false
+	 * @return mixed The stored value, or false on miss.
 	 */
 	function get_transient( $transient ) {
-		return false;
+		return array_key_exists( $transient, $GLOBALS['wp_movie_test_transients'] )
+			? $GLOBALS['wp_movie_test_transients'][ $transient ]
+			: false;
 	}
 }
 
@@ -103,12 +120,16 @@ if ( ! function_exists( 'set_transient' ) ) {
 	/**
 	 * Polyfill for WordPress set_transient().
 	 *
+	 * Writes to $GLOBALS['wp_movie_test_transients']. The expiration
+	 * argument is accepted for signature compatibility but ignored.
+	 *
 	 * @param string $transient  Transient name.
 	 * @param mixed  $value      Transient value.
-	 * @param int    $expiration Time until expiration in seconds.
+	 * @param int    $expiration Time until expiration in seconds (ignored).
 	 * @return true
 	 */
 	function set_transient( $transient, $value, $expiration = 0 ) {
+		$GLOBALS['wp_movie_test_transients'][ $transient ] = $value;
 		return true;
 	}
 }
@@ -121,6 +142,7 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	 * @return true
 	 */
 	function delete_transient( $transient ) {
+		unset( $GLOBALS['wp_movie_test_transients'][ $transient ] );
 		return true;
 	}
 }
@@ -184,14 +206,19 @@ if ( ! function_exists( 'get_option' ) ) {
 	/**
 	 * Polyfill for WordPress get_option().
 	 *
-	 * Reads from $GLOBALS['wp_movie_test_options']. Returns $default if unset.
+	 * Reads from $GLOBALS['wp_movie_test_options']. Uses array_key_exists
+	 * (rather than ??) so a stored null/false is returned as-is and only
+	 * a genuinely missing key falls back to $default — matching WordPress
+	 * semantics where a stored value is distinguishable from "not set".
 	 *
 	 * @param string $option  Option name.
 	 * @param mixed  $default Optional. Default value.
-	 * @return mixed The stored value or the default.
+	 * @return mixed The stored value, or $default if the option is not set.
 	 */
 	function get_option( $option, $default = false ) {
-		return $GLOBALS['wp_movie_test_options'][ $option ] ?? $default;
+		return array_key_exists( $option, $GLOBALS['wp_movie_test_options'] )
+			? $GLOBALS['wp_movie_test_options'][ $option ]
+			: $default;
 	}
 }
 

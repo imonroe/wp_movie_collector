@@ -146,6 +146,27 @@ class WP_Movie_Collector_DB {
 		if ( empty( $index_exists ) ) {
 			$wpdb->query( "ALTER TABLE $box_sets_table ADD INDEX title_year (title, release_year)" );
 		}
+
+		// Add single-column indexes on created_at and acquisition_date to
+		// both the movies and box sets tables. Both columns appear in the
+		// search ORDER BY whitelist (search_movies / search_box_sets) and
+		// power "recently added" / "recently acquired" listings; without
+		// indexes those queries degrade to filesorts as the collection
+		// grows.
+		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
+			foreach ( array( 'created_at', 'acquisition_date' ) as $key ) {
+				$exists = $wpdb->get_results(
+					$wpdb->prepare(
+						"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+						$key
+					)
+				);
+
+				if ( empty( $exists ) ) {
+					$wpdb->query( "ALTER TABLE {$table} ADD INDEX {$key} ({$key})" );
+				}
+			}
+		}
 	}
 
 	/**
@@ -184,7 +205,9 @@ class WP_Movie_Collector_DB {
             KEY format (format),
             KEY box_set_id (box_set_id),
             KEY cover_image_id (cover_image_id),
-            KEY title_year (title, release_year)
+            KEY title_year (title, release_year),
+            KEY created_at (created_at),
+            KEY acquisition_date (acquisition_date)
         ) $charset_collate;
 
         CREATE TABLE $this->box_sets_table (
@@ -208,7 +231,9 @@ class WP_Movie_Collector_DB {
             KEY release_year (release_year),
             KEY format (format),
             KEY cover_image_id (cover_image_id),
-            KEY title_year (title, release_year)
+            KEY title_year (title, release_year),
+            KEY created_at (created_at),
+            KEY acquisition_date (acquisition_date)
         ) $charset_collate;
 
         CREATE TABLE $this->relationships_table (

@@ -148,6 +148,9 @@ class DbSchemaTest extends TestCase {
 	/**
 	 * Test that the migration issues the parameterized ALTER TABLE for
 	 * each missing index, scoped to both the movies and box_sets tables.
+	 *
+	 * Missing keys are batched into a single ALTER per table so the
+	 * underlying engine only rebuilds each table once.
 	 */
 	public function test_update_tables_adds_index_for_both_tables(): void {
 		$body = $this->extract_update_tables_body( $this->read_db_source() );
@@ -163,10 +166,17 @@ class DbSchemaTest extends TestCase {
 			$body,
 			'Migration should loop over both index columns.'
 		);
+		// Missing keys are collected into a list of ADD INDEX clauses...
 		$this->assertMatchesRegularExpression(
-			'/ALTER TABLE \{\$table\} ADD INDEX \{\$key\} \(\{\$key\}\)/',
+			'/"ADD INDEX \{\$key\} \(\{\$key\}\)"/',
 			$body,
-			'Migration should issue ALTER TABLE ... ADD INDEX scoped to the $table / $key loop variables.'
+			'Migration should build per-key ADD INDEX clauses scoped to the $key loop variable.'
+		);
+		// ...and applied as a single ALTER TABLE per table.
+		$this->assertMatchesRegularExpression(
+			'/ALTER TABLE \{\$table\} "\s*\.\s*implode\(\s*\',\s*\',\s*\$add_clauses\s*\)/',
+			$body,
+			'Migration should batch missing indexes into a single ALTER TABLE per table.'
 		);
 	}
 }

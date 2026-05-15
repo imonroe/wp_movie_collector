@@ -152,8 +152,11 @@ class WP_Movie_Collector_DB {
 		// search ORDER BY whitelist (search_movies / search_box_sets) and
 		// power "recently added" / "recently acquired" listings; without
 		// indexes those queries degrade to filesorts as the collection
-		// grows.
+		// grows. Collect the missing keys per table and add them in a
+		// single ALTER TABLE so MySQL/MariaDB only rebuilds each table
+		// once instead of once per index.
 		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
+			$add_clauses = array();
 			foreach ( array( 'created_at', 'acquisition_date' ) as $key ) {
 				$exists = $wpdb->get_results(
 					$wpdb->prepare(
@@ -163,8 +166,12 @@ class WP_Movie_Collector_DB {
 				);
 
 				if ( empty( $exists ) ) {
-					$wpdb->query( "ALTER TABLE {$table} ADD INDEX {$key} ({$key})" );
+					$add_clauses[] = "ADD INDEX {$key} ({$key})";
 				}
+			}
+
+			if ( ! empty( $add_clauses ) ) {
+				$wpdb->query( "ALTER TABLE {$table} " . implode( ', ', $add_clauses ) );
 			}
 		}
 	}

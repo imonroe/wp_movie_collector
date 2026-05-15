@@ -38,7 +38,10 @@ class DbSchemaTest extends TestCase {
 		$this->assertFileExists( $path, "DB class source file does not exist at {$path}" );
 		$this->assertIsReadable( $path, "DB class source file is not readable at {$path}" );
 
-		return file_get_contents( $path );
+		$source = file_get_contents( $path );
+		$this->assertIsString( $source, "Failed to read DB class source at {$path}" );
+
+		return $source;
 	}
 
 	/**

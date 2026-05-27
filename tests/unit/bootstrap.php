@@ -631,6 +631,103 @@ if ( ! function_exists( 'absint' ) ) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Escaping / templating polyfills used when rendering public templates.
+// ---------------------------------------------------------------------------
+
+if ( ! function_exists( 'esc_html' ) ) {
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES );
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES );
+	}
+}
+
+if ( ! function_exists( 'esc_url' ) ) {
+	function esc_url( $url ) {
+		return filter_var( (string) $url, FILTER_SANITIZE_URL );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	function esc_html_e( $text, $domain = 'default' ) {
+		echo esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	function esc_attr_e( $text, $domain = 'default' ) {
+		echo esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	function esc_html__( $text, $domain = 'default' ) {
+		return esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr__' ) ) {
+	function esc_attr__( $text, $domain = 'default' ) {
+		return esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( '_e' ) ) {
+	function _e( $text, $domain = 'default' ) {
+		echo $text;
+	}
+}
+
+if ( ! function_exists( 'selected' ) ) {
+	function selected( $selected, $current = true, $echo = true ) {
+		$result = ( (string) $selected === (string) $current ) ? ' selected="selected"' : '';
+		if ( $echo ) {
+			echo $result;
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'get_permalink' ) ) {
+	function get_permalink( $post = 0 ) {
+		return 'http://example.com/collection/';
+	}
+}
+
+if ( ! function_exists( 'get_query_var' ) ) {
+	function get_query_var( $var, $default = '' ) {
+		return $default;
+	}
+}
+
+if ( ! function_exists( 'get_pagenum_link' ) ) {
+	function get_pagenum_link( $pagenum = 1 ) {
+		return 'http://example.com/collection/page/' . (int) $pagenum . '/';
+	}
+}
+
+if ( ! function_exists( 'get_terms' ) ) {
+	function get_terms( $args = array() ) {
+		return array();
+	}
+}
+
+if ( ! function_exists( 'shortcode_atts' ) ) {
+	function shortcode_atts( $defaults, $atts, $shortcode = '' ) {
+		$atts = (array) $atts;
+		$out  = array();
+		foreach ( $defaults as $name => $default ) {
+			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
+		}
+		return $out;
+	}
+}
+
 /**
  * Controls the return value of the current_user_can() polyfill.
  *

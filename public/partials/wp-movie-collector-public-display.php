@@ -161,8 +161,9 @@ $studios = get_terms(array(
             <?php if ( $current_sort !== $default_sort ) : ?>
                 <input type="hidden" name="sort" value="<?php echo esc_attr( $current_sort ); ?>">
             <?php endif; ?>
-            <label for="wp-movie-collector-search-field" class="screen-reader-text"><?php esc_html_e('Search your collection', 'wp-movie-collector'); ?></label>
-            <input type="search" id="wp-movie-collector-search-field" name="search" placeholder="<?php esc_attr_e('Search your collection...', 'wp-movie-collector'); ?>" value="<?php echo esc_attr($search_term); ?>">
+            <?php $search_field_id = function_exists( 'wp_unique_id' ) ? wp_unique_id( 'wp-movie-collector-search-' ) : 'wp-movie-collector-search-field'; ?>
+            <label for="<?php echo esc_attr( $search_field_id ); ?>" class="screen-reader-text"><?php esc_html_e('Search your collection', 'wp-movie-collector'); ?></label>
+            <input type="search" id="<?php echo esc_attr( $search_field_id ); ?>" name="search" placeholder="<?php esc_attr_e('Search your collection...', 'wp-movie-collector'); ?>" value="<?php echo esc_attr($search_term); ?>">
             <button type="submit" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
         </form>
     </div>
@@ -328,10 +329,15 @@ $studios = get_terms(array(
         </div>
         
         <!-- Pagination -->
+        <?php
+        // Only render the <nav> landmark when there is more than one page,
+        // so we don't leave an empty navigation landmark in the DOM.
+        if ($total_pages > 1) :
+        ?>
         <nav class="wp-movie-collector-pagination" aria-label="<?php esc_attr_e('Collection pagination', 'wp-movie-collector'); ?>">
             <?php
             // Pagination — $total_pages was computed above; preserve filters and sort in links.
-            if ($total_pages > 1) {
+            {
                 $current_page = max(1, $paged);
 
                 // Collect active query args so pagination links preserve them.
@@ -386,6 +392,7 @@ $studios = get_terms(array(
             }
             ?>
         </nav>
+        <?php endif; ?>
     <?php else : ?>
         <div class="wp-movie-collector-no-results" role="status" aria-live="polite">
             <p><?php esc_html_e('No movies or box sets found matching your criteria.', 'wp-movie-collector'); ?></p>

@@ -608,7 +608,7 @@ class WP_Movie_Collector_DB {
 		// Clear the denormalized box_set_id pointer on any movies that
 		// referenced this set so they don't keep a dangling ID after the
 		// set is gone.
-		$wpdb->update(
+		$cleared = $wpdb->update(
 			$this->movies_table,
 			array( 'box_set_id' => null ),
 			array( 'box_set_id' => $box_set_id )
@@ -624,7 +624,7 @@ class WP_Movie_Collector_DB {
 			$this->invalidate_stats_cache();
 		}
 
-		return $result !== false;
+		return $result !== false && $cleared !== false;
 	}
 
 	/**
@@ -713,7 +713,15 @@ class WP_Movie_Collector_DB {
 			array( 'movie_id' => $movie_id )
 		);
 
-		return $result !== false;
+		// Also clear the denormalized pointer on the movie row so it does not
+		// keep reporting membership in a set it no longer belongs to.
+		$cleared = $wpdb->update(
+			$this->movies_table,
+			array( 'box_set_id' => null ),
+			array( 'id' => $movie_id )
+		);
+
+		return $result !== false && $cleared !== false;
 	}
 
 	/**

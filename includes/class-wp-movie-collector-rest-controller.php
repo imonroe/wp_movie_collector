@@ -393,13 +393,16 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 		// When box_set_id is part of the request, rewrite the relationship
 		// table to match, mirroring the admin edit-movie flow: clear the
 		// movie's existing relationships, then re-add the selected box set.
-		// Surface a 500 if either sync step fails so the relationship table
-		// can't silently drift from the movie row.
+		// On failure, restore the previous movie row so the update and the
+		// relationship table can't be left out of sync (a poor-man's
+		// rollback, since the DB layer is accessed through $this->db).
 		if ( null !== $request->get_param( 'box_set_id' ) ) {
 			if ( false === $this->db->remove_movie_from_all_box_sets( $id ) ) {
+				$this->db->update_movie( $id, $existing );
 				return $this->server_error( __( 'Failed to update the box set membership.', 'wp-movie-collector' ) );
 			}
 			if ( ! empty( $prepared['box_set_id'] ) && ! $this->db->add_movie_to_box_set( $id, (int) $prepared['box_set_id'] ) ) {
+				$this->db->update_movie( $id, $existing );
 				return $this->server_error( __( 'Failed to update the box set membership.', 'wp-movie-collector' ) );
 			}
 		}
@@ -606,6 +609,12 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			return $this->server_error( __( 'Failed to add the movie to the box set.', 'wp-movie-collector' ) );
 		}
 
+		// Keep the denormalized movie.box_set_id pointer in step with the
+		// relationship so GET /movies/{id} and GET /box-sets/{id}/movies agree.
+		if ( false === $this->db->update_movie( $movie_id, array( 'box_set_id' => $box_set_id ) ) ) {
+			return $this->server_error( __( 'The relationship was created but the movie record could not be updated.', 'wp-movie-collector' ) );
+		}
+
 		$response = rest_ensure_response(
 			array(
 				'box_set_id'      => $box_set_id,
@@ -634,7 +643,8 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			return $this->not_found_error( __( 'Box set not found.', 'wp-movie-collector' ) );
 		}
 
-		if ( empty( $this->db->get_movie( $movie_id ) ) ) {
+		$movie = $this->db->get_movie( $movie_id );
+		if ( empty( $movie ) ) {
 			return $this->not_found_error( __( 'Movie not found.', 'wp-movie-collector' ) );
 		}
 
@@ -648,6 +658,12 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 		$removed = $this->db->remove_movie_from_box_set( $movie_id, $box_set_id );
 		if ( false === $removed ) {
 			return $this->server_error( __( 'Failed to remove the movie from the box set.', 'wp-movie-collector' ) );
+		}
+
+		// Clear the denormalized pointer when it referenced the set we just
+		// detached from, so GET /movies/{id} no longer reports stale membership.
+		if ( (int) ( isset( $movie['box_set_id'] ) ? $movie['box_set_id'] : 0 ) === $box_set_id ) {
+			$this->db->update_movie( $movie_id, array( 'box_set_id' => null ) );
 		}
 
 		return rest_ensure_response(

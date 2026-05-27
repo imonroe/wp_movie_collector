@@ -370,6 +370,82 @@ class RestControllerTest extends TestCase {
 		$this->assertTrue( $response->get_data()['deleted'] );
 	}
 
+	public function test_update_movie_rolls_back_on_relationship_failure() {
+		$existing = $this->sample_movie_row();
+		$this->db->method( 'get_movie' )->willReturn( $existing );
+		$this->db->method( 'remove_movie_from_all_box_sets' )->willReturn( false );
+
+		$update_calls = array();
+		$this->db->method( 'update_movie' )->willReturnCallback(
+			function ( $id, $data ) use ( &$update_calls ) {
+				$update_calls[] = array( $id, $data );
+				return true;
+			}
+		);
+
+		$request = new WP_REST_Request(
+			array(
+				'id'         => 7,
+				'box_set_id' => 0,
+			)
+		);
+		$result = $this->controller->update_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 500, $result->get_error_data()['status'] );
+		// The prior movie row is restored after the relationship sync fails.
+		$this->assertContains( array( 7, $existing ), $update_calls );
+	}
+
+	public function test_add_movie_to_box_set_syncs_movie_column() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );
+		$this->db->method( 'relationship_exists' )->willReturn( false );
+		$this->db->method( 'add_movie_to_box_set' )->willReturn( 55 );
+
+		$this->db->expects( $this->once() )
+			->method( 'update_movie' )
+			->with( 7, array( 'box_set_id' => 3 ) )
+			->willReturn( true );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$response = $this->controller->add_movie_to_box_set( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+	}
+
+	public function test_remove_movie_from_box_set_clears_pointer_when_matching() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn(
+			array(
+				'id'         => 7,
+				'box_set_id' => 3,
+			)
+		);
+		$this->db->method( 'relationship_exists' )->willReturn( true );
+		$this->db->method( 'remove_movie_from_box_set' )->willReturn( true );
+
+		$this->db->expects( $this->once() )
+			->method( 'update_movie' )
+			->with( 7, array( 'box_set_id' => null ) )
+			->willReturn( true );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$response = $this->controller->remove_movie_from_box_set( $request );
+
+		$this->assertTrue( $response->get_data()['deleted'] );
+	}
+
 	public function test_remove_movie_from_box_set_missing_relationship_returns_404() {
 		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
 		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );

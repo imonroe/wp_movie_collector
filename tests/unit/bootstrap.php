@@ -631,6 +631,154 @@ if ( ! function_exists( 'absint' ) ) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Escaping / templating polyfills used when rendering public templates.
+// ---------------------------------------------------------------------------
+
+if ( ! function_exists( 'esc_html' ) ) {
+	function esc_html( $text ) {
+		// Explicit UTF-8 + ENT_SUBSTITUTE keeps escaping deterministic and
+		// avoids warnings/blank output on invalid byte sequences.
+		return htmlspecialchars( (string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_attr' ) ) {
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_url' ) ) {
+	function esc_url( $url ) {
+		// Delegate sanitization to esc_url_raw() for consistency, drop URLs
+		// with a disallowed scheme (rough mirror of core's allowlist), then
+		// attribute-escape (encode &, quotes) for output safety.
+		$sanitized = esc_url_raw( (string) $url );
+		if ( '' !== $sanitized ) {
+			$scheme = wp_parse_url( $sanitized, PHP_URL_SCHEME );
+			if ( null !== $scheme && ! in_array( strtolower( (string) $scheme ), array( 'http', 'https', 'mailto', 'ftp' ), true ) ) {
+				$sanitized = '';
+			}
+		}
+		return htmlspecialchars( $sanitized, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	function esc_html_e( $text, $domain = 'default' ) {
+		echo esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	function esc_attr_e( $text, $domain = 'default' ) {
+		echo esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	function esc_html__( $text, $domain = 'default' ) {
+		return esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr__' ) ) {
+	function esc_attr__( $text, $domain = 'default' ) {
+		return esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( '_e' ) ) {
+	function _e( $text, $domain = 'default' ) {
+		echo $text;
+	}
+}
+
+if ( ! function_exists( 'selected' ) ) {
+	function selected( $selected, $current = true, $echo = true ) {
+		$result = ( (string) $selected === (string) $current ) ? ' selected="selected"' : '';
+		if ( $echo ) {
+			echo $result;
+		}
+		return $result;
+	}
+}
+
+if ( ! function_exists( 'get_permalink' ) ) {
+	function get_permalink( $post = 0 ) {
+		return 'http://example.com/collection/';
+	}
+}
+
+if ( ! function_exists( 'get_query_var' ) ) {
+	function get_query_var( $var, $default = '' ) {
+		return $default;
+	}
+}
+
+if ( ! function_exists( 'get_pagenum_link' ) ) {
+	function get_pagenum_link( $pagenum = 1 ) {
+		return 'http://example.com/collection/page/' . (int) $pagenum . '/';
+	}
+}
+
+if ( ! function_exists( 'get_terms' ) ) {
+	function get_terms( $args = array() ) {
+		return array();
+	}
+}
+
+if ( ! function_exists( 'shortcode_atts' ) ) {
+	function shortcode_atts( $defaults, $atts, $shortcode = '' ) {
+		$atts = (array) $atts;
+		$out  = array();
+		foreach ( $defaults as $name => $default ) {
+			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
+		}
+		// Mirror core: run the shortcode-specific filter when a tag is given.
+		if ( '' !== (string) $shortcode ) {
+			$out = apply_filters( "shortcode_atts_{$shortcode}", $out, $defaults, $atts, $shortcode );
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * Polyfill for WordPress wp_unslash(): recursively strip slashes.
+	 *
+	 * Public templates call this when reading $_GET; provide it so tests
+	 * that populate $_GET don't fatal in the WordPress-free suite.
+	 *
+	 * @param string|array $value Value to unslash.
+	 * @return string|array
+	 */
+	function wp_unslash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_unslash', $value );
+		}
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'remove_query_arg' ) ) {
+	/**
+	 * Minimal polyfill for WordPress remove_query_arg().
+	 *
+	 * Used by the single movie/box-set templates. Returns the base URL
+	 * without attempting full query-string surgery, which is sufficient
+	 * for rendering assertions.
+	 *
+	 * @param string|array $key Query key(s) to remove (ignored).
+	 * @param string       $url URL to operate on.
+	 * @return string
+	 */
+	function remove_query_arg( $key, $url = '' ) {
+		return (string) $url;
+	}
+}
+
 if ( ! function_exists( 'sanitize_file_name' ) ) {
 	/**
 	 * Polyfill for WordPress sanitize_file_name().

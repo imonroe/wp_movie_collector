@@ -605,6 +605,15 @@ class WP_Movie_Collector_DB {
 			array( 'box_set_id' => $box_set_id )
 		);
 
+		// Clear the denormalized box_set_id pointer on any movies that
+		// referenced this set so they don't keep a dangling ID after the
+		// set is gone.
+		$cleared = $wpdb->update(
+			$this->movies_table,
+			array( 'box_set_id' => null ),
+			array( 'box_set_id' => $box_set_id )
+		);
+
 		// Then delete the box set
 		$result = $wpdb->delete(
 			$this->box_sets_table,
@@ -615,7 +624,7 @@ class WP_Movie_Collector_DB {
 			$this->invalidate_stats_cache();
 		}
 
-		return $result !== false;
+		return $result !== false && $cleared !== false;
 	}
 
 	/**
@@ -687,6 +696,54 @@ class WP_Movie_Collector_DB {
 		);
 
 		return $result !== false;
+	}
+
+	/**
+	 * Remove a movie from every box set it belongs to.
+	 *
+	 * @since    1.3.0
+	 * @param    int $movie_id    The movie ID.
+	 * @return   bool                  True on success, false on failure.
+	 */
+	public function remove_movie_from_all_box_sets( $movie_id ) {
+		global $wpdb;
+
+		$result = $wpdb->delete(
+			$this->relationships_table,
+			array( 'movie_id' => $movie_id )
+		);
+
+		// Also clear the denormalized pointer on the movie row so it does not
+		// keep reporting membership in a set it no longer belongs to.
+		$cleared = $wpdb->update(
+			$this->movies_table,
+			array( 'box_set_id' => null ),
+			array( 'id' => $movie_id )
+		);
+
+		return $result !== false && $cleared !== false;
+	}
+
+	/**
+	 * Check whether a movie/box set relationship exists.
+	 *
+	 * @since    1.3.0
+	 * @param    int $movie_id      The movie ID.
+	 * @param    int $box_set_id    The box set ID.
+	 * @return   bool                    True if the relationship exists.
+	 */
+	public function relationship_exists( $movie_id, $box_set_id ) {
+		global $wpdb;
+
+		$id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
+				$movie_id,
+				$box_set_id
+			)
+		);
+
+		return ! empty( $id );
 	}
 
 	/**

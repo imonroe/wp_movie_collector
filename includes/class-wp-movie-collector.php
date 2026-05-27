@@ -28,6 +28,7 @@ class WP_Movie_Collector {
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 		$this->define_post_types();
+		$this->define_rest_routes();
 	}
 
 	/**
@@ -70,6 +71,9 @@ class WP_Movie_Collector {
 		// The class responsible for API integrations
 		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api-client.php';
 		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api.php';
+
+		// The class responsible for the REST API endpoints.
+		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-rest-controller.php';
 
 		$this->loader = new WP_Movie_Collector_Loader();
 	}
@@ -148,6 +152,18 @@ class WP_Movie_Collector {
 
 		$this->loader->add_action( 'init', $post_types, 'register_post_types' );
 		$this->loader->add_action( 'init', $post_types, 'register_taxonomies' );
+	}
+
+	/**
+	 * Register the REST API routes.
+	 *
+	 * @since    1.3.0
+	 * @access   private
+	 */
+	private function define_rest_routes() {
+		$rest_controller = new WP_Movie_Collector_REST_Controller();
+
+		$this->loader->add_action( 'rest_api_init', $rest_controller, 'register_routes' );
 	}
 
 	/**

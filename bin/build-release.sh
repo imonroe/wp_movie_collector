@@ -69,3 +69,9 @@ fi
 
 rm -rf "${STAGE_DIR}"
 echo "Created ${DIST_DIR}/${ZIP_NAME}"
+
+# When running in GitHub Actions, expose the exact artifact path so later
+# steps don't have to parse `ls` output.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  echo "zip=dist/${ZIP_NAME}" >> "${GITHUB_OUTPUT}"
+fi

@@ -31,20 +31,17 @@ jobs:
           cache: 'npm'
 
       - name: Build release package
+        id: build
         run: bash bin/build-release.sh
-
-      - name: Locate artifact
-        id: artifact
-        run: echo "zip=$(ls dist/wp-movie-collector-*.zip | head -n1)" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: wp-movie-collector-dist
-          path: ${{ steps.artifact.outputs.zip }}
+          path: ${{ steps.build.outputs.zip }}
 
       - name: Attach to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.artifact.outputs.zip }}
+          files: ${{ steps.build.outputs.zip }}

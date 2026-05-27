@@ -690,6 +690,46 @@ class WP_Movie_Collector_DB {
 	}
 
 	/**
+	 * Remove a movie from every box set it belongs to.
+	 *
+	 * @since    1.3.0
+	 * @param    int $movie_id    The movie ID.
+	 * @return   bool                  True on success, false on failure.
+	 */
+	public function remove_movie_from_all_box_sets( $movie_id ) {
+		global $wpdb;
+
+		$result = $wpdb->delete(
+			$this->relationships_table,
+			array( 'movie_id' => $movie_id )
+		);
+
+		return $result !== false;
+	}
+
+	/**
+	 * Check whether a movie/box set relationship exists.
+	 *
+	 * @since    1.3.0
+	 * @param    int $movie_id      The movie ID.
+	 * @param    int $box_set_id    The box set ID.
+	 * @return   bool                    True if the relationship exists.
+	 */
+	public function relationship_exists( $movie_id, $box_set_id ) {
+		global $wpdb;
+
+		$id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
+				$movie_id,
+				$box_set_id
+			)
+		);
+
+		return ! empty( $id );
+	}
+
+	/**
 	 * Get all movies in a box set.
 	 *
 	 * @since    1.0.0

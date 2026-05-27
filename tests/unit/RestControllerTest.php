@@ -287,6 +287,8 @@ class RestControllerTest extends TestCase {
 
 	public function test_remove_movie_from_box_set_success() {
 		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );
+		$this->db->method( 'relationship_exists' )->willReturn( true );
 		$this->db->method( 'remove_movie_from_box_set' )->willReturn( true );
 
 		$request = new WP_REST_Request(
@@ -298,6 +300,194 @@ class RestControllerTest extends TestCase {
 		$response = $this->controller->remove_movie_from_box_set( $request );
 
 		$this->assertTrue( $response->get_data()['deleted'] );
+	}
+
+	public function test_remove_movie_from_box_set_missing_relationship_returns_404() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );
+		$this->db->method( 'relationship_exists' )->willReturn( false );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$result = $this->controller->remove_movie_from_box_set( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_create_movie_with_box_set_syncs_relationship() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'insert_movie' )->willReturn( 7 );
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+
+		// The relationship must be created to match the admin add-movie flow.
+		$this->db->expects( $this->once() )
+			->method( 'add_movie_to_box_set' )
+			->with( 7, 3 )
+			->willReturn( 99 );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'The Thing',
+				'release_year' => 1982,
+				'format'       => 'Blu-ray',
+				'region_code'  => 'A',
+				'box_set_id'   => 3,
+			)
+		);
+		$response = $this->controller->create_movie( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+	}
+
+	public function test_update_movie_with_box_set_rewrites_relationships() {
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 4 ) );
+		$this->db->method( 'update_movie' )->willReturn( true );
+
+		$this->db->expects( $this->once() )
+			->method( 'remove_movie_from_all_box_sets' )
+			->with( 7 );
+		$this->db->expects( $this->once() )
+			->method( 'add_movie_to_box_set' )
+			->with( 7, 4 );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'         => 7,
+				'box_set_id' => 4,
+			)
+		);
+		$response = $this->controller->update_movie( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+	}
+
+	public function test_get_box_set_not_found_returns_404() {
+		$this->db->method( 'get_box_set' )->willReturn( null );
+
+		$request = new WP_REST_Request( array( 'id' => 404 ) );
+		$result  = $this->controller->get_box_set( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_get_box_set_returns_record() {
+		$this->db->method( 'get_box_set' )->willReturn(
+			array(
+				'id'    => 5,
+				'title' => 'Nightmare Collection',
+			)
+		);
+
+		$request  = new WP_REST_Request( array( 'id' => 5 ) );
+		$response = $this->controller->get_box_set( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 5, $response->get_data()['id'] );
+	}
+
+	public function test_get_box_sets_returns_data_with_pagination_headers() {
+		$this->db->method( 'count_box_sets' )->willReturn( 4 );
+		$this->db->method( 'search_box_sets' )->willReturn(
+			array( array( 'id' => 5, 'title' => 'Set' ) )
+		);
+
+		$request  = new WP_REST_Request( array( 'per_page' => '2' ) );
+		$response = $this->controller->get_box_sets( $request );
+
+		$this->assertCount( 1, $response->get_data() );
+		$headers = $response->get_headers();
+		$this->assertSame( '4', $headers['X-WP-Total'] );
+		$this->assertSame( '2', $headers['X-WP-TotalPages'] );
+	}
+
+	public function test_create_box_set_validates_required_fields() {
+		$request = new WP_REST_Request( array( 'title' => 'Incomplete' ) );
+		$result  = $this->controller->create_box_set( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_create_box_set_success_returns_201() {
+		$this->db->method( 'insert_box_set' )->willReturn( 5 );
+		$this->db->method( 'get_box_set' )->willReturn(
+			array(
+				'id'    => 5,
+				'title' => 'Nightmare Collection',
+			)
+		);
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'Nightmare Collection',
+				'release_year' => 1999,
+				'format'       => 'DVD',
+				'region_code'  => 'R1',
+			)
+		);
+		$response = $this->controller->create_box_set( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+		$this->assertSame( 5, $response->get_data()['id'] );
+	}
+
+	public function test_update_box_set_missing_record_returns_404() {
+		$this->db->method( 'get_box_set' )->willReturn( null );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'    => 5,
+				'title' => 'Updated',
+			)
+		);
+		$result = $this->controller->update_box_set( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_update_box_set_partial_update_succeeds() {
+		$this->db->method( 'get_box_set' )->willReturn(
+			array(
+				'id'    => 5,
+				'title' => 'Original',
+			)
+		);
+		$this->db->method( 'update_box_set' )->willReturn( true );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'    => 5,
+				'title' => 'Renamed Collection',
+			)
+		);
+		$response = $this->controller->update_box_set( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+	}
+
+	public function test_delete_box_set_returns_previous_record() {
+		$box_set = array(
+			'id'    => 5,
+			'title' => 'Nightmare Collection',
+		);
+		$this->db->method( 'get_box_set' )->willReturn( $box_set );
+		$this->db->method( 'delete_box_set' )->willReturn( true );
+
+		$request  = new WP_REST_Request( array( 'id' => 5 ) );
+		$response = $this->controller->delete_box_set( $request );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['deleted'] );
+		$this->assertSame( 5, $data['previous']['id'] );
 	}
 
 	public function test_get_box_set_movies_lists_contained_movies() {

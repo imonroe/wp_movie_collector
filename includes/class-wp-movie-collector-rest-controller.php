@@ -344,6 +344,12 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			return $this->server_error( __( 'Failed to create the movie.', 'wp-movie-collector' ) );
 		}
 
+		// Keep the box set relationship table in sync with the box_set_id
+		// column, mirroring the admin add-movie flow.
+		if ( ! empty( $prepared['box_set_id'] ) ) {
+			$this->db->add_movie_to_box_set( (int) $id, (int) $prepared['box_set_id'] );
+		}
+
 		$movie    = $this->db->get_movie( (int) $id );
 		$response = rest_ensure_response( $this->prepare_movie_for_response( $movie ) );
 		$response->set_status( 201 );
@@ -377,6 +383,16 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 		$updated = $this->db->update_movie( $id, $prepared );
 		if ( false === $updated ) {
 			return $this->server_error( __( 'Failed to update the movie.', 'wp-movie-collector' ) );
+		}
+
+		// When box_set_id is part of the request, rewrite the relationship
+		// table to match, mirroring the admin edit-movie flow: clear the
+		// movie's existing relationships, then re-add the selected box set.
+		if ( null !== $request->get_param( 'box_set_id' ) ) {
+			$this->db->remove_movie_from_all_box_sets( $id );
+			if ( ! empty( $prepared['box_set_id'] ) ) {
+				$this->db->add_movie_to_box_set( $id, (int) $prepared['box_set_id'] );
+			}
 		}
 
 		return rest_ensure_response( $this->prepare_movie_for_response( $this->db->get_movie( $id ) ) );
@@ -601,6 +617,17 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 
 		if ( empty( $this->db->get_box_set( $box_set_id ) ) ) {
 			return $this->not_found_error( __( 'Box set not found.', 'wp-movie-collector' ) );
+		}
+
+		if ( empty( $this->db->get_movie( $movie_id ) ) ) {
+			return $this->not_found_error( __( 'Movie not found.', 'wp-movie-collector' ) );
+		}
+
+		// wpdb::delete() returns 0 (not false) when no row matches, which the
+		// DB helper reports as success. Check the relationship exists first so
+		// clients can distinguish "removed" from "nothing to remove".
+		if ( ! $this->db->relationship_exists( $movie_id, $box_set_id ) ) {
+			return $this->not_found_error( __( 'That movie is not in this box set.', 'wp-movie-collector' ) );
 		}
 
 		$removed = $this->db->remove_movie_from_box_set( $movie_id, $box_set_id );

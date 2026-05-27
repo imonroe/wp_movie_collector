@@ -84,8 +84,9 @@ Template files for public display:
 
 3. **REST API**
    - Namespace `movie-collection/v1`
-   - `/movies` (GET, POST) and `/movies/{id}` (GET, PUT/PATCH, DELETE)
-   - `/box-sets` (GET, POST) and `/box-sets/{id}` (GET, PUT/PATCH, DELETE)
+   - `/movies` (GET, POST) and `/movies/{id}` (GET, POST/PUT/PATCH, DELETE)
+   - `/box-sets` (GET, POST) and `/box-sets/{id}` (GET, POST/PUT/PATCH, DELETE)
+   - Updates use the WordPress `EDITABLE` method set (POST, PUT, PATCH)
    - `/box-sets/{id}/movies` (GET, POST) and `/box-sets/{id}/movies/{movie_id}` (DELETE)
    - List endpoints support search/filter params and `X-WP-Total` / `X-WP-TotalPages` pagination headers
    - Access defaults to the `manage_options` capability; adjustable via the `wp_movie_collector_rest_read_permission` and `wp_movie_collector_rest_write_permission` filters

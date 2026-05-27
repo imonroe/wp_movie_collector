@@ -285,6 +285,74 @@ class RestControllerTest extends TestCase {
 		$this->assertSame( 55, $response->get_data()['relationship_id'] );
 	}
 
+	public function test_add_movie_to_box_set_already_linked_returns_200() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );
+		$this->db->method( 'relationship_exists' )->willReturn( true );
+		$this->db->method( 'add_movie_to_box_set' )->willReturn( 55 );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$response = $this->controller->add_movie_to_box_set( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $response->get_data()['already_linked'] );
+	}
+
+	public function test_create_movie_rolls_back_when_relationship_fails() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'insert_movie' )->willReturn( 7 );
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+		$this->db->method( 'add_movie_to_box_set' )->willReturn( false );
+
+		// The orphaned movie row must be deleted on relationship-sync failure.
+		$this->db->expects( $this->once() )
+			->method( 'delete_movie' )
+			->with( 7 );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'The Thing',
+				'release_year' => 1982,
+				'format'       => 'Blu-ray',
+				'region_code'  => 'A',
+				'box_set_id'   => 3,
+			)
+		);
+		$result = $this->controller->create_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 500, $result->get_error_data()['status'] );
+	}
+
+	public function test_update_movie_box_set_id_zero_clears_membership() {
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+		$this->db->method( 'update_movie' )->willReturn( true );
+
+		// box_set_id=0 should clear all relationships and not re-add any.
+		$this->db->expects( $this->once() )
+			->method( 'remove_movie_from_all_box_sets' )
+			->with( 7 )
+			->willReturn( true );
+		$this->db->expects( $this->never() )
+			->method( 'add_movie_to_box_set' );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'         => 7,
+				'box_set_id' => 0,
+			)
+		);
+		$response = $this->controller->update_movie( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+	}
+
 	public function test_remove_movie_from_box_set_success() {
 		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
 		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );

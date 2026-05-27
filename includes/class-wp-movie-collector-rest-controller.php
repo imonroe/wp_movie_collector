@@ -346,11 +346,12 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 
 		// Keep the box set relationship table in sync with the box_set_id
 		// column, mirroring the admin add-movie flow. If the relationship
-		// insert fails, surface a 500 so the client knows the movie row and
-		// the box set membership are out of sync.
+		// insert fails, roll back the movie insert so a failed create does
+		// not leave a partial write behind.
 		if ( ! empty( $prepared['box_set_id'] ) ) {
 			if ( ! $this->db->add_movie_to_box_set( (int) $id, (int) $prepared['box_set_id'] ) ) {
-				return $this->server_error( __( 'The movie was created but could not be linked to the box set.', 'wp-movie-collector' ) );
+				$this->db->delete_movie( (int) $id );
+				return $this->server_error( __( 'The movie could not be linked to the box set; the movie was not created.', 'wp-movie-collector' ) );
 			}
 		}
 
@@ -595,6 +596,11 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			return $this->not_found_error( __( 'Movie not found.', 'wp-movie-collector' ) );
 		}
 
+		// add_movie_to_box_set() returns the existing relationship ID when
+		// the movie is already in the set, so check first to return an
+		// accurate status: 201 only when a new relationship is created.
+		$already_linked = $this->db->relationship_exists( $movie_id, $box_set_id );
+
 		$relationship_id = $this->db->add_movie_to_box_set( $movie_id, $box_set_id );
 		if ( ! $relationship_id ) {
 			return $this->server_error( __( 'Failed to add the movie to the box set.', 'wp-movie-collector' ) );
@@ -605,9 +611,10 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 				'box_set_id'      => $box_set_id,
 				'movie_id'        => $movie_id,
 				'relationship_id' => (int) $relationship_id,
+				'already_linked'  => $already_linked,
 			)
 		);
-		$response->set_status( 201 );
+		$response->set_status( $already_linked ? 200 : 201 );
 
 		return $response;
 	}
@@ -759,7 +766,9 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			if ( $box_set_id > 0 && empty( $this->db->get_box_set( $box_set_id ) ) ) {
 				$errors[] = __( 'The specified box set does not exist.', 'wp-movie-collector' );
 			} else {
-				$data['box_set_id'] = $box_set_id;
+				// Persist a non-positive value as NULL so "clear membership"
+				// matches the admin edit flow rather than storing 0.
+				$data['box_set_id'] = $box_set_id > 0 ? $box_set_id : null;
 			}
 		}
 

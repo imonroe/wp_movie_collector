@@ -85,6 +85,8 @@ class DbSchemaTest extends TestCase {
 			'movies acquisition_date'     => array( '$this->movies_table', 'KEY acquisition_date (acquisition_date)' ),
 			'box_sets created_at'         => array( '$this->box_sets_table', 'KEY created_at (created_at)' ),
 			'box_sets acquisition_date'   => array( '$this->box_sets_table', 'KEY acquisition_date (acquisition_date)' ),
+			'movies format_year composite'   => array( '$this->movies_table', 'KEY format_year (format, release_year)' ),
+			'box_sets format_year composite' => array( '$this->box_sets_table', 'KEY format_year (format, release_year)' ),
 			// Sanity-check that existing indexes are still present.
 			'movies barcode'              => array( '$this->movies_table', 'KEY barcode (barcode)' ),
 			'movies title_year composite' => array( '$this->movies_table', 'KEY title_year (title, release_year)' ),
@@ -155,6 +157,21 @@ class DbSchemaTest extends TestCase {
 	 * Missing keys are batched into a single ALTER per table so the
 	 * underlying engine only rebuilds each table once.
 	 */
+	public function test_update_tables_adds_format_year_index_for_both_tables(): void {
+		$body = $this->extract_update_tables_body( $this->read_db_source() );
+
+		$this->assertStringContainsString(
+			"'format_year'",
+			$body,
+			'Migration should guard the format_year composite index.'
+		);
+		$this->assertStringContainsString(
+			'ADD INDEX format_year (format, release_year)',
+			$body,
+			'Migration should add the format_year composite index.'
+		);
+	}
+
 	public function test_update_tables_adds_index_for_both_tables(): void {
 		$body = $this->extract_update_tables_body( $this->read_db_source() );
 

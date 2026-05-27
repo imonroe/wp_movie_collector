@@ -631,6 +631,33 @@ if ( ! function_exists( 'absint' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_file_name' ) ) {
+	/**
+	 * Polyfill for WordPress sanitize_file_name().
+	 *
+	 * @param string $filename The filename to sanitize.
+	 * @return string Sanitized filename.
+	 */
+	function sanitize_file_name( $filename ) {
+		$filename = preg_replace( '/[^a-zA-Z0-9._-]/', '-', (string) $filename );
+		return preg_replace( '/-+/', '-', $filename );
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * Polyfill for WordPress wp_json_encode().
+	 *
+	 * @param mixed $data    Data to encode.
+	 * @param int   $options json_encode options bitmask.
+	 * @param int   $depth   Maximum depth.
+	 * @return string|false JSON string, or false on failure.
+	 */
+	function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
+	}
+}
+
 /**
  * Controls the return value of the current_user_can() polyfill.
  *

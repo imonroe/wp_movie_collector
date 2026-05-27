@@ -4,6 +4,10 @@
  *
  * @package    WP_Movie_Collector
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 ?>
 <div class="wp-movie-collector-item wp-movie-collector-box-set-item">
     <div class="wp-movie-collector-item-image">

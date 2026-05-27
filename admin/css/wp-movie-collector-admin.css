@@ -386,9 +386,4 @@
     .wp-movie-collector-form .form-group textarea {
         min-height: 88px;
     }
-
-    /* Stat grids collapse to a single column on narrow screens. */
-    .wp-movie-collector-stats {
-        grid-template-columns: 1fr;
-    }
 }

@@ -214,10 +214,10 @@
 
 /* Responsive Adjustments */
 
-/* Tablet landscape and below: tighten the grid so cards don't get too narrow. */
+/* Tablet landscape and below: keep the 200px minimum card width (from the
+   base rule) so cards don't get cramped, and just tighten the gap. */
 @media (max-width: 1024px) {
     .wp-movie-collector-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 16px;
     }
 }

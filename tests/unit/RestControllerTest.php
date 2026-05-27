@@ -351,10 +351,12 @@ class RestControllerTest extends TestCase {
 
 		$this->db->expects( $this->once() )
 			->method( 'remove_movie_from_all_box_sets' )
-			->with( 7 );
+			->with( 7 )
+			->willReturn( true );
 		$this->db->expects( $this->once() )
 			->method( 'add_movie_to_box_set' )
-			->with( 7, 4 );
+			->with( 7, 4 )
+			->willReturn( 99 );
 
 		$request = new WP_REST_Request(
 			array(
@@ -365,6 +367,47 @@ class RestControllerTest extends TestCase {
 		$response = $this->controller->update_movie( $request );
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response );
+	}
+
+	public function test_create_movie_returns_500_when_relationship_sync_fails() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'insert_movie' )->willReturn( 7 );
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+		$this->db->method( 'add_movie_to_box_set' )->willReturn( false );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'The Thing',
+				'release_year' => 1982,
+				'format'       => 'Blu-ray',
+				'region_code'  => 'A',
+				'box_set_id'   => 3,
+			)
+		);
+		$result = $this->controller->create_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 500, $result->get_error_data()['status'] );
+	}
+
+	public function test_box_set_collection_params_exclude_movie_only_filters() {
+		$params = $this->controller->get_box_set_collection_params();
+
+		$this->assertArrayHasKey( 'title', $params );
+		$this->assertArrayHasKey( 'year', $params );
+		$this->assertArrayHasKey( 'format', $params );
+		$this->assertArrayNotHasKey( 'director', $params );
+		$this->assertArrayNotHasKey( 'actor', $params );
+		$this->assertArrayNotHasKey( 'genre', $params );
+		$this->assertArrayNotHasKey( 'studio', $params );
+	}
+
+	public function test_movie_collection_params_include_all_filters() {
+		$params = $this->controller->get_collection_params();
+
+		foreach ( array( 'director', 'actor', 'genre', 'studio' ) as $key ) {
+			$this->assertArrayHasKey( $key, $params );
+		}
 	}
 
 	public function test_get_box_set_not_found_returns_404() {

@@ -118,7 +118,7 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_box_sets' ),
 					'permission_callback' => array( $this, 'read_permissions_check' ),
-					'args'                => $this->get_collection_params(),
+					'args'                => $this->get_box_set_collection_params(),
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
@@ -345,9 +345,13 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 		}
 
 		// Keep the box set relationship table in sync with the box_set_id
-		// column, mirroring the admin add-movie flow.
+		// column, mirroring the admin add-movie flow. If the relationship
+		// insert fails, surface a 500 so the client knows the movie row and
+		// the box set membership are out of sync.
 		if ( ! empty( $prepared['box_set_id'] ) ) {
-			$this->db->add_movie_to_box_set( (int) $id, (int) $prepared['box_set_id'] );
+			if ( ! $this->db->add_movie_to_box_set( (int) $id, (int) $prepared['box_set_id'] ) ) {
+				return $this->server_error( __( 'The movie was created but could not be linked to the box set.', 'wp-movie-collector' ) );
+			}
 		}
 
 		$movie    = $this->db->get_movie( (int) $id );
@@ -388,10 +392,14 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 		// When box_set_id is part of the request, rewrite the relationship
 		// table to match, mirroring the admin edit-movie flow: clear the
 		// movie's existing relationships, then re-add the selected box set.
+		// Surface a 500 if either sync step fails so the relationship table
+		// can't silently drift from the movie row.
 		if ( null !== $request->get_param( 'box_set_id' ) ) {
-			$this->db->remove_movie_from_all_box_sets( $id );
-			if ( ! empty( $prepared['box_set_id'] ) ) {
-				$this->db->add_movie_to_box_set( $id, (int) $prepared['box_set_id'] );
+			if ( false === $this->db->remove_movie_from_all_box_sets( $id ) ) {
+				return $this->server_error( __( 'Failed to update the box set membership.', 'wp-movie-collector' ) );
+			}
+			if ( ! empty( $prepared['box_set_id'] ) && ! $this->db->add_movie_to_box_set( $id, (int) $prepared['box_set_id'] ) ) {
+				return $this->server_error( __( 'Failed to update the box set membership.', 'wp-movie-collector' ) );
 			}
 		}
 
@@ -949,10 +957,56 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 	/**
 	 * Shared query parameters for list (collection) endpoints.
 	 *
+	 * Used by the movies list endpoint, which supports the full set of
+	 * filters implemented by WP_Movie_Collector_DB::search_movies().
+	 *
 	 * @since 1.3.0
 	 * @return array
 	 */
 	public function get_collection_params() {
+		$params = $this->base_collection_params();
+
+		$params['genre']    = array(
+			'description' => __( 'Limit results to a genre.', 'wp-movie-collector' ),
+			'type'        => 'string',
+		);
+		$params['director'] = array(
+			'description' => __( 'Limit results to a director.', 'wp-movie-collector' ),
+			'type'        => 'string',
+		);
+		$params['studio']   = array(
+			'description' => __( 'Limit results to a studio.', 'wp-movie-collector' ),
+			'type'        => 'string',
+		);
+		$params['actor']    = array(
+			'description' => __( 'Limit results to an actor.', 'wp-movie-collector' ),
+			'type'        => 'string',
+		);
+
+		return $params;
+	}
+
+	/**
+	 * Query parameters for the box sets list endpoint.
+	 *
+	 * Box set search (WP_Movie_Collector_DB::search_box_sets()) only
+	 * supports title, year, and format filters, so the schema advertises
+	 * just those rather than the movie-only filters.
+	 *
+	 * @since 1.3.0
+	 * @return array
+	 */
+	public function get_box_set_collection_params() {
+		return $this->base_collection_params();
+	}
+
+	/**
+	 * Pagination, sorting, and the filters common to both list endpoints.
+	 *
+	 * @since 1.3.0
+	 * @return array
+	 */
+	protected function base_collection_params() {
 		return array(
 			'page'     => array(
 				'description'       => __( 'Current page of the collection.', 'wp-movie-collector' ),
@@ -981,22 +1035,6 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 				'description' => __( 'Limit results to a media format.', 'wp-movie-collector' ),
 				'type'        => 'string',
 				'enum'        => self::VALID_FORMATS,
-			),
-			'genre'    => array(
-				'description' => __( 'Limit results to a genre.', 'wp-movie-collector' ),
-				'type'        => 'string',
-			),
-			'director' => array(
-				'description' => __( 'Limit results to a director.', 'wp-movie-collector' ),
-				'type'        => 'string',
-			),
-			'studio'   => array(
-				'description' => __( 'Limit results to a studio.', 'wp-movie-collector' ),
-				'type'        => 'string',
-			),
-			'actor'    => array(
-				'description' => __( 'Limit results to an actor.', 'wp-movie-collector' ),
-				'type'        => 'string',
 			),
 			'orderby'  => array(
 				'description' => __( 'Sort collection by attribute.', 'wp-movie-collector' ),

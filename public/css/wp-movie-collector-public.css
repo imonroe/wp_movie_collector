@@ -2,6 +2,22 @@
  * Public-facing styles for WP Movie Collector
  */
 
+/* Accessibility: visually hide content while keeping it available to screen
+   readers. Mirrors WordPress core's .screen-reader-text so labels work on
+   any theme. The focusable variant reveals the element on keyboard focus. */
+.wp-movie-collector-container .screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    word-wrap: normal !important;
+}
+
 /* Movie Collection Container */
 .wp-movie-collector-container {
     margin: 20px 0;

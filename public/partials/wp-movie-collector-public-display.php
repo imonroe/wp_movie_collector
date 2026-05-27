@@ -5,6 +5,10 @@
  * @package    WP_Movie_Collector
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 // Get the current query parameters
 $type = isset($atts['type']) ? $atts['type'] : 'all';
 $per_page = isset($atts['per_page']) ? intval($atts['per_page']) : 12;

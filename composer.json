@@ -38,6 +38,7 @@
     "scripts": {
         "lint": "phpcs",
         "lint:fix": "phpcbf",
+        "make-pot": "php bin/make-pot.php",
         "test": "phpunit --testsuite unit",
         "test:integration": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from phpunit phpunit",
         "test:integration:down": "docker compose -f docker-compose.test.yml down -v"

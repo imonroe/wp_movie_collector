@@ -6,6 +6,10 @@
  * @package    WP_Movie_Collector
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 class WP_Movie_Collector_DB {
 
 	/**
@@ -147,6 +151,24 @@ class WP_Movie_Collector_DB {
 			$wpdb->query( "ALTER TABLE $box_sets_table ADD INDEX title_year (title, release_year)" );
 		}
 
+		// Add composite index (format, release_year) to both tables. Format
+		// and release year are the two most commonly combined filters in the
+		// public collection display; a composite index lets MySQL/MariaDB
+		// satisfy "format = X AND release_year = Y" from a single index
+		// instead of scanning one single-column index and filtering the rest.
+		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
+			$exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+					'format_year'
+				)
+			);
+
+			if ( empty( $exists ) ) {
+				$wpdb->query( "ALTER TABLE {$table} ADD INDEX format_year (format, release_year)" );
+			}
+		}
+
 		// Add single-column indexes on created_at and acquisition_date to
 		// both the movies and box sets tables. Both columns appear in the
 		// search ORDER BY whitelist (search_movies / search_box_sets) and
@@ -213,6 +235,7 @@ class WP_Movie_Collector_DB {
             KEY box_set_id (box_set_id),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
+            KEY format_year (format, release_year),
             KEY created_at (created_at),
             KEY acquisition_date (acquisition_date)
         ) $charset_collate;
@@ -239,6 +262,7 @@ class WP_Movie_Collector_DB {
             KEY format (format),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
+            KEY format_year (format, release_year),
             KEY created_at (created_at),
             KEY acquisition_date (acquisition_date)
         ) $charset_collate;
@@ -984,6 +1008,20 @@ class WP_Movie_Collector_DB {
 	 * @return   array    Associative array of collection statistics.
 	 */
 	public function get_collection_stats() {
+		// Fast path: WordPress object cache. When a persistent backend
+		// (Redis/Memcached) is configured this avoids the transient's DB
+		// read entirely; otherwise it still serves repeat calls within a
+		// single request without re-querying.
+		$object_cached = wp_cache_get( 'collection_stats', 'wp_movie_collector' );
+		if (
+			is_array( $object_cached ) &&
+			array_key_exists( 'total_movies', $object_cached ) &&
+			array_key_exists( 'total_box_sets', $object_cached ) &&
+			array_key_exists( 'format_breakdown', $object_cached )
+		) {
+			return $object_cached;
+		}
+
 		$cached = get_transient( 'wp_movie_collector_stats' );
 		if (
 			is_array( $cached ) &&
@@ -991,6 +1029,7 @@ class WP_Movie_Collector_DB {
 			array_key_exists( 'total_box_sets', $cached ) &&
 			array_key_exists( 'format_breakdown', $cached )
 		) {
+			wp_cache_set( 'collection_stats', $cached, 'wp_movie_collector', HOUR_IN_SECONDS );
 			return $cached;
 		}
 
@@ -1094,6 +1133,7 @@ class WP_Movie_Collector_DB {
 		$stats['latest_year']   = $year_range ? $year_range['latest_year'] : null;
 
 		set_transient( 'wp_movie_collector_stats', $stats, HOUR_IN_SECONDS );
+		wp_cache_set( 'collection_stats', $stats, 'wp_movie_collector', HOUR_IN_SECONDS );
 
 		return $stats;
 	}
@@ -1107,6 +1147,7 @@ class WP_Movie_Collector_DB {
 	 */
 	public function invalidate_stats_cache() {
 		delete_transient( 'wp_movie_collector_stats' );
+		wp_cache_delete( 'collection_stats', 'wp_movie_collector' );
 	}
 
 	/**

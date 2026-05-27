@@ -6,6 +6,10 @@
  * @package    WP_Movie_Collector
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 class WP_Movie_Collector_Deactivator {
 
     /**

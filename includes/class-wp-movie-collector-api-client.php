@@ -11,6 +11,10 @@
  * @package    WP_Movie_Collector
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 /**
  * API client with rate limiting, exponential backoff, and circuit breaker.
  */

@@ -147,6 +147,56 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	}
 }
 
+if ( ! isset( $GLOBALS['wp_movie_test_object_cache'] ) ) {
+	$GLOBALS['wp_movie_test_object_cache'] = array();
+}
+
+if ( ! function_exists( 'wp_cache_get' ) ) {
+	/**
+	 * Polyfill for WordPress wp_cache_get().
+	 *
+	 * @param string $key   Cache key.
+	 * @param string $group Cache group.
+	 * @return mixed The stored value, or false on miss.
+	 */
+	function wp_cache_get( $key, $group = '' ) {
+		$ck = $group . ':' . $key;
+		return array_key_exists( $ck, $GLOBALS['wp_movie_test_object_cache'] )
+			? $GLOBALS['wp_movie_test_object_cache'][ $ck ]
+			: false;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_set' ) ) {
+	/**
+	 * Polyfill for WordPress wp_cache_set().
+	 *
+	 * @param string $key    Cache key.
+	 * @param mixed  $value  Value to store.
+	 * @param string $group  Cache group.
+	 * @param int    $expire Expiration in seconds (ignored).
+	 * @return true
+	 */
+	function wp_cache_set( $key, $value, $group = '', $expire = 0 ) {
+		$GLOBALS['wp_movie_test_object_cache'][ $group . ':' . $key ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_cache_delete' ) ) {
+	/**
+	 * Polyfill for WordPress wp_cache_delete().
+	 *
+	 * @param string $key   Cache key.
+	 * @param string $group Cache group.
+	 * @return true
+	 */
+	function wp_cache_delete( $key, $group = '' ) {
+		unset( $GLOBALS['wp_movie_test_object_cache'][ $group . ':' . $key ] );
+		return true;
+	}
+}
+
 if ( ! function_exists( 'dbDelta' ) ) {
 	/**
 	 * Polyfill for WordPress dbDelta().

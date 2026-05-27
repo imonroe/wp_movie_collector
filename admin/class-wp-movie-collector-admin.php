@@ -200,6 +200,71 @@ class WP_Movie_Collector_Admin {
 
 
 	/**
+	 * Add contextual help tabs to the plugin's admin pages.
+	 *
+	 * Hooked to current_screen. Adds a help tab (and a shared sidebar with
+	 * documentation links) to each WP Movie Collector admin screen.
+	 *
+	 * @since    1.3.0
+	 * @param    WP_Screen $screen The current admin screen.
+	 */
+	public function add_help_tabs( $screen ) {
+		if ( ! $screen instanceof WP_Screen || false === strpos( $screen->id, 'wp-movie-collector' ) ) {
+			return;
+		}
+
+		$help = array();
+
+		if ( false !== strpos( $screen->id, 'dashboard' ) ) {
+			$help[] = array(
+				'id'      => 'wpmc-dashboard-overview',
+				'title'   => __( 'Overview', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'The dashboard summarizes your collection: total movies and box sets, format breakdown, top genres, directors, and studios, and recent additions. Use the menu on the left to add movies, manage box sets, import/export your data, and configure API keys.', 'wp-movie-collector' ) . '</p>',
+			);
+		} elseif ( false !== strpos( $screen->id, 'add-movie' ) || false !== strpos( $screen->id, 'edit-movie' ) ) {
+			$help[] = array(
+				'id'      => 'wpmc-add-movie',
+				'title'   => __( 'Adding a Movie', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'Enter the movie details manually, or scan/enter a barcode and use the lookup button to fetch metadata automatically. A barcode scanner that behaves as a keyboard will type the barcode into the field. Title, year, format, and region are required.', 'wp-movie-collector' ) . '</p>',
+			);
+		} elseif ( false !== strpos( $screen->id, 'add-box-set' ) || false !== strpos( $screen->id, 'edit-box-set' ) || false !== strpos( $screen->id, 'manage-box-set' ) ) {
+			$help[] = array(
+				'id'      => 'wpmc-box-sets',
+				'title'   => __( 'Box Sets', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'Box sets group related movies. Create the box set first, then use "Manage" to add movies to it and drag to reorder them. Removing a movie from a set does not delete the movie.', 'wp-movie-collector' ) . '</p>',
+			);
+		} elseif ( false !== strpos( $screen->id, 'import-export' ) ) {
+			$help[] = array(
+				'id'      => 'wpmc-import-export',
+				'title'   => __( 'Import / Export', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'Export your collection as CSV or JSON for backup or migration. When importing, download the CSV template first to match the expected columns. Choose append to add to your collection or replace to overwrite it.', 'wp-movie-collector' ) . '</p>',
+			);
+		} elseif ( false !== strpos( $screen->id, 'settings' ) ) {
+			$help[] = array(
+				'id'      => 'wpmc-settings',
+				'title'   => __( 'API Keys', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'API keys are optional and enable automatic metadata and barcode lookups. Get a TMDb key from your TMDb account, an OMDb key from omdbapi.com, and a Barcode Lookup key from barcodelookup.com. Without keys you can still add movies manually.', 'wp-movie-collector' ) . '</p>',
+			);
+		} else {
+			$help[] = array(
+				'id'      => 'wpmc-collection',
+				'title'   => __( 'Your Collection', 'wp-movie-collector' ),
+				'content' => '<p>' . esc_html__( 'Browse, search, and filter your movies and box sets. Use the row actions to edit or delete an item.', 'wp-movie-collector' ) . '</p>',
+			);
+		}
+
+		foreach ( $help as $tab ) {
+			$screen->add_help_tab( $tab );
+		}
+
+		$screen->set_help_sidebar(
+			'<p><strong>' . esc_html__( 'For more information:', 'wp-movie-collector' ) . '</strong></p>' .
+			'<p><a href="https://github.com/imonroe/wp_movie_collector" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Documentation', 'wp-movie-collector' ) . '</a></p>' .
+			'<p><a href="https://github.com/imonroe/wp_movie_collector/issues" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Support', 'wp-movie-collector' ) . '</a></p>'
+		);
+	}
+
+	/**
 	 * Display the admin dashboard.
 	 *
 	 * @since    1.0.0

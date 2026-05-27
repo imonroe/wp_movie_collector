@@ -9,10 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 ?>
-<div class="wp-movie-collector-item">
+<div class="wp-movie-collector-item" role="listitem">
     <div class="wp-movie-collector-item-image">
         <?php if (!empty($movie['cover_image_url'])) : ?>
-            <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="<?php echo esc_attr($movie['title']); ?>">
+            <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="<?php echo esc_attr( ! empty( $movie['release_year'] ) ? sprintf( /* translators: 1: movie title, 2: release year */ __( '%1$s (%2$s)', 'wp-movie-collector' ), $movie['title'], $movie['release_year'] ) : $movie['title'] ); ?>">
         <?php else : ?>
             <div class="wp-movie-collector-no-image">
                 <span><?php esc_html_e('No Image', 'wp-movie-collector'); ?></span>

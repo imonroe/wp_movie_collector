@@ -34,6 +34,7 @@ class WP_Movie_Collector {
 		$this->define_public_hooks();
 		$this->define_post_types();
 		$this->define_rest_routes();
+		$this->define_sync_hooks();
 	}
 
 	/**
@@ -72,6 +73,9 @@ class WP_Movie_Collector {
 
 		// The class responsible for defining custom post types
 		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-post-types.php';
+
+		// The class responsible for syncing custom-table rows to CPT posts.
+		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-sync.php';
 
 		// The class responsible for API integrations
 		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-api-client.php';
@@ -138,6 +142,9 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'admin_post_wp_movie_collector_import_movies', $plugin_admin, 'process_import_movies' );
 		$this->loader->add_action( 'admin_post_wp_movie_collector_download_csv_template', $plugin_admin, 'download_csv_template' );
 
+		// Bulk-sync custom-table data into CPT posts.
+		$this->loader->add_action( 'admin_post_wp_movie_collector_sync_posts', $plugin_admin, 'process_sync_posts' );
+
 		// Register AJAX handlers
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_barcode_lookup', $plugin_admin, 'ajax_barcode_lookup' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search' );
@@ -193,6 +200,21 @@ class WP_Movie_Collector {
 		$rest_controller = new WP_Movie_Collector_REST_Controller();
 
 		$this->loader->add_action( 'rest_api_init', $rest_controller, 'register_routes' );
+	}
+
+	/**
+	 * Register hooks that keep the CPT posts in sync with the custom tables.
+	 *
+	 * @since    1.4.0
+	 * @access   private
+	 */
+	private function define_sync_hooks() {
+		$sync = new WP_Movie_Collector_Sync();
+
+		$this->loader->add_action( 'wp_movie_collector_movie_saved', $sync, 'sync_movie' );
+		$this->loader->add_action( 'wp_movie_collector_movie_deleted', $sync, 'delete_movie' );
+		$this->loader->add_action( 'wp_movie_collector_box_set_saved', $sync, 'sync_box_set' );
+		$this->loader->add_action( 'wp_movie_collector_box_set_deleted', $sync, 'delete_box_set' );
 	}
 
 	/**

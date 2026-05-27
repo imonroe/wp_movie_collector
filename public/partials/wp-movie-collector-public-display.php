@@ -337,8 +337,7 @@ $studios = get_terms(array(
         <nav class="wp-movie-collector-pagination" aria-label="<?php esc_attr_e('Collection pagination', 'wp-movie-collector'); ?>">
             <?php
             // Pagination — $total_pages was computed above; preserve filters and sort in links.
-            {
-                $current_page = max(1, $paged);
+            $current_page = max(1, $paged);
 
                 // Collect active query args so pagination links preserve them.
                 $query_args = array();
@@ -389,7 +388,6 @@ $studios = get_terms(array(
                 }
 
                 echo '</div>';
-            }
             ?>
         </nav>
         <?php endif; ?>

@@ -550,6 +550,20 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'do_action' ) ) {
+	/**
+	 * Polyfill for WordPress do_action().
+	 *
+	 * No-op in unit tests: plugin code fires action hooks (e.g. the CPT
+	 * sync triggers), but unit tests do not register listeners.
+	 *
+	 * @param string $tag     Action name.
+	 * @param mixed  ...$args Action arguments.
+	 * @return void
+	 */
+	function do_action( $tag, ...$args ) {}
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * Polyfill for WordPress sanitize_text_field().

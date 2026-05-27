@@ -303,6 +303,13 @@ class WP_Movie_Collector_DB {
 			if ( ! $skip_cache_invalidation ) {
 				$this->invalidate_stats_cache();
 			}
+			/**
+			 * Fires after a movie is saved to the custom table.
+			 *
+			 * @since 1.4.0
+			 * @param int $movie_id The movie ID.
+			 */
+			do_action( 'wp_movie_collector_movie_saved', (int) $wpdb->insert_id );
 			return $wpdb->insert_id;
 		}
 
@@ -331,6 +338,11 @@ class WP_Movie_Collector_DB {
 
 		if ( $result > 0 ) {
 			$this->invalidate_stats_cache();
+		}
+
+		if ( false !== $result ) {
+			/** This action is documented in includes/db/class-wp-movie-collector-db.php */
+			do_action( 'wp_movie_collector_movie_saved', (int) $movie_id );
 		}
 
 		return $result !== false;
@@ -457,6 +469,13 @@ class WP_Movie_Collector_DB {
 
 		if ( $result !== false ) {
 			$this->invalidate_stats_cache();
+			/**
+			 * Fires after a movie is deleted from the custom table.
+			 *
+			 * @since 1.4.0
+			 * @param int $movie_id The deleted movie ID.
+			 */
+			do_action( 'wp_movie_collector_movie_deleted', (int) $movie_id );
 		}
 
 		return $result !== false;
@@ -483,6 +502,13 @@ class WP_Movie_Collector_DB {
 			if ( ! $skip_cache_invalidation ) {
 				$this->invalidate_stats_cache();
 			}
+			/**
+			 * Fires after a box set is saved to the custom table.
+			 *
+			 * @since 1.4.0
+			 * @param int $box_set_id The box set ID.
+			 */
+			do_action( 'wp_movie_collector_box_set_saved', (int) $wpdb->insert_id );
 			return $wpdb->insert_id;
 		}
 
@@ -511,6 +537,11 @@ class WP_Movie_Collector_DB {
 
 		if ( $result > 0 ) {
 			$this->invalidate_stats_cache();
+		}
+
+		if ( false !== $result ) {
+			/** This action is documented in includes/db/class-wp-movie-collector-db.php */
+			do_action( 'wp_movie_collector_box_set_saved', (int) $box_set_id );
 		}
 
 		return $result !== false;
@@ -646,6 +677,13 @@ class WP_Movie_Collector_DB {
 
 		if ( $result !== false ) {
 			$this->invalidate_stats_cache();
+			/**
+			 * Fires after a box set is deleted from the custom table.
+			 *
+			 * @since 1.4.0
+			 * @param int $box_set_id The deleted box set ID.
+			 */
+			do_action( 'wp_movie_collector_box_set_deleted', (int) $box_set_id );
 		}
 
 		return $result !== false && $cleared !== false;

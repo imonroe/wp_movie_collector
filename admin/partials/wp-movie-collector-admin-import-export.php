@@ -25,6 +25,16 @@ if ( ! current_user_can( 'manage_options' ) ) {
                     $message = sprintf(__('%d items were successfully imported.', 'wp-movie-collector'), $count);
                 }
                 break;
+            case 'synced':
+                $synced_movies   = isset($_GET['synced_movies']) ? absint(wp_unslash($_GET['synced_movies'])) : 0;
+                $synced_box_sets = isset($_GET['synced_box_sets']) ? absint(wp_unslash($_GET['synced_box_sets'])) : 0;
+                $message = sprintf(
+                    /* translators: 1: number of movies, 2: number of box sets */
+                    __('Sync complete: %1$d movies and %2$d box sets are now mirrored as posts.', 'wp-movie-collector'),
+                    $synced_movies,
+                    $synced_box_sets
+                );
+                break;
             default:
                 $message = __('Operation completed successfully.', 'wp-movie-collector');
                 break;
@@ -131,6 +141,19 @@ if ( ! current_user_can( 'manage_options' ) ) {
         <a href="<?php echo esc_url(admin_url('admin-post.php?action=wp_movie_collector_download_csv_template&wp_movie_collector_nonce=' . wp_create_nonce('wp_movie_collector_template'))); ?>" class="button">
             <?php esc_html_e('Download CSV Template', 'wp-movie-collector'); ?>
         </a>
+    </div>
+
+    <div class="wp-movie-collector-import-template">
+        <h2><?php esc_html_e('Sync to Posts', 'wp-movie-collector'); ?></h2>
+        <p><?php esc_html_e('Create or refresh the WordPress posts (movie / box set) that mirror your collection so single-item pages, WordPress search, taxonomies, and SEO plugins work. New and edited items sync automatically; use this to backfill existing data.', 'wp-movie-collector'); ?></p>
+
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="wp_movie_collector_sync_posts">
+            <?php wp_nonce_field('wp_movie_collector_sync_posts', 'wp_movie_collector_nonce'); ?>
+            <button type="submit" class="button">
+                <?php esc_html_e('Sync collection to posts', 'wp-movie-collector'); ?>
+            </button>
+        </form>
     </div>
 </div>
 

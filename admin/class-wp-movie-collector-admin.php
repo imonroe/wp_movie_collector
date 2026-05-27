@@ -1634,6 +1634,42 @@ class WP_Movie_Collector_Admin {
 	}
 
 	/**
+	 * Bulk-sync all custom-table movies and box sets into CPT posts.
+	 *
+	 * Backfills `movie`/`box_set` posts for data that pre-dates the sync
+	 * feature (or repairs posts that drifted). Triggered from the
+	 * Import/Export admin page.
+	 *
+	 * @since    1.4.0
+	 */
+	public function process_sync_posts() {
+		// Check nonce.
+		if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_sync_posts' ) ) {
+			wp_die( __( 'Security check failed.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+		}
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to perform this action.', 'wp-movie-collector' ), '', array( 'response' => 403 ) );
+		}
+
+		$sync   = new WP_Movie_Collector_Sync();
+		$counts = $sync->sync_all();
+
+		$redirect = add_query_arg(
+			array(
+				'message'        => 'synced',
+				'synced_movies'  => (int) $counts['movies'],
+				'synced_box_sets' => (int) $counts['box_sets'],
+			),
+			admin_url( 'admin.php?page=wp-movie-collector-import-export' )
+		);
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
 	 * Get export data based on type.
 	 *
 	 * @since    1.0.0

@@ -2,6 +2,44 @@
  * Public-facing styles for WP Movie Collector
  */
 
+/* Accessibility: visually hide content while keeping it available to screen
+   readers. Mirrors WordPress core's .screen-reader-text so labels work on
+   any theme. The focusable variant reveals the element on keyboard focus. */
+.wp-movie-collector-container .screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    word-wrap: normal !important;
+}
+
+/* Focusable variant: reveal the element when it receives keyboard focus
+   (e.g. skip links), matching WordPress core's .screen-reader-text:focus. */
+.wp-movie-collector-container .screen-reader-text:focus {
+    background-color: #f1f1f1;
+    border-radius: 3px;
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.6);
+    clip: auto !important;
+    clip-path: none;
+    color: #21759b;
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    height: auto;
+    left: 5px;
+    line-height: normal;
+    padding: 15px 23px 14px;
+    text-decoration: none;
+    top: 5px;
+    width: auto;
+    z-index: 100000;
+}
+
 /* Movie Collection Container */
 .wp-movie-collector-container {
     margin: 20px 0;
@@ -55,7 +93,8 @@
     gap: 10px;
 }
 
-.wp-movie-collector-search input[type="text"] {
+.wp-movie-collector-search input[type="text"],
+.wp-movie-collector-search input[type="search"] {
     flex: 1;
 }
 
@@ -213,23 +252,87 @@
 }
 
 /* Responsive Adjustments */
+
+/* Tablet landscape and below: keep the 200px minimum card width (from the
+   base rule) so cards don't get cramped, and just tighten the gap. */
+@media (max-width: 1024px) {
+    .wp-movie-collector-grid {
+        gap: 16px;
+    }
+}
+
+/* Tablet portrait and below: stack the filter/search forms and single-view
+   header; make form controls full-width and easy to tap. */
 @media (max-width: 768px) {
     .wp-movie-collector-filters form {
         flex-direction: column;
+        align-items: stretch;
     }
-    
+
     .wp-movie-collector-filters .filter-group,
     .wp-movie-collector-filters .filter-actions {
         width: 100%;
+        min-width: 0;
     }
-    
+
+    .wp-movie-collector-filters .filter-actions {
+        flex-direction: column;
+    }
+
+    .wp-movie-collector-search form {
+        flex-wrap: wrap;
+    }
+
+    /* Full-width search field on small screens. */
+    .wp-movie-collector-search input {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    /* Comfortable touch targets (>= 44px) for inputs, selects, and buttons. */
+    .wp-movie-collector-filters .filter-group select,
+    .wp-movie-collector-filters .filter-group input,
+    .wp-movie-collector-search input,
+    .wp-movie-collector-container .button,
+    .wp-movie-collector-pagination .page-numbers {
+        min-height: 44px;
+        line-height: 1.4;
+    }
+
+    .wp-movie-collector-pagination .page-numbers {
+        padding: 10px 14px;
+    }
+
     .wp-movie-collector-single-header {
         flex-direction: column;
     }
-    
+
     .wp-movie-collector-single-image {
         margin-bottom: 20px;
         flex: 0 0 auto;
         max-width: 250px;
+    }
+}
+
+/* Phones: two-up grid down to the smallest common widths (320-480px),
+   single column once cards would be cramped. */
+@media (max-width: 480px) {
+    .wp-movie-collector-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .wp-movie-collector-item-title {
+        font-size: 15px;
+    }
+
+    .wp-movie-collector-single-title {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 360px) {
+    .wp-movie-collector-grid {
+        grid-template-columns: 1fr;
     }
 }

@@ -157,18 +157,20 @@ $studios = get_terms(array(
 <div class="wp-movie-collector-container">
     <!-- Search Bar -->
     <div class="wp-movie-collector-search">
-        <form method="get" action="<?php echo esc_url(get_permalink()); ?>">
+        <form method="get" action="<?php echo esc_url(get_permalink()); ?>" role="search" aria-label="<?php esc_attr_e('Search the movie collection', 'wp-movie-collector'); ?>">
             <?php if ( $current_sort !== $default_sort ) : ?>
                 <input type="hidden" name="sort" value="<?php echo esc_attr( $current_sort ); ?>">
             <?php endif; ?>
-            <input type="text" name="search" placeholder="<?php esc_attr_e('Search your collection...', 'wp-movie-collector'); ?>" value="<?php echo esc_attr($search_term); ?>">
+            <?php $search_field_id = function_exists( 'wp_unique_id' ) ? wp_unique_id( 'wp-movie-collector-search-' ) : 'wp-movie-collector-search-field'; ?>
+            <label for="<?php echo esc_attr( $search_field_id ); ?>" class="screen-reader-text"><?php esc_html_e('Search your collection', 'wp-movie-collector'); ?></label>
+            <input type="search" id="<?php echo esc_attr( $search_field_id ); ?>" name="search" placeholder="<?php esc_attr_e('Search your collection...', 'wp-movie-collector'); ?>" value="<?php echo esc_attr($search_term); ?>">
             <button type="submit" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
         </form>
     </div>
-    
+
     <!-- Filters -->
     <div class="wp-movie-collector-filters">
-        <form method="get" action="<?php echo esc_url(get_permalink()); ?>">
+        <form method="get" action="<?php echo esc_url(get_permalink()); ?>" aria-label="<?php esc_attr_e('Filter and sort the collection', 'wp-movie-collector'); ?>">
             <?php if (!empty($search_term)) : ?>
                 <input type="hidden" name="search" value="<?php echo esc_attr($search_term); ?>">
             <?php endif; ?>
@@ -262,13 +264,13 @@ $studios = get_terms(array(
     
     <?php if ($current_page_items > 0) : ?>
         <!-- Results Grid -->
-        <div class="wp-movie-collector-grid">
+        <div class="wp-movie-collector-grid" role="list" aria-label="<?php esc_attr_e('Collection items', 'wp-movie-collector'); ?>">
             <?php if (isset($results['movies']) && !empty($results['movies'])) : ?>
                 <?php foreach ($results['movies'] as $movie) : ?>
-                    <div class="wp-movie-collector-item">
+                    <div class="wp-movie-collector-item" role="listitem">
                         <div class="wp-movie-collector-item-image">
                             <?php if (!empty($movie['cover_image_url'])) : ?>
-                                <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="<?php echo esc_attr($movie['title']); ?>">
+                                <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="<?php echo esc_attr( ! empty( $movie['release_year'] ) ? sprintf( /* translators: 1: movie title, 2: release year */ __( '%1$s (%2$s)', 'wp-movie-collector' ), $movie['title'], $movie['release_year'] ) : $movie['title'] ); ?>">
                             <?php else : ?>
                                 <div class="wp-movie-collector-no-image">
                                     <span><?php esc_html_e('No Image', 'wp-movie-collector'); ?></span>
@@ -297,10 +299,10 @@ $studios = get_terms(array(
             
             <?php if (isset($results['box_sets']) && !empty($results['box_sets'])) : ?>
                 <?php foreach ($results['box_sets'] as $box_set) : ?>
-                    <div class="wp-movie-collector-item wp-movie-collector-box-set-item">
+                    <div class="wp-movie-collector-item wp-movie-collector-box-set-item" role="listitem">
                         <div class="wp-movie-collector-item-image">
                             <?php if (!empty($box_set['cover_image_url'])) : ?>
-                                <img src="<?php echo esc_url($box_set['cover_image_url']); ?>" alt="<?php echo esc_attr($box_set['title']); ?>">
+                                <img src="<?php echo esc_url($box_set['cover_image_url']); ?>" alt="<?php echo esc_attr( ! empty( $box_set['release_year'] ) ? sprintf( /* translators: 1: box set title, 2: release year, 3: "Box Set" label */ __( '%1$s (%2$s) — %3$s', 'wp-movie-collector' ), $box_set['title'], $box_set['release_year'], __( 'Box Set', 'wp-movie-collector' ) ) : sprintf( /* translators: 1: box set title, 2: "Box Set" label */ __( '%1$s — %2$s', 'wp-movie-collector' ), $box_set['title'], __( 'Box Set', 'wp-movie-collector' ) ) ); ?>">
                             <?php else : ?>
                                 <div class="wp-movie-collector-no-image">
                                     <span><?php esc_html_e('No Image', 'wp-movie-collector'); ?></span>
@@ -327,11 +329,15 @@ $studios = get_terms(array(
         </div>
         
         <!-- Pagination -->
-        <div class="wp-movie-collector-pagination">
+        <?php
+        // Only render the <nav> landmark when there is more than one page,
+        // so we don't leave an empty navigation landmark in the DOM.
+        if ($total_pages > 1) :
+        ?>
+        <nav class="wp-movie-collector-pagination" aria-label="<?php esc_attr_e('Collection pagination', 'wp-movie-collector'); ?>">
             <?php
             // Pagination — $total_pages was computed above; preserve filters and sort in links.
-            if ($total_pages > 1) {
-                $current_page = max(1, $paged);
+            $current_page = max(1, $paged);
 
                 // Collect active query args so pagination links preserve them.
                 $query_args = array();
@@ -368,7 +374,7 @@ $studios = get_terms(array(
                 // Page numbers
                 for ($i = 1; $i <= $total_pages; $i++) {
                     if ($i === $current_page) {
-                        echo '<span class="page-numbers current">' . $i . '</span>';
+                        echo '<span class="page-numbers current" aria-current="page">' . $i . '</span>';
                     } else {
                         $page_url = add_query_arg( $query_args, get_pagenum_link( $i ) );
                         echo '<a class="page-numbers" href="' . esc_url( $page_url ) . '">' . $i . '</a>';
@@ -382,11 +388,11 @@ $studios = get_terms(array(
                 }
 
                 echo '</div>';
-            }
             ?>
-        </div>
+        </nav>
+        <?php endif; ?>
     <?php else : ?>
-        <div class="wp-movie-collector-no-results">
+        <div class="wp-movie-collector-no-results" role="status" aria-live="polite">
             <p><?php esc_html_e('No movies or box sets found matching your criteria.', 'wp-movie-collector'); ?></p>
         </div>
     <?php endif; ?>

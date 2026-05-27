@@ -95,6 +95,26 @@ class PublicShortcodeTest extends TestCase {
 		$this->assertStringContainsString( 'Repo Man', $html );
 	}
 
+	public function test_shortcode_renders_box_set_for_box_sets_type(): void {
+		$this->mock_wpdb(
+			array(
+				array(
+					'id'              => 9,
+					'title'           => 'Alien Anthology',
+					'release_year'    => 2010,
+					'format'          => 'Blu-ray',
+					'cover_image_url' => '',
+				),
+			),
+			'1'
+		);
+
+		$html = $this->render( array( 'type' => 'box_sets' ) );
+
+		$this->assertStringContainsString( 'wp-movie-collector-box-set-item', $html );
+		$this->assertStringContainsString( 'Alien Anthology', $html );
+	}
+
 	public function test_shortcode_shows_empty_message_when_no_results(): void {
 		$this->mock_wpdb( array(), '0' );
 

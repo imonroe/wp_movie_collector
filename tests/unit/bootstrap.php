@@ -734,6 +734,41 @@ if ( ! function_exists( 'shortcode_atts' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * Polyfill for WordPress wp_unslash(): recursively strip slashes.
+	 *
+	 * Public templates call this when reading $_GET; provide it so tests
+	 * that populate $_GET don't fatal in the WordPress-free suite.
+	 *
+	 * @param string|array $value Value to unslash.
+	 * @return string|array
+	 */
+	function wp_unslash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_unslash', $value );
+		}
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'remove_query_arg' ) ) {
+	/**
+	 * Minimal polyfill for WordPress remove_query_arg().
+	 *
+	 * Used by the single movie/box-set templates. Returns the base URL
+	 * without attempting full query-string surgery, which is sufficient
+	 * for rendering assertions.
+	 *
+	 * @param string|array $key Query key(s) to remove (ignored).
+	 * @param string       $url URL to operate on.
+	 * @return string
+	 */
+	function remove_query_arg( $key, $url = '' ) {
+		return (string) $url;
+	}
+}
+
 /**
  * Controls the return value of the current_user_can() polyfill.
  *

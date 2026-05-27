@@ -605,6 +605,15 @@ class WP_Movie_Collector_DB {
 			array( 'box_set_id' => $box_set_id )
 		);
 
+		// Clear the denormalized box_set_id pointer on any movies that
+		// referenced this set so they don't keep a dangling ID after the
+		// set is gone.
+		$wpdb->update(
+			$this->movies_table,
+			array( 'box_set_id' => null ),
+			array( 'box_set_id' => $box_set_id )
+		);
+
 		// Then delete the box set
 		$result = $wpdb->delete(
 			$this->box_sets_table,

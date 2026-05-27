@@ -772,7 +772,13 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			}
 		}
 
-		return $this->finalize_prepared_data( $data, $errors, $is_create, array( 'title', 'release_year', 'format', 'region_code' ) );
+		return $this->finalize_prepared_data(
+			$data,
+			$errors,
+			$is_create,
+			array( 'title', 'release_year', 'format', 'region_code' ),
+			array( 'barcode', 'director', 'studio', 'actors', 'genre' )
+		);
 	}
 
 	/**
@@ -803,7 +809,13 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 
 		$this->apply_common_media_fields( $request, $data, $errors );
 
-		return $this->finalize_prepared_data( $data, $errors, $is_create, array( 'title', 'release_year', 'format', 'region_code' ) );
+		return $this->finalize_prepared_data(
+			$data,
+			$errors,
+			$is_create,
+			array( 'title', 'release_year', 'format', 'region_code' ),
+			array( 'barcode' )
+		);
 	}
 
 	/**
@@ -872,15 +884,26 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 	 * @param array $data      Sanitized data.
 	 * @param array $errors    Accumulated validation errors.
 	 * @param bool  $is_create Whether required fields must be present.
-	 * @param array $required  Required field keys (enforced on create only).
+	 * @param array $required       Required field keys (enforced on create only).
+	 * @param array $not_null_blank NOT NULL columns to default to '' on create when omitted.
 	 * @return array|WP_Error
 	 */
-	protected function finalize_prepared_data( $data, $errors, $is_create, $required ) {
+	protected function finalize_prepared_data( $data, $errors, $is_create, $required, $not_null_blank = array() ) {
 		if ( $is_create ) {
 			foreach ( $required as $field ) {
 				if ( ! isset( $data[ $field ] ) || '' === $data[ $field ] ) {
 					/* translators: %s: field name. */
 					$errors[] = sprintf( __( 'The %s field is required.', 'wp-movie-collector' ), $field );
+				}
+			}
+
+			// The custom tables declare these columns NOT NULL without a
+			// default, and the admin flow always supplies empty-string
+			// defaults. Mirror that so a minimal REST create doesn't fail
+			// (or behave differently) under MySQL strict mode.
+			foreach ( $not_null_blank as $field ) {
+				if ( ! isset( $data[ $field ] ) ) {
+					$data[ $field ] = '';
 				}
 			}
 		}
@@ -922,7 +945,7 @@ class WP_Movie_Collector_REST_Controller extends WP_REST_Controller {
 			'cover_image_id'   => isset( $movie['cover_image_id'] ) ? (int) $movie['cover_image_id'] : 0,
 			'description'      => isset( $movie['description'] ) ? $movie['description'] : '',
 			'acquisition_date' => isset( $movie['acquisition_date'] ) ? $movie['acquisition_date'] : null,
-			'box_set_id'       => isset( $movie['box_set_id'] ) ? (int) $movie['box_set_id'] : 0,
+			'box_set_id'       => empty( $movie['box_set_id'] ) ? null : (int) $movie['box_set_id'],
 			'api_source'       => isset( $movie['api_source'] ) ? $movie['api_source'] : '',
 			'custom_notes'     => isset( $movie['custom_notes'] ) ? $movie['custom_notes'] : '',
 			'created_at'       => isset( $movie['created_at'] ) ? $movie['created_at'] : null,

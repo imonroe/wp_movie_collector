@@ -390,7 +390,8 @@ class DbTest extends TestCase {
 	}
 
 	/**
-	 * delete_box_set should delete relationships first, then the box set.
+	 * delete_box_set should delete relationships first, clear the box_set_id
+	 * pointer on member movies, then delete the box set.
 	 */
 	public function test_delete_box_set_removes_relationships_and_record(): void {
 		$delete_calls = array();
@@ -407,12 +408,33 @@ class DbTest extends TestCase {
 				}
 			);
 
+		$update_calls = array();
+		$this->wpdb->expects( $this->once() )
+			->method( 'update' )
+			->willReturnCallback(
+				function ( $table, $data, $where ) use ( &$update_calls ) {
+					$update_calls[] = array(
+						'table' => $table,
+						'data'  => $data,
+						'where' => $where,
+					);
+					return 1;
+				}
+			);
+
 		$this->assertTrue( $this->db->delete_box_set( 8 ) );
+
 		$this->assertCount( 2, $delete_calls );
 		$this->assertSame( 'wp_movie_box_set_relationships', $delete_calls[0]['table'] );
 		$this->assertSame( array( 'box_set_id' => 8 ), $delete_calls[0]['where'] );
 		$this->assertSame( 'wp_movie_box_sets', $delete_calls[1]['table'] );
 		$this->assertSame( array( 'id' => 8 ), $delete_calls[1]['where'] );
+
+		// The movies table pointer is cleared to NULL for the removed set.
+		$this->assertCount( 1, $update_calls );
+		$this->assertSame( 'wp_movie_collection', $update_calls[0]['table'] );
+		$this->assertSame( array( 'box_set_id' => null ), $update_calls[0]['data'] );
+		$this->assertSame( array( 'box_set_id' => 8 ), $update_calls[0]['where'] );
 	}
 
 	// ------------------------------------------------------------------

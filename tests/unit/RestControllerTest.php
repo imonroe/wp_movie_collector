@@ -458,6 +458,65 @@ class RestControllerTest extends TestCase {
 		$this->assertSame( 500, $result->get_error_data()['status'] );
 	}
 
+	public function test_prepare_movie_for_response_box_set_id_null_when_unset() {
+		$row               = $this->sample_movie_row();
+		$row['box_set_id'] = null;
+
+		$prepared = $this->controller->prepare_movie_for_response( $row );
+
+		$this->assertNull( $prepared['box_set_id'] );
+	}
+
+	public function test_create_movie_defaults_not_null_text_fields_to_blank() {
+		$captured = null;
+		$this->db->method( 'insert_movie' )->willReturnCallback(
+			function ( $data ) use ( &$captured ) {
+				$captured = $data;
+				return 7;
+			}
+		);
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'Minimal',
+				'release_year' => 2000,
+				'format'       => 'DVD',
+				'region_code'  => 'R1',
+			)
+		);
+		$this->controller->create_movie( $request );
+
+		foreach ( array( 'barcode', 'director', 'studio', 'actors', 'genre' ) as $field ) {
+			$this->assertArrayHasKey( $field, $captured );
+			$this->assertSame( '', $captured[ $field ] );
+		}
+	}
+
+	public function test_create_box_set_defaults_barcode_to_blank() {
+		$captured = null;
+		$this->db->method( 'insert_box_set' )->willReturnCallback(
+			function ( $data ) use ( &$captured ) {
+				$captured = $data;
+				return 5;
+			}
+		);
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 5 ) );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'Minimal Set',
+				'release_year' => 2000,
+				'format'       => 'DVD',
+				'region_code'  => 'R1',
+			)
+		);
+		$this->controller->create_box_set( $request );
+
+		$this->assertArrayHasKey( 'barcode', $captured );
+		$this->assertSame( '', $captured['barcode'] );
+	}
+
 	public function test_box_set_collection_params_exclude_movie_only_filters() {
 		$params = $this->controller->get_box_set_collection_params();
 

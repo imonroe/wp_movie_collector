@@ -1,0 +1,10 @@
+I want you to look closely at the current state of the code base so you understand what it looks like.
+Then I want you to take a look at the documentation in the project, including externally facing documentation, such a user guides or help documentation, as well as developer facing documentation (README.md, etc), as well as your own documentation (CLAUDE.md, etc).
+Look at any files in the `docs/` directory if it exists.
+
+Once you have a thorough understanding of the current state of the project, and the current state of all the documentation, I want you to do a comprehensive update for all the documnenation.
+This will make development easier, and keeping updated documentation is important for project hygiene.
+
+When you are done, create a pull request set up to merge to the `dev` branch, and push it to Github. Treat it like any other PR, subscribe and follow for feedback.  Respond to any feedback.
+
+When I merge the PR into `dev`, this task is complete.

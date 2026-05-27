@@ -1,0 +1,35 @@
+{
+    "name": "wp-movie-collector",
+    "version": "1.0.0",
+    "description": "A WordPress plugin for collecting and managing your movie collection.",
+    "private": true,
+    "scripts": {
+        "build": "webpack --mode=production",
+        "build:release": "bash bin/build-release.sh",
+        "watch": "webpack --mode=development --watch",
+        "dev": "webpack --mode=development",
+        "lint:js": "eslint src/ admin/js/ public/js/",
+        "lint:js:fix": "eslint src/ admin/js/ public/js/ --fix",
+        "lint:css": "stylelint \"**/*.css\" --ignore-path .gitignore",
+        "test": "jest --passWithNoTests"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.26.0",
+        "@babel/preset-env": "^7.26.0",
+        "@wordpress/eslint-plugin": "^21.0.0",
+        "babel-loader": "^9.2.0",
+        "css-loader": "^7.0.0",
+        "css-minimizer-webpack-plugin": "^7.0.0",
+        "eslint": "^8.57.0",
+        "jest": "^29.7.0",
+        "jest-environment-jsdom": "^29.7.0",
+        "mini-css-extract-plugin": "^2.9.0",
+        "stylelint": "^16.0.0",
+        "stylelint-config-standard": "^37.0.0",
+        "webpack": "^5.97.0",
+        "webpack-cli": "^6.0.0"
+    },
+    "engines": {
+        "node": ">=18.14.0"
+    }
+}

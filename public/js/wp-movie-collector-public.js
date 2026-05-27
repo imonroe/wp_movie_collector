@@ -8,7 +8,7 @@
      * Initialize filters and search functionality
      */
     function initFilters() {
-        // Auto-submit filters when changed
+        // Auto-submit filters when changed (including sort dropdown)
         $('.wp-movie-collector-filters select').on('change', function() {
             $(this).closest('form').submit();
         });

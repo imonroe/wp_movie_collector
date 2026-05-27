@@ -6,6 +6,10 @@
  * @package    WP_Movie_Collector
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 class WP_Movie_Collector_Public {
 
     /**
@@ -23,7 +27,14 @@ class WP_Movie_Collector_Public {
      * @since    1.0.0
      */
     public function enqueue_styles() {
-        wp_enqueue_style('wp-movie-collector-public', WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/css/wp-movie-collector-public.css', array(), WP_MOVIE_COLLECTOR_VERSION, 'all');
+        $css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/css/wp-movie-collector-public.css';
+        if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
+            $built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/public/css/wp-movie-collector-public.min.css';
+            if ( file_exists( $built_path ) ) {
+                $css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/css/wp-movie-collector-public.min.css';
+            }
+        }
+        wp_enqueue_style('wp-movie-collector-public', $css_url, array(), WP_MOVIE_COLLECTOR_VERSION, 'all');
     }
 
     /**
@@ -32,7 +43,14 @@ class WP_Movie_Collector_Public {
      * @since    1.0.0
      */
     public function enqueue_scripts() {
-        wp_enqueue_script('wp-movie-collector-public', WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/js/wp-movie-collector-public.js', array('jquery'), WP_MOVIE_COLLECTOR_VERSION, false);
+        $js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'public/js/wp-movie-collector-public.js';
+        if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
+            $built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/public/js/wp-movie-collector-public.min.js';
+            if ( file_exists( $built_path ) ) {
+                $js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/public/js/wp-movie-collector-public.min.js';
+            }
+        }
+        wp_enqueue_script('wp-movie-collector-public', $js_url, array('jquery'), WP_MOVIE_COLLECTOR_VERSION, false);
         
         // Localize the script with new data
         $localize_data = array(
@@ -65,6 +83,8 @@ class WP_Movie_Collector_Public {
         $atts = shortcode_atts(array(
             'type' => 'all', // all, movies, box_sets
             'per_page' => 12,
+            'orderby' => '',
+            'order' => '',
         ), $atts, 'movie_collection');
 
         // Start output buffering
@@ -166,12 +186,34 @@ class WP_Movie_Collector_Public {
         $results = array();
         $total_items = 0;
 
-        // Build search criteria
+        // Build search criteria. Support combined "sort" key (e.g. "title-ASC")
+        // as well as separate orderby/order keys. Validate against whitelists.
+        // Director only applies to movies, not box sets.
+        $allowed_orderby = array( 'title', 'release_year', 'created_at', 'acquisition_date', 'format' );
+        if ( $type !== 'box_sets' ) {
+            $allowed_orderby[] = 'director';
+        }
+        $allowed_order   = array( 'ASC', 'DESC' );
+
+        $orderby = 'title';
+        $order   = 'ASC';
+        if ( ! empty( $sanitized_args['sort'] ) ) {
+            $sort_parts = explode( '-', $sanitized_args['sort'], 2 );
+            $orderby    = isset( $sort_parts[0] ) ? sanitize_key( $sort_parts[0] ) : 'title';
+            $order      = isset( $sort_parts[1] ) ? strtoupper( $sort_parts[1] ) : 'ASC';
+        } elseif ( ! empty( $sanitized_args['orderby'] ) ) {
+            $orderby = sanitize_key( $sanitized_args['orderby'] );
+            $order   = isset( $sanitized_args['order'] ) ? strtoupper( $sanitized_args['order'] ) : 'ASC';
+        }
+
+        $orderby = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'title';
+        $order   = in_array( $order, $allowed_order, true ) ? $order : 'ASC';
+
         $criteria = array(
             'per_page' => $per_page,
-            'page' => $page,
-            'orderby' => isset($sanitized_args['orderby']) ? $sanitized_args['orderby'] : 'title',
-            'order' => isset($sanitized_args['order']) ? $sanitized_args['order'] : 'ASC',
+            'page'     => $page,
+            'orderby'  => $orderby,
+            'order'    => $order,
         );
 
         // Add any filter criteria from args

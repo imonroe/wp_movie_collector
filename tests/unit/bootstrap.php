@@ -651,10 +651,16 @@ if ( ! function_exists( 'esc_attr' ) ) {
 
 if ( ! function_exists( 'esc_url' ) ) {
 	function esc_url( $url ) {
-		// Sanitize then attribute-escape (encode &, quotes) so rendered
-		// output mirrors WordPress's output-safe esc_url() rather than the
-		// raw esc_url_raw() value.
-		$sanitized = filter_var( (string) $url, FILTER_SANITIZE_URL );
+		// Delegate sanitization to esc_url_raw() for consistency, drop URLs
+		// with a disallowed scheme (rough mirror of core's allowlist), then
+		// attribute-escape (encode &, quotes) for output safety.
+		$sanitized = esc_url_raw( (string) $url );
+		if ( '' !== $sanitized ) {
+			$scheme = wp_parse_url( $sanitized, PHP_URL_SCHEME );
+			if ( null !== $scheme && ! in_array( strtolower( (string) $scheme ), array( 'http', 'https', 'mailto', 'ftp' ), true ) ) {
+				$sanitized = '';
+			}
+		}
 		return htmlspecialchars( $sanitized, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
 	}
 }
@@ -729,6 +735,10 @@ if ( ! function_exists( 'shortcode_atts' ) ) {
 		$out  = array();
 		foreach ( $defaults as $name => $default ) {
 			$out[ $name ] = array_key_exists( $name, $atts ) ? $atts[ $name ] : $default;
+		}
+		// Mirror core: run the shortcode-specific filter when a tag is given.
+		if ( '' !== (string) $shortcode ) {
+			$out = apply_filters( "shortcode_atts_{$shortcode}", $out, $defaults, $atts, $shortcode );
 		}
 		return $out;
 	}

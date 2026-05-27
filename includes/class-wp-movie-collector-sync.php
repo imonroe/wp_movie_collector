@@ -33,11 +33,15 @@ class WP_Movie_Collector_Sync {
 	 *
 	 * @since 1.4.0
 	 * @param int $movie_id The movie table ID.
+	 * @param array|null $movie Optional pre-fetched movie row, to avoid a
+	 *                          redundant query during bulk sync.
 	 * @return int|null The post ID, or null if the movie no longer exists.
 	 */
-	public function sync_movie( $movie_id ) {
-		$db    = new WP_Movie_Collector_DB();
-		$movie = $db->get_movie( (int) $movie_id );
+	public function sync_movie( $movie_id, $movie = null ) {
+		if ( null === $movie ) {
+			$db    = new WP_Movie_Collector_DB();
+			$movie = $db->get_movie( (int) $movie_id );
+		}
 		if ( empty( $movie ) ) {
 			return null;
 		}
@@ -69,12 +73,16 @@ class WP_Movie_Collector_Sync {
 	 * Create or update the `box_set` post mirroring a box set row.
 	 *
 	 * @since 1.4.0
-	 * @param int $box_set_id The box set table ID.
+	 * @param int        $box_set_id The box set table ID.
+	 * @param array|null $box_set    Optional pre-fetched box set row, to avoid
+	 *                               a redundant query during bulk sync.
 	 * @return int|null The post ID, or null if the box set no longer exists.
 	 */
-	public function sync_box_set( $box_set_id ) {
-		$db      = new WP_Movie_Collector_DB();
-		$box_set = $db->get_box_set( (int) $box_set_id );
+	public function sync_box_set( $box_set_id, $box_set = null ) {
+		if ( null === $box_set ) {
+			$db      = new WP_Movie_Collector_DB();
+			$box_set = $db->get_box_set( (int) $box_set_id );
+		}
 		if ( empty( $box_set ) ) {
 			return null;
 		}
@@ -137,7 +145,8 @@ class WP_Movie_Collector_Sync {
 		$movies = $db->search_movies( array() );
 		if ( is_array( $movies ) ) {
 			foreach ( $movies as $movie ) {
-				if ( ! empty( $movie['id'] ) && $this->sync_movie( (int) $movie['id'] ) ) {
+				// Reuse the already-fetched row to avoid an N+1 re-query.
+				if ( ! empty( $movie['id'] ) && $this->sync_movie( (int) $movie['id'], $movie ) ) {
 					$counts['movies']++;
 				}
 			}
@@ -146,7 +155,7 @@ class WP_Movie_Collector_Sync {
 		$box_sets = $db->search_box_sets( array() );
 		if ( is_array( $box_sets ) ) {
 			foreach ( $box_sets as $box_set ) {
-				if ( ! empty( $box_set['id'] ) && $this->sync_box_set( (int) $box_set['id'] ) ) {
+				if ( ! empty( $box_set['id'] ) && $this->sync_box_set( (int) $box_set['id'], $box_set ) ) {
 					$counts['box_sets']++;
 				}
 			}
@@ -244,6 +253,10 @@ class WP_Movie_Collector_Sync {
 	private function set_featured_image( $post_id, $row ) {
 		if ( ! empty( $row['cover_image_id'] ) ) {
 			set_post_thumbnail( $post_id, (int) $row['cover_image_id'] );
+		} else {
+			// Clear any stale thumbnail so the post mirrors the table state
+			// after a cover image is removed.
+			delete_post_thumbnail( $post_id );
 		}
 	}
 

@@ -1,0 +1,49 @@
+# Files and directories excluded from the distribution ZIP.
+# Anything listed here is stripped from the release package.
+
+# Version control
+.git
+.github
+.gitignore
+.gitattributes
+
+# Dependencies (dev) and build tooling
+node_modules
+src
+webpack.config.js
+package.json
+package-lock.json
+composer.json
+composer.lock
+.eslintrc.js
+.stylelintrc.json
+phpcs.xml.dist
+phpunit.xml.dist
+jest.config.js
+
+# Tests
+tests
+bin
+
+# Docker / local dev
+Dockerfile
+Dockerfile.test
+docker-compose.yml
+docker-compose.test.yml
+DOCKER-SETUP.md
+.dockerignore
+
+# Project docs (not shipped to end users)
+CLAUDE.md
+STRUCTURE.md
+TODO.md
+requirements.md
+.claude
+
+# Build artifacts and scratch
+dist
+build
+*.map
+*.log
+.phpunit.result.cache
+.distignore

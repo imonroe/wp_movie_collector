@@ -377,6 +377,7 @@
     .wp-movie-collector-form .form-group input[type="text"],
     .wp-movie-collector-form .form-group input[type="number"],
     .wp-movie-collector-form .form-group input[type="date"],
+    .wp-movie-collector-form .form-group input[type="url"],
     .wp-movie-collector-form .form-group select,
     .wp-movie-collector-form .form-group textarea {
         width: 100%;
@@ -385,5 +386,17 @@
 
     .wp-movie-collector-form .form-group textarea {
         min-height: 88px;
+    }
+
+    /* The barcode scanner sits outside the form-group wrapper; stack it and
+       give the input/button comfortable touch targets too. */
+    .wp-movie-collector-barcode-input {
+        flex-direction: column;
+    }
+
+    .wp-movie-collector-barcode-input input,
+    .wp-movie-collector-barcode-input .button {
+        width: 100%;
+        min-height: 44px;
     }
 }

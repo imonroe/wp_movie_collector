@@ -5,6 +5,7 @@
     "private": true,
     "scripts": {
         "build": "webpack --mode=production",
+        "build:release": "bash bin/build-release.sh",
         "watch": "webpack --mode=development --watch",
         "dev": "webpack --mode=development",
         "lint:js": "eslint src/ admin/js/ public/js/",

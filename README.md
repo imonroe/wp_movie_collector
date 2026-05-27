@@ -68,6 +68,18 @@ Example:
 2. Enter box set details
 3. Add existing movies to the box set or create new ones
 
+## Building a Release
+
+To produce a clean distribution ZIP (production dependencies and assets only, with all development files excluded):
+
+```bash
+npm run build:release
+```
+
+This runs `bin/build-release.sh`, which installs production dependencies, builds the minified assets into `dist/`, and writes `build/wp-movie-collector-<version>.zip` (the built `dist/` assets are included in the package). The version in the filename is read from the plugin header. Files excluded from the package are listed in `.distignore`.
+
+Pushing a `v*` tag (or running the **Release** workflow manually) builds the same ZIP in CI and attaches it to the GitHub Release.
+
 ## Contributing
 
 Contributions are welcome! Feel free to submit pull requests or open issues on the GitHub repository.

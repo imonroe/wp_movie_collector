@@ -370,4 +370,25 @@
     .wp-movie-collector-search-input {
         flex-direction: column;
     }
+
+    /* Tablet/phone: the Add Movie form is commonly used on a tablet while
+       barcode scanning, so make fields full-width with comfortable touch
+       targets (>= 44px). 782px is WordPress's own admin "mobile" breakpoint. */
+    .wp-movie-collector-form .form-group input[type="text"],
+    .wp-movie-collector-form .form-group input[type="number"],
+    .wp-movie-collector-form .form-group input[type="date"],
+    .wp-movie-collector-form .form-group select,
+    .wp-movie-collector-form .form-group textarea {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .wp-movie-collector-form .form-group textarea {
+        min-height: 88px;
+    }
+
+    /* Stat grids collapse to a single column on narrow screens. */
+    .wp-movie-collector-stats {
+        grid-template-columns: 1fr;
+    }
 }

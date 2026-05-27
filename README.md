@@ -120,6 +120,18 @@ Custom post types (`movie`, `box_set`) and taxonomies (genre, director, studio, 
 
 The plugin registers REST routes on `rest_api_init` via `WP_Movie_Collector_REST_Controller` under the plugin's namespace. See that class for the available endpoints.
 
+## Building a Release
+
+To produce a clean distribution ZIP (production dependencies and assets only, with all development files excluded):
+
+```bash
+npm run build:release
+```
+
+This runs `bin/build-release.sh`, which installs production dependencies, builds the minified assets into `dist/`, and writes `build/wp-movie-collector-<version>.zip` (the built `dist/` assets are included in the package). The version in the filename is read from the plugin header. Files excluded from the package are listed in `.distignore`.
+
+Pushing a `v*` tag (or running the **Release** workflow manually) builds the same ZIP in CI and attaches it to the GitHub Release.
+
 ## Contributing
 
 Contributions are welcome! Feel free to submit pull requests or open issues on the GitHub repository.

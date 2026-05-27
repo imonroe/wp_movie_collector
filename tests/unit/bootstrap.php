@@ -637,19 +637,25 @@ if ( ! function_exists( 'absint' ) ) {
 
 if ( ! function_exists( 'esc_html' ) ) {
 	function esc_html( $text ) {
-		return htmlspecialchars( (string) $text, ENT_QUOTES );
+		// Explicit UTF-8 + ENT_SUBSTITUTE keeps escaping deterministic and
+		// avoids warnings/blank output on invalid byte sequences.
+		return htmlspecialchars( (string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
 	}
 }
 
 if ( ! function_exists( 'esc_attr' ) ) {
 	function esc_attr( $text ) {
-		return htmlspecialchars( (string) $text, ENT_QUOTES );
+		return htmlspecialchars( (string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
 	}
 }
 
 if ( ! function_exists( 'esc_url' ) ) {
 	function esc_url( $url ) {
-		return filter_var( (string) $url, FILTER_SANITIZE_URL );
+		// Sanitize then attribute-escape (encode &, quotes) so rendered
+		// output mirrors WordPress's output-safe esc_url() rather than the
+		// raw esc_url_raw() value.
+		$sanitized = filter_var( (string) $url, FILTER_SANITIZE_URL );
+		return htmlspecialchars( $sanitized, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
 	}
 }
 

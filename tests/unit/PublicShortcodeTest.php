@@ -29,13 +29,25 @@ class PublicShortcodeTest extends TestCase {
 	 */
 	private $previous_wpdb = null;
 
+	/**
+	 * Snapshot of $_GET, restored in tearDown.
+	 *
+	 * @var array
+	 */
+	private $previous_get = array();
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+		// The display template reads filters/search/sort from $_GET; start
+		// from a clean slate so these tests stay isolated and deterministic.
+		$this->previous_get = $_GET;
+		$_GET               = array();
 	}
 
 	protected function tearDown(): void {
 		$GLOBALS['wpdb'] = $this->previous_wpdb;
+		$_GET            = $this->previous_get;
 		parent::tearDown();
 	}
 

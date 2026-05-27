@@ -4,9 +4,11 @@
 #
 # Steps:
 #   1. composer install --no-dev   (production dependencies only)
-#   2. npm ci && npm run build      (production assets)
+#   2. npm ci && npm run build      (production assets, output to dist/)
 #   3. Copy plugin files into a staging dir, excluding everything in .distignore
-#   4. Zip the staging dir as wp-movie-collector-<version>.zip in dist/
+#      (the built dist/ assets ARE included, since the runtime asset loaders
+#      prefer dist/.../*.min.{css,js})
+#   4. Zip the staging dir as wp-movie-collector-<version>.zip in build/
 #
 # Usage: bin/build-release.sh
 #
@@ -14,8 +16,11 @@ set -euo pipefail
 
 SLUG="wp-movie-collector"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DIST_DIR="${ROOT_DIR}/dist"
-STAGE_DIR="${DIST_DIR}/${SLUG}"
+# Webpack emits production assets to dist/, which must ship in the package.
+# The release staging dir and the final ZIP go to build/ so they are not
+# packaged into themselves and dist/ can be copied in cleanly.
+OUTPUT_DIR="${ROOT_DIR}/build"
+STAGE_DIR="${OUTPUT_DIR}/${SLUG}"
 
 cd "${ROOT_DIR}"
 
@@ -45,10 +50,12 @@ else
 fi
 
 # 3. Stage files, honoring .distignore.
-rm -rf "${STAGE_DIR}" "${DIST_DIR}/${ZIP_NAME}"
+rm -rf "${OUTPUT_DIR}"
 mkdir -p "${STAGE_DIR}"
 
-EXCLUDES=("--exclude=./dist" "--exclude=./.git")
+# Always exclude the build output dir, git metadata, and source maps
+# (the latter recursively, including any inside dist/).
+EXCLUDES=("--exclude=./build" "--exclude=./.git" "--exclude=*.map")
 while IFS= read -r line; do
   # Skip comments and blank lines.
   [[ -z "${line}" || "${line}" =~ ^[[:space:]]*# ]] && continue
@@ -59,7 +66,7 @@ done < "${ROOT_DIR}/.distignore"
 tar -C "${ROOT_DIR}" -cf - "${EXCLUDES[@]}" . | tar -C "${STAGE_DIR}" -xf -
 
 # 4. Create the ZIP (top-level dir is the plugin slug, as WordPress expects).
-cd "${DIST_DIR}"
+cd "${OUTPUT_DIR}"
 if command -v zip >/dev/null 2>&1; then
   zip -rq "${ZIP_NAME}" "${SLUG}"
 else
@@ -68,10 +75,10 @@ else
 fi
 
 rm -rf "${STAGE_DIR}"
-echo "Created ${DIST_DIR}/${ZIP_NAME}"
+echo "Created ${OUTPUT_DIR}/${ZIP_NAME}"
 
 # When running in GitHub Actions, expose the exact artifact path so later
 # steps don't have to parse `ls` output.
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-  echo "zip=dist/${ZIP_NAME}" >> "${GITHUB_OUTPUT}"
+  echo "zip=build/${ZIP_NAME}" >> "${GITHUB_OUTPUT}"
 fi

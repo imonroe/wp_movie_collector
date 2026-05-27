@@ -41,7 +41,9 @@ requirements.md
 .claude
 
 # Build artifacts and scratch
-dist
+# NOTE: dist/ is intentionally NOT excluded — it holds the webpack-built
+# minified assets that the runtime asset loaders prefer. The release
+# staging dir and ZIP are written to build/ instead.
 build
 *.map
 *.log

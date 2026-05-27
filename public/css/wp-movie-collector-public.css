@@ -252,23 +252,87 @@
 }
 
 /* Responsive Adjustments */
+
+/* Tablet landscape and below: keep the 200px minimum card width (from the
+   base rule) so cards don't get cramped, and just tighten the gap. */
+@media (max-width: 1024px) {
+    .wp-movie-collector-grid {
+        gap: 16px;
+    }
+}
+
+/* Tablet portrait and below: stack the filter/search forms and single-view
+   header; make form controls full-width and easy to tap. */
 @media (max-width: 768px) {
     .wp-movie-collector-filters form {
         flex-direction: column;
+        align-items: stretch;
     }
-    
+
     .wp-movie-collector-filters .filter-group,
     .wp-movie-collector-filters .filter-actions {
         width: 100%;
+        min-width: 0;
     }
-    
+
+    .wp-movie-collector-filters .filter-actions {
+        flex-direction: column;
+    }
+
+    .wp-movie-collector-search form {
+        flex-wrap: wrap;
+    }
+
+    /* Full-width search field on small screens. */
+    .wp-movie-collector-search input {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    /* Comfortable touch targets (>= 44px) for inputs, selects, and buttons. */
+    .wp-movie-collector-filters .filter-group select,
+    .wp-movie-collector-filters .filter-group input,
+    .wp-movie-collector-search input,
+    .wp-movie-collector-container .button,
+    .wp-movie-collector-pagination .page-numbers {
+        min-height: 44px;
+        line-height: 1.4;
+    }
+
+    .wp-movie-collector-pagination .page-numbers {
+        padding: 10px 14px;
+    }
+
     .wp-movie-collector-single-header {
         flex-direction: column;
     }
-    
+
     .wp-movie-collector-single-image {
         margin-bottom: 20px;
         flex: 0 0 auto;
         max-width: 250px;
+    }
+}
+
+/* Phones: two-up grid down to the smallest common widths (320-480px),
+   single column once cards would be cramped. */
+@media (max-width: 480px) {
+    .wp-movie-collector-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .wp-movie-collector-item-title {
+        font-size: 15px;
+    }
+
+    .wp-movie-collector-single-title {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 360px) {
+    .wp-movie-collector-grid {
+        grid-template-columns: 1fr;
     }
 }

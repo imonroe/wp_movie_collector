@@ -130,38 +130,63 @@ class WP_Movie_Collector_Sync {
 	 * Bulk-sync every movie and box set in the custom tables to posts.
 	 *
 	 * Used by the admin "Sync to posts" tool to backfill posts for data
-	 * that pre-dates the sync feature.
+	 * that pre-dates the sync feature. Rows are processed in pages rather
+	 * than loaded all at once, so the request stays bounded in memory on
+	 * large collections.
 	 *
 	 * @since 1.4.0
+	 * @param int $batch_size Rows to load per page.
 	 * @return array{movies:int, box_sets:int} Counts of synced items.
 	 */
-	public function sync_all() {
-		$db      = new WP_Movie_Collector_DB();
-		$counts  = array(
-			'movies'   => 0,
-			'box_sets' => 0,
+	public function sync_all( $batch_size = 100 ) {
+		$db          = new WP_Movie_Collector_DB();
+		$batch_size  = max( 1, (int) $batch_size );
+
+		$counts = array(
+			'movies'   => $this->sync_all_of_type( array( $db, 'search_movies' ), array( $this, 'sync_movie' ), $batch_size ),
+			'box_sets' => $this->sync_all_of_type( array( $db, 'search_box_sets' ), array( $this, 'sync_box_set' ), $batch_size ),
 		);
 
-		$movies = $db->search_movies( array() );
-		if ( is_array( $movies ) ) {
-			foreach ( $movies as $movie ) {
-				// Reuse the already-fetched row to avoid an N+1 re-query.
-				if ( ! empty( $movie['id'] ) && $this->sync_movie( (int) $movie['id'], $movie ) ) {
-					$counts['movies']++;
-				}
-			}
-		}
-
-		$box_sets = $db->search_box_sets( array() );
-		if ( is_array( $box_sets ) ) {
-			foreach ( $box_sets as $box_set ) {
-				if ( ! empty( $box_set['id'] ) && $this->sync_box_set( (int) $box_set['id'], $box_set ) ) {
-					$counts['box_sets']++;
-				}
-			}
-		}
-
 		return $counts;
+	}
+
+	/**
+	 * Page through one collection type and sync each row to a post.
+	 *
+	 * @since 1.4.0
+	 * @param callable $fetch      Search method returning rows for a page.
+	 * @param callable $sync       Sync method accepting ( id, row ).
+	 * @param int      $batch_size Rows per page.
+	 * @return int Number of rows synced.
+	 */
+	private function sync_all_of_type( $fetch, $sync, $batch_size ) {
+		$synced = 0;
+		$page   = 1;
+
+		do {
+			$rows = call_user_func(
+				$fetch,
+				array(
+					'per_page' => $batch_size,
+					'page'     => $page,
+				)
+			);
+
+			if ( ! is_array( $rows ) || empty( $rows ) ) {
+				break;
+			}
+
+			foreach ( $rows as $row ) {
+				// Reuse the already-fetched row to avoid an N+1 re-query.
+				if ( ! empty( $row['id'] ) && call_user_func( $sync, (int) $row['id'], $row ) ) {
+					$synced++;
+				}
+			}
+
+			$page++;
+		} while ( count( $rows ) === $batch_size );
+
+		return $synced;
 	}
 
 	/**

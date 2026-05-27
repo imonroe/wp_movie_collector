@@ -26,8 +26,8 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 }
                 break;
             case 'synced':
-                $synced_movies   = isset($_GET['synced_movies']) ? intval($_GET['synced_movies']) : 0;
-                $synced_box_sets = isset($_GET['synced_box_sets']) ? intval($_GET['synced_box_sets']) : 0;
+                $synced_movies   = isset($_GET['synced_movies']) ? absint(wp_unslash($_GET['synced_movies'])) : 0;
+                $synced_box_sets = isset($_GET['synced_box_sets']) ? absint(wp_unslash($_GET['synced_box_sets'])) : 0;
                 $message = sprintf(
                     /* translators: 1: number of movies, 2: number of box sets */
                     __('Sync complete: %1$d movies and %2$d box sets are now mirrored as posts.', 'wp-movie-collector'),

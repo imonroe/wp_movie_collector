@@ -1,0 +1,339 @@
+<?php
+/**
+ * Unit tests for the REST API controller.
+ *
+ * These tests exercise the controller's logic in isolation using a mocked
+ * database layer and the lightweight REST stubs defined in the unit
+ * bootstrap. They cover response shaping, request-to-criteria mapping,
+ * payload validation, pagination headers, permission checks, and the
+ * CRUD/relationship handlers.
+ *
+ * @package WP_Movie_Collector\Tests\Unit
+ */
+
+use PHPUnit\Framework\TestCase;
+
+require_once dirname( __DIR__, 2 ) . '/includes/db/class-wp-movie-collector-db.php';
+require_once dirname( __DIR__, 2 ) . '/includes/class-wp-movie-collector-rest-controller.php';
+
+class RestControllerTest extends TestCase {
+
+	/**
+	 * Mocked database layer.
+	 *
+	 * @var WP_Movie_Collector_DB&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $db;
+
+	/**
+	 * Controller under test.
+	 *
+	 * @var WP_Movie_Collector_REST_Controller
+	 */
+	private $controller;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		// Reset auth globals to the permissive default.
+		$GLOBALS['wp_movie_test_current_user_can'] = true;
+		$GLOBALS['wp_movie_test_user_logged_in']   = true;
+		$GLOBALS['wp_movie_test_rest_routes']      = array();
+
+		$this->db         = $this->createMock( WP_Movie_Collector_DB::class );
+		$this->controller = new WP_Movie_Collector_REST_Controller( $this->db );
+	}
+
+	/**
+	 * A sample raw movie row as it would come from the database.
+	 *
+	 * @return array
+	 */
+	private function sample_movie_row() {
+		return array(
+			'id'               => '7',
+			'title'            => 'The Thing',
+			'release_year'     => '1982',
+			'format'           => 'Blu-ray',
+			'region_code'      => 'A',
+			'barcode'          => '012345678905',
+			'director'         => 'John Carpenter',
+			'studio'           => 'Universal',
+			'actors'           => 'Kurt Russell',
+			'genre'            => 'Horror',
+			'special_features' => 'Commentary',
+			'cover_image_url'  => 'http://example.com/thing.jpg',
+			'cover_image_id'   => '42',
+			'description'      => 'Antarctic dread.',
+			'acquisition_date' => '2020-01-01',
+			'box_set_id'       => '3',
+			'api_source'       => 'TMDb',
+			'custom_notes'     => 'Mint condition.',
+			'created_at'       => '2020-01-01 10:00:00',
+			'updated_at'       => '2020-01-02 10:00:00',
+		);
+	}
+
+	public function test_register_routes_registers_all_endpoints() {
+		$this->controller->register_routes();
+
+		$routes = $GLOBALS['wp_movie_test_rest_routes'];
+
+		$this->assertContains( 'movie-collection/v1/movies', $routes );
+		$this->assertContains( 'movie-collection/v1/movies/(?P<id>[\d]+)', $routes );
+		$this->assertContains( 'movie-collection/v1/box-sets', $routes );
+		$this->assertContains( 'movie-collection/v1/box-sets/(?P<id>[\d]+)', $routes );
+		$this->assertContains( 'movie-collection/v1/box-sets/(?P<id>[\d]+)/movies', $routes );
+		$this->assertContains( 'movie-collection/v1/box-sets/(?P<id>[\d]+)/movies/(?P<movie_id>[\d]+)', $routes );
+	}
+
+	public function test_prepare_movie_for_response_casts_types() {
+		$prepared = $this->controller->prepare_movie_for_response( $this->sample_movie_row() );
+
+		$this->assertSame( 7, $prepared['id'] );
+		$this->assertSame( 1982, $prepared['release_year'] );
+		$this->assertSame( 42, $prepared['cover_image_id'] );
+		$this->assertSame( 3, $prepared['box_set_id'] );
+		$this->assertSame( 'The Thing', $prepared['title'] );
+		$this->assertArrayHasKey( 'created_at', $prepared );
+	}
+
+	public function test_prepare_box_set_for_response_casts_types() {
+		$prepared = $this->controller->prepare_box_set_for_response(
+			array(
+				'id'           => '5',
+				'title'        => 'Nightmare Collection',
+				'release_year' => '1999',
+			)
+		);
+
+		$this->assertSame( 5, $prepared['id'] );
+		$this->assertSame( 1999, $prepared['release_year'] );
+		$this->assertSame( '', $prepared['format'] );
+		$this->assertArrayNotHasKey( 'box_set_id', $prepared );
+	}
+
+	public function test_build_query_criteria_maps_and_clamps_params() {
+		$request = new WP_REST_Request(
+			array(
+				'title'    => '  Alien  ',
+				'year'     => '1979',
+				'format'   => 'DVD',
+				'order'    => 'desc',
+				'orderby'  => 'release_year',
+				'per_page' => '500',
+				'page'     => '0',
+			)
+		);
+
+		$criteria = $this->controller->build_query_criteria( $request );
+
+		$this->assertSame( 'Alien', $criteria['title'] );
+		$this->assertSame( 1979, $criteria['year'] );
+		$this->assertSame( 'DVD', $criteria['format'] );
+		$this->assertSame( 'DESC', $criteria['order'] );
+		$this->assertSame( 'release_year', $criteria['orderby'] );
+		$this->assertSame( WP_Movie_Collector_REST_Controller::MAX_PER_PAGE, $criteria['per_page'] );
+		$this->assertSame( 1, $criteria['page'] );
+	}
+
+	public function test_get_movies_returns_data_with_pagination_headers() {
+		$this->db->method( 'count_movies' )->willReturn( 25 );
+		$this->db->method( 'search_movies' )->willReturn( array( $this->sample_movie_row() ) );
+
+		$request  = new WP_REST_Request( array( 'per_page' => '10' ) );
+		$response = $this->controller->get_movies( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$data = $response->get_data();
+		$this->assertCount( 1, $data );
+		$this->assertSame( 7, $data[0]['id'] );
+
+		$headers = $response->get_headers();
+		$this->assertSame( '25', $headers['X-WP-Total'] );
+		$this->assertSame( '3', $headers['X-WP-TotalPages'] );
+	}
+
+	public function test_get_movie_not_found_returns_404_error() {
+		$this->db->method( 'get_movie' )->willReturn( null );
+
+		$request = new WP_REST_Request( array( 'id' => 999 ) );
+		$result  = $this->controller->get_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_create_movie_validates_required_fields() {
+		$request = new WP_REST_Request( array( 'title' => 'Missing Fields' ) );
+		$result  = $this->controller->create_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_create_movie_rejects_invalid_format() {
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'Bad Format',
+				'release_year' => 2000,
+				'format'       => 'Betamax',
+				'region_code'  => 'A',
+			)
+		);
+		$result = $this->controller->create_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertStringContainsString( 'Invalid format', $result->get_error_message() );
+	}
+
+	public function test_create_movie_success_returns_201() {
+		$this->db->method( 'insert_movie' )->willReturn( 7 );
+		$this->db->method( 'get_movie' )->willReturn( $this->sample_movie_row() );
+
+		$request = new WP_REST_Request(
+			array(
+				'title'        => 'The Thing',
+				'release_year' => 1982,
+				'format'       => 'Blu-ray',
+				'region_code'  => 'A',
+			)
+		);
+		$response = $this->controller->create_movie( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+		$this->assertSame( 7, $response->get_data()['id'] );
+	}
+
+	public function test_update_movie_missing_record_returns_404() {
+		$this->db->method( 'get_movie' )->willReturn( null );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'    => 12,
+				'title' => 'Updated',
+			)
+		);
+		$result = $this->controller->update_movie( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_update_movie_partial_update_succeeds() {
+		$row = $this->sample_movie_row();
+		$this->db->method( 'get_movie' )->willReturn( $row );
+		$this->db->method( 'update_movie' )->willReturn( true );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'    => 7,
+				'title' => 'The Thing (Remastered)',
+			)
+		);
+		$response = $this->controller->update_movie( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+	}
+
+	public function test_delete_movie_returns_previous_record() {
+		$row = $this->sample_movie_row();
+		$this->db->method( 'get_movie' )->willReturn( $row );
+		$this->db->method( 'delete_movie' )->willReturn( true );
+
+		$request  = new WP_REST_Request( array( 'id' => 7 ) );
+		$response = $this->controller->delete_movie( $request );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['deleted'] );
+		$this->assertSame( 7, $data['previous']['id'] );
+	}
+
+	public function test_add_movie_to_box_set_validates_existence() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( null );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 99,
+			)
+		);
+		$result = $this->controller->add_movie_to_box_set( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 404, $result->get_error_data()['status'] );
+	}
+
+	public function test_add_movie_to_box_set_success_returns_201() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movie' )->willReturn( array( 'id' => 7 ) );
+		$this->db->method( 'add_movie_to_box_set' )->willReturn( 55 );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$response = $this->controller->add_movie_to_box_set( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 201, $response->get_status() );
+		$this->assertSame( 55, $response->get_data()['relationship_id'] );
+	}
+
+	public function test_remove_movie_from_box_set_success() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'remove_movie_from_box_set' )->willReturn( true );
+
+		$request = new WP_REST_Request(
+			array(
+				'id'       => 3,
+				'movie_id' => 7,
+			)
+		);
+		$response = $this->controller->remove_movie_from_box_set( $request );
+
+		$this->assertTrue( $response->get_data()['deleted'] );
+	}
+
+	public function test_get_box_set_movies_lists_contained_movies() {
+		$this->db->method( 'get_box_set' )->willReturn( array( 'id' => 3 ) );
+		$this->db->method( 'get_movies_in_box_set' )->willReturn( array( $this->sample_movie_row() ) );
+
+		$request  = new WP_REST_Request( array( 'id' => 3 ) );
+		$response = $this->controller->get_box_set_movies( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertCount( 1, $response->get_data() );
+	}
+
+	public function test_read_permission_denied_when_capability_missing() {
+		$GLOBALS['wp_movie_test_current_user_can'] = false;
+		$GLOBALS['wp_movie_test_user_logged_in']   = true;
+
+		$result = $this->controller->read_permissions_check( new WP_REST_Request() );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+	}
+
+	public function test_write_permission_denied_returns_401_when_logged_out() {
+		$GLOBALS['wp_movie_test_current_user_can'] = false;
+		$GLOBALS['wp_movie_test_user_logged_in']   = false;
+
+		$result = $this->controller->write_permissions_check( new WP_REST_Request() );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 401, $result->get_error_data()['status'] );
+	}
+
+	public function test_write_permission_allowed_when_capable() {
+		$GLOBALS['wp_movie_test_current_user_can'] = true;
+
+		$this->assertTrue( $this->controller->write_permissions_check( new WP_REST_Request() ) );
+	}
+}

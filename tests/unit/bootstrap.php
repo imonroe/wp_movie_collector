@@ -500,6 +500,363 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * Polyfill for WordPress sanitize_text_field().
+	 *
+	 * Strips tags and collapses whitespace, approximating core behavior
+	 * closely enough for unit tests.
+	 *
+	 * @param string $str The string to sanitize.
+	 * @return string Sanitized single-line string.
+	 */
+	function sanitize_text_field( $str ) {
+		$str = (string) $str;
+		$str = wp_strip_all_tags( $str );
+		$str = preg_replace( '/[\r\n\t ]+/', ' ', $str );
+		return trim( $str );
+	}
+}
+
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+	/**
+	 * Polyfill for WordPress sanitize_textarea_field().
+	 *
+	 * Strips tags but preserves newlines.
+	 *
+	 * @param string $str The string to sanitize.
+	 * @return string Sanitized multi-line string.
+	 */
+	function sanitize_textarea_field( $str ) {
+		return trim( wp_strip_all_tags( (string) $str ) );
+	}
+}
+
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * Polyfill for WordPress wp_strip_all_tags().
+	 *
+	 * @param string $string The string to strip tags from.
+	 * @return string Stripped string.
+	 */
+	function wp_strip_all_tags( $string ) {
+		$string = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', (string) $string );
+		return trim( wp_strip_tags_simple( $string ) );
+	}
+}
+
+if ( ! function_exists( 'wp_strip_tags_simple' ) ) {
+	/**
+	 * Helper used by the wp_strip_all_tags polyfill.
+	 *
+	 * @param string $string The string to strip tags from.
+	 * @return string Stripped string.
+	 */
+	function wp_strip_tags_simple( $string ) {
+		return strip_tags( $string );
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	/**
+	 * Polyfill for WordPress esc_url_raw().
+	 *
+	 * @param string $url The URL to sanitize.
+	 * @return string Sanitized URL.
+	 */
+	function esc_url_raw( $url ) {
+		return filter_var( (string) $url, FILTER_SANITIZE_URL );
+	}
+}
+
+if ( ! function_exists( 'absint' ) ) {
+	/**
+	 * Polyfill for WordPress absint().
+	 *
+	 * @param mixed $maybeint The value to convert.
+	 * @return int Non-negative integer.
+	 */
+	function absint( $maybeint ) {
+		return abs( (int) $maybeint );
+	}
+}
+
+/**
+ * Controls the return value of the current_user_can() polyfill.
+ *
+ * @var bool
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_current_user_can'] ) ) {
+	$GLOBALS['wp_movie_test_current_user_can'] = true;
+}
+
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * Polyfill for WordPress current_user_can().
+	 *
+	 * Returns the value of $GLOBALS['wp_movie_test_current_user_can'] so
+	 * tests can simulate authorized and unauthorized requests.
+	 *
+	 * @param string $capability The capability being checked (ignored).
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		return (bool) $GLOBALS['wp_movie_test_current_user_can'];
+	}
+}
+
+/**
+ * Controls the return value of the is_user_logged_in() polyfill.
+ *
+ * @var bool
+ */
+if ( ! isset( $GLOBALS['wp_movie_test_user_logged_in'] ) ) {
+	$GLOBALS['wp_movie_test_user_logged_in'] = true;
+}
+
+if ( ! function_exists( 'is_user_logged_in' ) ) {
+	/**
+	 * Polyfill for WordPress is_user_logged_in().
+	 *
+	 * @return bool
+	 */
+	function is_user_logged_in() {
+		return (bool) $GLOBALS['wp_movie_test_user_logged_in'];
+	}
+}
+
+if ( ! function_exists( 'register_rest_route' ) ) {
+	/**
+	 * No-op polyfill for WordPress register_rest_route().
+	 *
+	 * Records registered routes in $GLOBALS['wp_movie_test_rest_routes']
+	 * so tests can assert route registration without a REST server.
+	 *
+	 * @param string $namespace Route namespace.
+	 * @param string $route     Route pattern.
+	 * @param array  $args      Route args.
+	 * @param bool   $override  Whether to override.
+	 * @return true
+	 */
+	function register_rest_route( $namespace, $route, $args = array(), $override = false ) {
+		if ( ! isset( $GLOBALS['wp_movie_test_rest_routes'] ) ) {
+			$GLOBALS['wp_movie_test_rest_routes'] = array();
+		}
+		$GLOBALS['wp_movie_test_rest_routes'][] = $namespace . $route;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'rest_ensure_response' ) ) {
+	/**
+	 * Polyfill for WordPress rest_ensure_response().
+	 *
+	 * Wraps non-response, non-error data in a WP_REST_Response.
+	 *
+	 * @param mixed $response The data to wrap.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	function rest_ensure_response( $response ) {
+		if ( is_wp_error( $response ) || $response instanceof WP_REST_Response ) {
+			return $response;
+		}
+		return new WP_REST_Response( $response );
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Server' ) ) {
+	/**
+	 * Minimal polyfill for WP_REST_Server providing the HTTP method constants.
+	 */
+	class WP_REST_Server {
+		const READABLE  = 'GET';
+		const CREATABLE = 'POST';
+		const EDITABLE  = 'POST, PUT, PATCH';
+		const DELETABLE = 'DELETE';
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Controller' ) ) {
+	/**
+	 * Minimal polyfill base class for WP_REST_Controller.
+	 *
+	 * Provides the `$namespace`/`$rest_base` properties the plugin
+	 * controller assigns. Real route registration is exercised via the
+	 * register_rest_route() polyfill.
+	 */
+	class WP_REST_Controller {
+
+		/**
+		 * Route namespace.
+		 *
+		 * @var string
+		 */
+		protected $namespace = '';
+
+		/**
+		 * Route base.
+		 *
+		 * @var string
+		 */
+		protected $rest_base = '';
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Request' ) ) {
+	/**
+	 * Minimal polyfill for WP_REST_Request.
+	 *
+	 * Supports get_param()/set_param() and ArrayAccess for route params,
+	 * which is the surface the plugin controller relies on.
+	 */
+	class WP_REST_Request implements ArrayAccess {
+
+		/**
+		 * Request parameters.
+		 *
+		 * @var array
+		 */
+		private $params;
+
+		/**
+		 * Constructor.
+		 *
+		 * @param array $params Initial parameters.
+		 */
+		public function __construct( $params = array() ) {
+			$this->params = $params;
+		}
+
+		/**
+		 * Get a parameter value.
+		 *
+		 * @param string $key Parameter name.
+		 * @return mixed Parameter value, or null if unset.
+		 */
+		public function get_param( $key ) {
+			return array_key_exists( $key, $this->params ) ? $this->params[ $key ] : null;
+		}
+
+		/**
+		 * Set a parameter value.
+		 *
+		 * @param string $key   Parameter name.
+		 * @param mixed  $value Parameter value.
+		 */
+		public function set_param( $key, $value ) {
+			$this->params[ $key ] = $value;
+		}
+
+		#[\ReturnTypeWillChange]
+		public function offsetExists( $offset ) {
+			return isset( $this->params[ $offset ] );
+		}
+
+		#[\ReturnTypeWillChange]
+		public function offsetGet( $offset ) {
+			return $this->get_param( $offset );
+		}
+
+		#[\ReturnTypeWillChange]
+		public function offsetSet( $offset, $value ) {
+			$this->params[ $offset ] = $value;
+		}
+
+		#[\ReturnTypeWillChange]
+		public function offsetUnset( $offset ) {
+			unset( $this->params[ $offset ] );
+		}
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Response' ) ) {
+	/**
+	 * Minimal polyfill for WP_REST_Response.
+	 *
+	 * Captures data, status, and headers for assertions in unit tests.
+	 */
+	class WP_REST_Response {
+
+		/**
+		 * Response payload.
+		 *
+		 * @var mixed
+		 */
+		private $data;
+
+		/**
+		 * HTTP status code.
+		 *
+		 * @var int
+		 */
+		private $status = 200;
+
+		/**
+		 * Response headers.
+		 *
+		 * @var array<string, string>
+		 */
+		private $headers = array();
+
+		/**
+		 * Constructor.
+		 *
+		 * @param mixed $data   Response data.
+		 * @param int   $status HTTP status.
+		 */
+		public function __construct( $data = null, $status = 200 ) {
+			$this->data   = $data;
+			$this->status = $status;
+		}
+
+		/**
+		 * Get the response data.
+		 *
+		 * @return mixed
+		 */
+		public function get_data() {
+			return $this->data;
+		}
+
+		/**
+		 * Set the HTTP status.
+		 *
+		 * @param int $status HTTP status code.
+		 */
+		public function set_status( $status ) {
+			$this->status = (int) $status;
+		}
+
+		/**
+		 * Get the HTTP status.
+		 *
+		 * @return int
+		 */
+		public function get_status() {
+			return $this->status;
+		}
+
+		/**
+		 * Set a header.
+		 *
+		 * @param string $key   Header name.
+		 * @param string $value Header value.
+		 */
+		public function header( $key, $value ) {
+			$this->headers[ $key ] = $value;
+		}
+
+		/**
+		 * Get all headers.
+		 *
+		 * @return array<string, string>
+		 */
+		public function get_headers() {
+			return $this->headers;
+		}
+	}
+}
+
 /**
  * Stub class for the WordPress $wpdb global.
  *

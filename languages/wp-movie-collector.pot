@@ -1,0 +1,1737 @@
+# Copyright (C) 2026
+# This file is distributed under the GPL-2.0+ license.
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Movie Collector\n"
+"Report-Msgid-Bugs-To: https://github.com/imonroe/wp_movie_collector/issues\n"
+"POT-Creation-Date: 2026-05-27 21:06+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language-Team: \n"
+"X-Domain: wp-movie-collector\n"
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:21
+msgid "%d items were successfully imported."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:141
+msgid "%s item"
+msgid_plural "%s items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:19
+msgid "1 item was successfully imported."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:78 admin/partials/wp-movie-collector-admin-edit-box-set.php:84 admin/partials/wp-movie-collector-admin-add-movie.php:88 admin/partials/wp-movie-collector-admin-edit-movie.php:83
+msgid "4K Ultra HD"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:872
+msgid "A box set with the same title and year already exists: \"%1$s\" (%2$d), ID: %3$d. If you own multiple copies, check \"Allow duplicate\"."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:259 admin/partials/wp-movie-collector-admin-add-movie.php:368
+msgid "A box set with this barcode already exists in your collection:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:725 admin/class-wp-movie-collector-admin.php:864
+msgid "A box set with this barcode already exists: \"%1$s\" (ID: %2$d). If you want to add it anyway, check \"Allow duplicate\"."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:265
+msgid "A box set with this title and year already exists:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:712
+msgid "A movie with the same title and year already exists: \"%1$s\" (%2$d), ID: %3$d. If you own multiple copies, check \"Allow duplicate\"."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:253 admin/partials/wp-movie-collector-admin-add-movie.php:374
+msgid "A movie with this barcode already exists in your collection:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:704 admin/class-wp-movie-collector-admin.php:885
+msgid "A movie with this barcode already exists: \"%1$s\" (ID: %2$d). If you want to add it anyway, check \"Allow duplicate\"."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:380
+msgid "A movie with this title and year already exists:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:250
+msgid "API Configuration"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:304
+msgid "API Settings"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:11
+msgid "API cache invalidated successfully. Cached responses will be refreshed on next request."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:234
+msgid "Acquired (Newest)"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:235
+msgid "Acquired (Oldest)"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:49 public/partials/wp-movie-collector-public-movie.php:77
+msgid "Acquired On:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:125 admin/partials/wp-movie-collector-admin-edit-box-set.php:157 admin/partials/wp-movie-collector-admin-add-movie.php:163 admin/partials/wp-movie-collector-admin-edit-movie.php:184
+msgid "Acquisition Date"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:664 admin/class-wp-movie-collector-admin.php:844
+msgid "Acquisition date is not valid."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:891
+msgid "Acquisition date must be a valid date in YYYY-MM-DD format."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:667 admin/class-wp-movie-collector-admin.php:847
+msgid "Acquisition date must be in YYYY-MM-DD format."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:121
+msgid "Actions"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:175
+msgid "Actor"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:128 admin/partials/wp-movie-collector-admin-edit-movie.php:145
+msgid "Actors"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-movie.php:70
+msgid "Actors:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:158
+msgid "Add Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:208
+msgid "Add Movie"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:98
+msgid "Add Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:173
+msgid "Add Movies to Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:173
+msgid "Add New Actor"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:58 admin/class-wp-movie-collector-admin.php:123 admin/class-wp-movie-collector-admin.php:124 admin/partials/wp-movie-collector-admin-box-sets.php:31 admin/partials/wp-movie-collector-admin-dashboard.php:181
+msgid "Add New Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:125
+msgid "Add New Director"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:101
+msgid "Add New Genre"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:25 admin/class-wp-movie-collector-admin.php:113 admin/class-wp-movie-collector-admin.php:114 admin/partials/wp-movie-collector-admin-dashboard.php:180 admin/partials/wp-movie-collector-admin-movies.php:55
+msgid "Add New Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:149
+msgid "Add New Studio"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:234 admin/partials/wp-movie-collector-admin-manage-box-set.php:396
+msgid "Add Selected Movies to Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:354
+msgid "Add as New Movie"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:138
+msgid "Add your first box set!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:280
+msgid "Add your first movie!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:74
+msgid "Added (30 days)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:165
+msgid "After saving the box set, you can add movies to it."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:168
+msgid "All Actors"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:62 admin/class-wp-movie-collector-admin.php:163 admin/class-wp-movie-collector-admin.php:164 admin/partials/wp-movie-collector-admin-box-sets.php:30
+msgid "All Box Sets"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:120 public/partials/wp-movie-collector-public-display.php:213
+msgid "All Directors"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:118 public/partials/wp-movie-collector-public-display.php:175
+msgid "All Formats"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:96 public/partials/wp-movie-collector-public-display.php:187
+msgid "All Genres"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:29 admin/class-wp-movie-collector-admin.php:103 admin/class-wp-movie-collector-admin.php:104 admin/partials/wp-movie-collector-admin-import-export.php:71 admin/partials/wp-movie-collector-admin-movies.php:54
+msgid "All Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:144
+msgid "All Studios"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:201
+msgid "All Years"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:152 admin/partials/wp-movie-collector-admin-add-movie.php:202
+msgid "Allow duplicate (I own multiple copies)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:408
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:38 admin/partials/wp-movie-collector-admin-import-export.php:52 admin/partials/wp-movie-collector-admin-edit-box-set.php:50 admin/partials/wp-movie-collector-admin-add-movie.php:38 admin/partials/wp-movie-collector-admin-manage-box-set.php:58 admin/partials/wp-movie-collector-admin-edit-movie.php:50
+msgid "An unknown error occurred. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:139 admin/partials/wp-movie-collector-admin-edit-box-set.php:171
+msgid "Any personal notes about this box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:189 admin/partials/wp-movie-collector-admin-edit-movie.php:214
+msgid "Any personal notes about this movie."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:109
+msgid "Append to Collection"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:253
+msgid "Apply Filters"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:66
+msgid "Are you sure you want to delete this box set?"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:121 admin/partials/wp-movie-collector-admin-edit-box-set.php:187
+msgid "Are you sure you want to delete this box set? This action cannot be undone."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:65
+msgid "Are you sure you want to delete this movie?"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:223 admin/partials/wp-movie-collector-admin-edit-movie.php:229 admin/partials/wp-movie-collector-admin-movies.php:252
+msgid "Are you sure you want to delete this movie? This action cannot be undone."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:141
+msgid "Are you sure you want to remove this movie from the box set?"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:185
+msgid "Available Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:75 admin/partials/wp-movie-collector-admin-manage-box-set.php:247
+msgid "Back to Box Sets"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:117 public/partials/wp-movie-collector-public-movie.php:123
+msgid "Back to Collection"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:103 admin/partials/wp-movie-collector-admin-edit-box-set.php:131 admin/partials/wp-movie-collector-admin-dashboard.php:188 admin/partials/wp-movie-collector-admin-add-movie.php:113 admin/partials/wp-movie-collector-admin-edit-movie.php:130
+msgid "Barcode"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:279
+msgid "Barcode Lookup"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:352
+msgid "Barcode found! "
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:42 public/partials/wp-movie-collector-public-movie.php:42
+msgid "Barcode:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:49
+msgid "BarcodeLookup API Key"
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:296
+msgid "BarcodeLookup API key is not set. Please set it in the settings page."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:77 admin/partials/wp-movie-collector-admin-edit-box-set.php:83 admin/partials/wp-movie-collector-admin-add-movie.php:87 admin/partials/wp-movie-collector-admin-edit-movie.php:82
+msgid "Blu-ray"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set-item.php:29 public/partials/wp-movie-collector-public-display.php:317
+msgid "Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:58 admin/partials/wp-movie-collector-admin-edit-box-set.php:60
+msgid "Box Set Details"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:100
+msgid "Box Set Relationships:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:58
+msgid "Box Sets"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:73
+msgid "Box Sets Only"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:99
+msgid "Box Sets:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:42 admin/partials/wp-movie-collector-admin-dashboard.php:26
+msgid "Box set added successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:48 admin/partials/wp-movie-collector-admin-dashboard.php:32
+msgid "Box set deleted successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:206
+msgid "Box set found! Filling in details..."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:471 includes/class-wp-movie-collector-rest-controller.php:513 includes/class-wp-movie-collector-rest-controller.php:544 includes/class-wp-movie-collector-rest-controller.php:571 includes/class-wp-movie-collector-rest-controller.php:595 includes/class-wp-movie-collector-rest-controller.php:643 admin/partials/wp-movie-collector-admin-edit-box-set.php:18 admin/partials/wp-movie-collector-admin-manage-box-set.php:74 public/class-wp-movie-collector-public.php:138
+msgid "Box set not found."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:45 admin/partials/wp-movie-collector-admin-dashboard.php:29
+msgid "Box set updated successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:80
+msgid "CSV (Comma Separated Values)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:124
+msgid "CSV Template"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:180 admin/partials/wp-movie-collector-admin-edit-movie.php:223
+msgid "Cancel"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:125 admin/partials/wp-movie-collector-admin-settings.php:132
+msgid "Clear API Cache"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:254
+msgid "Clear Filters"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:297
+msgid "Collection Summary"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:262 admin/partials/wp-movie-collector-admin-dashboard.php:272 admin/partials/wp-movie-collector-admin-dashboard.php:282
+msgid "Configured"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1726
+msgid "Could not open file for import."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1822
+msgid "Could not read file for import."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:108 admin/partials/wp-movie-collector-admin-edit-box-set.php:136 admin/partials/wp-movie-collector-admin-add-movie.php:146 admin/partials/wp-movie-collector-admin-edit-movie.php:163
+msgid "Cover Image"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:628 admin/class-wp-movie-collector-admin.php:807
+msgid "Cover image URL is not valid."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:97
+msgid "Current Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1060
+msgid "Current page of the collection."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:137 admin/partials/wp-movie-collector-admin-edit-box-set.php:169 admin/partials/wp-movie-collector-admin-add-movie.php:187 admin/partials/wp-movie-collector-admin-edit-movie.php:212
+msgid "Custom Notes"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:76 admin/partials/wp-movie-collector-admin-edit-box-set.php:82 admin/partials/wp-movie-collector-admin-add-movie.php:86 admin/partials/wp-movie-collector-admin-edit-movie.php:81
+msgid "DVD"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:97
+msgid "Dashboard"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:60
+msgid "Database Information"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:91
+msgid "Database Statistics"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:63
+msgid "Database Tables"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:200 admin/partials/wp-movie-collector-admin-movies.php:263
+msgid "Date Added"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:232
+msgid "Date Added (Newest)"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:233
+msgid "Date Added (Oldest)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:122 admin/partials/wp-movie-collector-admin-dashboard.php:224 admin/partials/wp-movie-collector-admin-movies.php:253
+msgid "Delete"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:193
+msgid "Delete Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-movie.php:235
+msgid "Delete Movie"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:120 admin/partials/wp-movie-collector-admin-edit-box-set.php:152 admin/partials/wp-movie-collector-admin-add-movie.php:158 admin/partials/wp-movie-collector-admin-manage-box-set.php:89 admin/partials/wp-movie-collector-admin-edit-movie.php:179 public/partials/wp-movie-collector-public-box-set.php:66 public/partials/wp-movie-collector-public-movie.php:94
+msgid "Description"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:127 admin/partials/wp-movie-collector-admin-add-movie.php:118 admin/partials/wp-movie-collector-admin-edit-movie.php:135 admin/partials/wp-movie-collector-admin-movies.php:198 admin/partials/wp-movie-collector-admin-movies.php:261 public/partials/wp-movie-collector-public-display.php:211 public/partials/wp-movie-collector-public-display.php:240
+msgid "Director"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-movie.php:49
+msgid "Director:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:63
+msgid "Directors"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:83
+msgid "Does not exist"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:128
+msgid "Download CSV Template"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:105 admin/partials/wp-movie-collector-admin-dashboard.php:216 admin/partials/wp-movie-collector-admin-movies.php:241
+msgid "Edit"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:171
+msgid "Edit Actor"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:60 admin/class-wp-movie-collector-admin.php:173 admin/class-wp-movie-collector-admin.php:174 admin/partials/wp-movie-collector-admin-edit-box-set.php:22 admin/partials/wp-movie-collector-admin-manage-box-set.php:248
+msgid "Edit Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:123
+msgid "Edit Director"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:146 admin/partials/wp-movie-collector-admin-add-box-set.php:196 admin/partials/wp-movie-collector-admin-add-box-set.php:262 admin/partials/wp-movie-collector-admin-add-box-set.php:268 admin/partials/wp-movie-collector-admin-dashboard.php:340 admin/partials/wp-movie-collector-admin-add-movie.php:240 admin/partials/wp-movie-collector-admin-add-movie.php:371
+msgid "Edit Existing Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:195 admin/partials/wp-movie-collector-admin-add-box-set.php:256 admin/partials/wp-movie-collector-admin-dashboard.php:341 admin/partials/wp-movie-collector-admin-add-movie.php:196 admin/partials/wp-movie-collector-admin-add-movie.php:241 admin/partials/wp-movie-collector-admin-add-movie.php:377 admin/partials/wp-movie-collector-admin-add-movie.php:383
+msgid "Edit Existing Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:99
+msgid "Edit Genre"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:27 admin/class-wp-movie-collector-admin.php:153 admin/class-wp-movie-collector-admin.php:154 admin/partials/wp-movie-collector-admin-edit-movie.php:22
+msgid "Edit Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:147
+msgid "Edit Studio"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:130 admin/partials/wp-movie-collector-admin-edit-movie.php:147
+msgid "Enter actors separated by commas."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:136 admin/partials/wp-movie-collector-admin-edit-movie.php:153
+msgid "Enter genres separated by commas."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:133 admin/partials/wp-movie-collector-admin-edit-box-set.php:165
+msgid "Enter special features included in this box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:142 admin/partials/wp-movie-collector-admin-edit-movie.php:159
+msgid "Enter special features like director's commentary, deleted scenes, etc."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:913
+msgid "Enter your API keys for movie data services."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:54
+msgid "Enter your BarcodeLookup API key. You can get one from <a href=\"https://barcodelookup.com/api\" target=\"_blank\" rel=\"noopener noreferrer\">BarcodeLookup</a>."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:44
+msgid "Enter your OMDb API key. You can get one from <a href=\"https://www.omdbapi.com/apikey.aspx\" target=\"_blank\" rel=\"noopener noreferrer\">OMDb</a>."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:34
+msgid "Enter your TMDb API key. You can get one from <a href=\"https://www.themoviedb.org/settings/api\" target=\"_blank\" rel=\"noopener noreferrer\">TMDb</a>."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:482
+msgid "Error connecting to server."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:214 admin/partials/wp-movie-collector-admin-dashboard.php:365 admin/partials/wp-movie-collector-admin-add-movie.php:265
+msgid "Error looking up barcode. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:476
+msgid "Error retrieving full movie details."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:494
+msgid "Error searching for additional movie details."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:329
+msgid "Error searching for movie. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:413
+msgid "Error searching for movies. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:81
+msgid "Exists"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:87
+msgid "Export"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:78
+msgid "Export Format"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:62
+msgid "Export Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:69
+msgid "Export Type"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:609
+msgid "Failed to add the movie to the box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:17
+msgid "Failed to clear API cache. Please try again."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:492
+msgid "Failed to create the box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:344
+msgid "Failed to create the movie."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:66
+msgid "Failed to delete box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:84
+msgid "Failed to delete movie."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:549
+msgid "Failed to delete the box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:429
+msgid "Failed to delete the movie."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:46
+msgid "Failed to remove movie from box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:660
+msgid "Failed to remove the movie from the box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:49
+msgid "Failed to reorder movies."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:211
+msgid "Failed to retrieve movie details."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:402 includes/class-wp-movie-collector-rest-controller.php:406
+msgid "Failed to update the box set membership."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:527
+msgid "Failed to update the box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:390
+msgid "Failed to update the movie."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:131
+msgid "Filter"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:84 admin/partials/wp-movie-collector-admin-box-sets.php:129 admin/partials/wp-movie-collector-admin-box-sets.php:147 admin/partials/wp-movie-collector-admin-add-box-set.php:73 admin/partials/wp-movie-collector-admin-edit-box-set.php:77 admin/partials/wp-movie-collector-admin-add-movie.php:83 admin/partials/wp-movie-collector-admin-manage-box-set.php:120 admin/partials/wp-movie-collector-admin-manage-box-set.php:217 admin/partials/wp-movie-collector-admin-manage-box-set.php:383 admin/partials/wp-movie-collector-admin-edit-movie.php:76 admin/partials/wp-movie-collector-admin-movies.php:197 admin/partials/wp-movie-collector-admin-movies.php:260 public/partials/wp-movie-collector-public-display.php:173 public/partials/wp-movie-collector-public-display.php:236
+msgid "Format"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:81
+msgid "Format Breakdown"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:595 admin/class-wp-movie-collector-admin.php:779
+msgid "Format is required."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:83 public/partials/wp-movie-collector-public-box-set.php:31 public/partials/wp-movie-collector-public-movie.php:31
+msgid "Format:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:344
+msgid "Found in your collection!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:451
+msgid "Found match, retrieving full details..."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:103 admin/partials/wp-movie-collector-admin-add-movie.php:134 admin/partials/wp-movie-collector-admin-edit-movie.php:151 admin/partials/wp-movie-collector-admin-movies.php:199 admin/partials/wp-movie-collector-admin-movies.php:262 public/partials/wp-movie-collector-public-display.php:185
+msgid "Genre"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-movie.php:63
+msgid "Genre:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:946
+msgid "Get your API key from <a href=\"https://barcodelookup.com/api\" target=\"_blank\">BarcodeLookup</a>."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:935
+msgid "Get your API key from <a href=\"https://www.omdbapi.com/apikey.aspx\" target=\"_blank\">OMDb</a>."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:924
+msgid "Get your API key from <a href=\"https://www.themoviedb.org/settings/api\" target=\"_blank\">TMDb</a>."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:112 admin/partials/wp-movie-collector-admin-edit-box-set.php:144 admin/partials/wp-movie-collector-admin-add-movie.php:150 admin/partials/wp-movie-collector-admin-edit-movie.php:171
+msgid "Image URL or upload"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:116
+msgid "Import"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:183
+msgid "Import / Export"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:101
+msgid "Import File"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:94
+msgid "Import Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:107
+msgid "Import Type"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:48
+msgid "Import failed. Please check your file and try again."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:133 admin/class-wp-movie-collector-admin.php:134
+msgid "Import/Export"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1733
+msgid "Invalid CSV file format."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:619
+msgid "Invalid IMDb ID."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1828
+msgid "Invalid JSON format."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:305
+msgid "Invalid barcode format."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1293 admin/partials/wp-movie-collector-admin-box-sets.php:69 admin/partials/wp-movie-collector-admin-edit-box-set.php:10 admin/partials/wp-movie-collector-admin-manage-box-set.php:40
+msgid "Invalid box set ID."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:42
+msgid "Invalid file format. Please upload a CSV or JSON file."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:599 admin/class-wp-movie-collector-admin.php:783
+msgid "Invalid format selected."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:861
+msgid "Invalid format."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:43 admin/partials/wp-movie-collector-admin-edit-movie.php:10 admin/partials/wp-movie-collector-admin-movies.php:87
+msgid "Invalid movie ID."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:610 admin/class-wp-movie-collector-admin.php:794
+msgid "Invalid region code selected."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:870
+msgid "Invalid region code."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:81
+msgid "JSON"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:80 admin/partials/wp-movie-collector-admin-edit-box-set.php:86 admin/partials/wp-movie-collector-admin-add-movie.php:90 admin/partials/wp-movie-collector-admin-edit-movie.php:85
+msgid "LaserDisc"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1022
+msgid "Limit results to a director."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1018
+msgid "Limit results to a genre."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1083
+msgid "Limit results to a media format."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1079
+msgid "Limit results to a release year."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1026
+msgid "Limit results to a studio."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1030
+msgid "Limit results to an actor."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1075
+msgid "Limit results to those matching a title."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:179 admin/partials/wp-movie-collector-admin-dashboard.php:324 admin/partials/wp-movie-collector-admin-add-movie.php:224
+msgid "Looking up barcode..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:53 admin/partials/wp-movie-collector-admin-dashboard.php:190 admin/partials/wp-movie-collector-admin-add-movie.php:53
+msgid "Lookup"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:290
+msgid "Manage API Settings"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:183 admin/class-wp-movie-collector-admin.php:184
+msgid "Manage Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:110 admin/partials/wp-movie-collector-admin-edit-box-set.php:181
+msgid "Manage Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1067
+msgid "Maximum number of items to be returned in the result set."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:85
+msgid "Movie Collection"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:68 admin/partials/wp-movie-collector-admin-edit-movie.php:60
+msgid "Movie Details"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:17
+msgid "Movie added successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:17
+msgid "Movie added to box set successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:23
+msgid "Movie deleted successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:66
+msgid "Movie deleted successfully."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:251
+msgid "Movie found! Filling in details..."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:323 includes/class-wp-movie-collector-rest-controller.php:376 includes/class-wp-movie-collector-rest-controller.php:424 includes/class-wp-movie-collector-rest-controller.php:599 includes/class-wp-movie-collector-rest-controller.php:648 admin/partials/wp-movie-collector-admin-edit-movie.php:18 public/class-wp-movie-collector-public.php:109
+msgid "Movie not found."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:20
+msgid "Movie removed from box set successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:20
+msgid "Movie updated successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:69
+msgid "Movie updated successfully."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:86 admin/partials/wp-movie-collector-admin-box-sets.php:86 admin/partials/wp-movie-collector-admin-box-sets.php:131 admin/partials/wp-movie-collector-admin-box-sets.php:149 admin/partials/wp-movie-collector-admin-dashboard.php:53
+msgid "Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:72
+msgid "Movies Only (exclude box sets)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:164 admin/partials/wp-movie-collector-admin-manage-box-set.php:104 public/partials/wp-movie-collector-public-box-set.php:73 public/partials/wp-movie-collector-public-box-set.php:103
+msgid "Movies in this Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:23
+msgid "Movies reordered successfully!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:98
+msgid "Movies:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:174
+msgid "New Actor Name"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:59
+msgid "New Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:126
+msgid "New Director Name"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:102
+msgid "New Genre Name"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:26
+msgid "New Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:150
+msgid "New Studio Name"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:377
+msgid "Next"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set-item.php:14 public/partials/wp-movie-collector-public-display.php:270 public/partials/wp-movie-collector-public-display.php:302 public/partials/wp-movie-collector-public-box-set.php:83 public/partials/wp-movie-collector-public-movie-item.php:14
+msgid "No Image"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:16 public/partials/wp-movie-collector-public-movie.php:16
+msgid "No Image Available"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:488
+msgid "No additional movie details found."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:203
+msgid "No available movies found. Add some movies first!"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1907
+msgid "No barcode provided."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:66
+msgid "No box sets found in Trash."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:65 admin/partials/wp-movie-collector-admin-box-sets.php:137
+msgid "No box sets found."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:147
+msgid "No director data available."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:97
+msgid "No format data available yet."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:121
+msgid "No genre data available."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:2015
+msgid "No movie ID provided."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:594
+msgid "No movie found with this barcode."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:55
+msgid "No movie order data was provided."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:33
+msgid "No movies found in Trash."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:325
+msgid "No movies found matching that title."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:406
+msgid "No movies found matching your search."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:32 admin/partials/wp-movie-collector-admin-movies.php:279
+msgid "No movies found."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:104
+msgid "No movies have been added to this box set yet."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:111
+msgid "No movies in this box set yet."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:386
+msgid "No movies or box sets found matching your criteria."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:52
+msgid "No movies were selected to add."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:232
+msgid "No movies yet. Why not add one?"
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:471
+msgid "No product found with this barcode."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1286
+msgid "No search query provided."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:171
+msgid "No studio data available."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1980
+msgid "No title provided."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:385 includes/class-wp-movie-collector-rest-controller.php:522
+msgid "No valid fields were supplied to update."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:264 admin/partials/wp-movie-collector-admin-dashboard.php:274 admin/partials/wp-movie-collector-admin-dashboard.php:284
+msgid "Not configured"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:171 admin/partials/wp-movie-collector-admin-edit-movie.php:192
+msgid "Not part of a box set"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:110 public/partials/wp-movie-collector-public-movie.php:101
+msgid "Notes"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:269
+msgid "OMDb API"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:319 admin/partials/wp-movie-collector-admin-settings.php:39
+msgid "OMDb API Key"
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:148 includes/class-wp-movie-collector-api.php:612
+msgid "OMDb API key is not set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:51 admin/partials/wp-movie-collector-admin-import-export.php:25 admin/partials/wp-movie-collector-admin-dashboard.php:35 admin/partials/wp-movie-collector-admin-manage-box-set.php:26
+msgid "Operation completed successfully."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:117
+msgid "Order"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1093
+msgid "Order sort attribute ascending or descending."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:169
+msgid "Parent Actor"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:170
+msgid "Parent Actor:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:64
+msgid "Parent Box Sets:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:121
+msgid "Parent Director"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:122
+msgid "Parent Director:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:97
+msgid "Parent Genre"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:98
+msgid "Parent Genre:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:31
+msgid "Parent Movies:"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:145
+msgid "Parent Studio"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:146
+msgid "Parent Studio:"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-movie.php:108
+msgid "Part of Box Set"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:169 admin/partials/wp-movie-collector-admin-edit-movie.php:190
+msgid "Part of Box Set?"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:64
+msgid "Please fill out all required fields."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:19 admin/partials/wp-movie-collector-admin-edit-box-set.php:33 admin/partials/wp-movie-collector-admin-add-movie.php:19 admin/partials/wp-movie-collector-admin-edit-movie.php:33
+msgid "Please fix the following errors:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:68
+msgid "Please select a CSV or JSON file."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:67
+msgid "Please select a file to import."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:361
+msgid "Previous"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:178
+msgid "Quick Actions"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:186
+msgid "Quick Scan"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:196
+msgid "Recently Added"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:85 admin/partials/wp-movie-collector-admin-box-sets.php:130 admin/partials/wp-movie-collector-admin-box-sets.php:148
+msgid "Region"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:106 admin/partials/wp-movie-collector-admin-edit-movie.php:105
+msgid "Region 1 (USA, Canada)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:107 admin/partials/wp-movie-collector-admin-edit-movie.php:106
+msgid "Region 2 (Europe, Japan, Middle East)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:108 admin/partials/wp-movie-collector-admin-edit-movie.php:107
+msgid "Region 3 (East Asia)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:109 admin/partials/wp-movie-collector-admin-edit-movie.php:108
+msgid "Region 4 (Australia, New Zealand, Latin America)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:110 admin/partials/wp-movie-collector-admin-edit-movie.php:109
+msgid "Region 5 (Africa, Asia, Russia)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:111 admin/partials/wp-movie-collector-admin-edit-movie.php:110
+msgid "Region 6 (China)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:113 admin/partials/wp-movie-collector-admin-edit-movie.php:112
+msgid "Region A (Blu-ray: Americas, East Asia)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:114 admin/partials/wp-movie-collector-admin-edit-movie.php:113
+msgid "Region B (Blu-ray: Europe, Africa, Australia)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:115 admin/partials/wp-movie-collector-admin-edit-movie.php:114
+msgid "Region C (Blu-ray: Central/South Asia, Russia, China)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:85 admin/partials/wp-movie-collector-admin-edit-box-set.php:101 admin/partials/wp-movie-collector-admin-add-movie.php:95 admin/partials/wp-movie-collector-admin-edit-movie.php:100
+msgid "Region Code"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:36 public/partials/wp-movie-collector-public-movie.php:36
+msgid "Region Code:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:112 admin/partials/wp-movie-collector-admin-edit-movie.php:111
+msgid "Region Free"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:116 admin/partials/wp-movie-collector-admin-edit-movie.php:115
+msgid "Region Free (Blu-ray)"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:606 admin/class-wp-movie-collector-admin.php:790
+msgid "Region code is required."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:84
+msgid "Region:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:68 admin/partials/wp-movie-collector-admin-edit-box-set.php:72 admin/partials/wp-movie-collector-admin-add-movie.php:78 admin/partials/wp-movie-collector-admin-manage-box-set.php:119 admin/partials/wp-movie-collector-admin-manage-box-set.php:216 admin/partials/wp-movie-collector-admin-manage-box-set.php:382 admin/partials/wp-movie-collector-admin-edit-movie.php:71
+msgid "Release Year"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-box-set.php:26 public/partials/wp-movie-collector-public-movie.php:26
+msgid "Release Year:"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:584 admin/class-wp-movie-collector-admin.php:768
+msgid "Release year is required."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:852 admin/class-wp-movie-collector-admin.php:588 admin/class-wp-movie-collector-admin.php:772
+msgid "Release year must be between 1900 and the current year."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:142
+msgid "Remove"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:114 admin/partials/wp-movie-collector-admin-edit-box-set.php:146 admin/partials/wp-movie-collector-admin-add-movie.php:152 admin/partials/wp-movie-collector-admin-edit-movie.php:173
+msgid "Remove Image"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:112
+msgid "Repair Database"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:116
+msgid "Repair Database Tables"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:110
+msgid "Replace Collection (Warning: This will delete all existing movies!)"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:162
+msgid "Save Order"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:49 admin/partials/wp-movie-collector-admin-add-movie.php:49
+msgid "Scan Barcode"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:52 admin/partials/wp-movie-collector-admin-dashboard.php:189 admin/partials/wp-movie-collector-admin-add-movie.php:52
+msgid "Scan or enter barcode..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:244 admin/partials/wp-movie-collector-admin-add-movie.php:63 admin/partials/wp-movie-collector-admin-manage-box-set.php:177 public/partials/wp-movie-collector-public-display.php:161
+msgid "Search"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:167
+msgid "Search Actors"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:63
+msgid "Search Box Sets"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:239
+msgid "Search Collection"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:119
+msgid "Search Directors"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:95
+msgid "Search Genres"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:59
+msgid "Search Movie Database"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:30 admin/partials/wp-movie-collector-admin-movies.php:104 admin/partials/wp-movie-collector-admin-movies.php:106
+msgid "Search Movies"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:290 admin/partials/wp-movie-collector-admin-manage-box-set.php:372
+msgid "Search Results"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:143
+msgid "Search Studios"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:243
+msgid "Search by title, director, actor..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:105
+msgid "Search by title..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:60
+msgid "Search for a movie title to retrieve metadata."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:62
+msgid "Search movie title..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-manage-box-set.php:176
+msgid "Search movies by title..."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:160
+msgid "Search your collection..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:435
+msgid "Searching for additional movie details..."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:277 admin/partials/wp-movie-collector-admin-manage-box-set.php:359
+msgid "Searching..."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:347 admin/class-wp-movie-collector-admin.php:397 admin/class-wp-movie-collector-admin.php:442 admin/class-wp-movie-collector-admin.php:538 admin/class-wp-movie-collector-admin.php:957 admin/class-wp-movie-collector-admin.php:1019 admin/class-wp-movie-collector-admin.php:1104 admin/class-wp-movie-collector-admin.php:1148 admin/class-wp-movie-collector-admin.php:1188 admin/class-wp-movie-collector-admin.php:1276 admin/class-wp-movie-collector-admin.php:1338 admin/class-wp-movie-collector-admin.php:1376 admin/class-wp-movie-collector-admin.php:1479 admin/class-wp-movie-collector-admin.php:1897 admin/class-wp-movie-collector-admin.php:1970 admin/class-wp-movie-collector-admin.php:2005 admin/class-wp-movie-collector-admin.php:2039 admin/class-wp-movie-collector-admin.php:2088 public/class-wp-movie-collector-public.php:162
+msgid "Security check failed."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:75 admin/partials/wp-movie-collector-admin-edit-box-set.php:79 admin/partials/wp-movie-collector-admin-add-movie.php:85 admin/partials/wp-movie-collector-admin-edit-movie.php:78
+msgid "Select Format"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:87 admin/partials/wp-movie-collector-admin-edit-box-set.php:103 admin/partials/wp-movie-collector-admin-add-movie.php:97 admin/partials/wp-movie-collector-admin-edit-movie.php:102
+msgid "Select Region"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:62
+msgid "Select or Upload Cover Image"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:685
+msgid "Selected box set does not exist."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:642 admin/class-wp-movie-collector-admin.php:821
+msgid "Selected cover image is not valid."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:143 admin/class-wp-movie-collector-admin.php:144
+msgid "Settings"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:3 admin/partials/wp-movie-collector-admin-add-box-set.php:3 admin/partials/wp-movie-collector-admin-import-export.php:3 admin/partials/wp-movie-collector-admin-settings.php:3 admin/partials/wp-movie-collector-admin-edit-box-set.php:3 admin/partials/wp-movie-collector-admin-dashboard.php:3 admin/partials/wp-movie-collector-admin-add-movie.php:3 admin/partials/wp-movie-collector-admin-manage-box-set.php:3 admin/partials/wp-movie-collector-admin-edit-movie.php:3 admin/partials/wp-movie-collector-admin-movies.php:3
+msgid "Sorry, you are not allowed to access this page."
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:225
+msgid "Sort By"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:1088
+msgid "Sort collection by attribute."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:131 admin/partials/wp-movie-collector-admin-edit-box-set.php:163 admin/partials/wp-movie-collector-admin-add-movie.php:140 admin/partials/wp-movie-collector-admin-edit-movie.php:157 public/partials/wp-movie-collector-public-box-set.php:57 public/partials/wp-movie-collector-public-movie.php:85
+msgid "Special Features"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:151 admin/partials/wp-movie-collector-admin-add-movie.php:123 admin/partials/wp-movie-collector-admin-edit-movie.php:140
+msgid "Studio"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-movie.php:56
+msgid "Studio:"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:68
+msgid "Studios"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:472
+msgid "Successfully retrieved additional movie details from TMDB!"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:259
+msgid "TMDb API"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:311 admin/partials/wp-movie-collector-admin-settings.php:29
+msgid "TMDb API Key"
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:188 includes/class-wp-movie-collector-api.php:548
+msgid "TMDb API key is not set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api.php:60
+msgid "TMDb API key is not set. Please set it in the settings page."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:655
+msgid "That movie is not in this box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api-client.php:113
+msgid "The %s API is temporarily unavailable due to repeated failures. Please try again later."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api-client.php:126
+msgid "The %s API rate limit has been reached. Please wait and try again."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:912
+msgid "The %s field is required."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:354
+msgid "The movie could not be linked to the box set; the movie was not created."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api-client.php:201
+msgid "The movie service is temporarily unavailable. Please try again later."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:182
+msgid "The movie to add to the box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:615
+msgid "The relationship was created but the movie record could not be updated."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:783
+msgid "The specified box set does not exist."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:35
+msgid "There was an error saving the box set to the database. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:35
+msgid "There was an error saving the movie to the database. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:47
+msgid "There was an error updating the box set. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-movie.php:47
+msgid "There was an error updating the movie. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:39
+msgid "There was an error uploading the file. Please try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:199 admin/partials/wp-movie-collector-admin-add-movie.php:244
+msgid "This barcode already exists in your collection."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:243
+msgid "This barcode belongs to an existing box set in your collection."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:198
+msgid "This barcode belongs to an existing movie in your collection."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:120
+msgid "This will attempt to recreate any missing database tables."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:137
+msgid "This will clear all cached API responses (movie searches, details, and barcode lookups)."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:82 admin/partials/wp-movie-collector-admin-box-sets.php:96 admin/partials/wp-movie-collector-admin-box-sets.php:145 admin/partials/wp-movie-collector-admin-add-box-set.php:63 admin/partials/wp-movie-collector-admin-edit-box-set.php:67 admin/partials/wp-movie-collector-admin-add-movie.php:73 admin/partials/wp-movie-collector-admin-manage-box-set.php:118 admin/partials/wp-movie-collector-admin-manage-box-set.php:215 admin/partials/wp-movie-collector-admin-manage-box-set.php:381 admin/partials/wp-movie-collector-admin-edit-movie.php:66 admin/partials/wp-movie-collector-admin-movies.php:195 admin/partials/wp-movie-collector-admin-movies.php:232
+msgid "Title"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:228
+msgid "Title (A-Z)"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:229
+msgid "Title (Z-A)"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:578 admin/class-wp-movie-collector-admin.php:762
+msgid "Title is required."
+msgstr ""
+
+#: includes/class-wp-movie-collector-api-client.php:183
+msgid "Too many requests. Please wait a moment and try again."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-settings.php:109
+msgid "Tools"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:128
+msgid "Top Directors"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:102
+msgid "Top Genres"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:152
+msgid "Top Studios"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:327
+msgid "UPC Database API Key"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:138 includes/class-wp-movie-collector-rest-controller.php:167 includes/class-wp-movie-collector-rest-controller.php:198
+msgid "Unique identifier for the box set."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:90 includes/class-wp-movie-collector-rest-controller.php:202
+msgid "Unique identifier for the movie."
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:172
+msgid "Update Actor"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-box-set.php:178
+msgid "Update Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:124
+msgid "Update Director"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:100
+msgid "Update Genre"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-edit-movie.php:221
+msgid "Update Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:148
+msgid "Update Studio"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:113 admin/partials/wp-movie-collector-admin-edit-box-set.php:145 admin/partials/wp-movie-collector-admin-add-movie.php:151 admin/partials/wp-movie-collector-admin-edit-movie.php:172
+msgid "Upload Image"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:103
+msgid "Upload a CSV or JSON file containing movie data."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:115 admin/partials/wp-movie-collector-admin-edit-box-set.php:147
+msgid "Upload an image or enter a URL for the box set cover."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:153 admin/partials/wp-movie-collector-admin-edit-movie.php:174
+msgid "Upload an image or enter a URL for the movie cover."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:50
+msgid "Use a barcode scanner or enter a barcode manually to quickly add a box set."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:50
+msgid "Use a barcode scanner or enter a barcode manually to quickly add a movie."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:63
+msgid "Use this image"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:79 admin/partials/wp-movie-collector-admin-edit-box-set.php:85 admin/partials/wp-movie-collector-admin-add-movie.php:89 admin/partials/wp-movie-collector-admin-edit-movie.php:84
+msgid "VHS"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:182 admin/partials/wp-movie-collector-admin-dashboard.php:230
+msgid "View All Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:61
+msgid "View Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:28
+msgid "View Movie"
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:2179
+msgid "WP Movie Collector: The following API services are experiencing issues and have been temporarily paused: %s. They will be retried automatically after a cooldown period."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-box-set.php:127 admin/partials/wp-movie-collector-admin-edit-box-set.php:159
+msgid "When did you acquire this box set?"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-add-movie.php:165 admin/partials/wp-movie-collector-admin-edit-movie.php:186
+msgid "When did you acquire this movie?"
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-box-sets.php:83 admin/partials/wp-movie-collector-admin-box-sets.php:128 admin/partials/wp-movie-collector-admin-box-sets.php:146 admin/partials/wp-movie-collector-admin-movies.php:196 admin/partials/wp-movie-collector-admin-movies.php:259 public/partials/wp-movie-collector-public-display.php:199
+msgid "Year"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:230
+msgid "Year (Newest)"
+msgstr ""
+
+#: public/partials/wp-movie-collector-public-display.php:231
+msgid "Year (Oldest)"
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:241
+msgid "You are not allowed to access the movie collection."
+msgstr ""
+
+#: includes/class-wp-movie-collector-rest-controller.php:271
+msgid "You are not allowed to modify the movie collection."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-import-export.php:125
+msgid "You can download a CSV template to help you format your movie data for import."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:352 admin/class-wp-movie-collector-admin.php:402 admin/class-wp-movie-collector-admin.php:447 admin/class-wp-movie-collector-admin.php:543 admin/class-wp-movie-collector-admin.php:962 admin/class-wp-movie-collector-admin.php:1024 admin/class-wp-movie-collector-admin.php:1109 admin/class-wp-movie-collector-admin.php:1153 admin/class-wp-movie-collector-admin.php:1193 admin/class-wp-movie-collector-admin.php:1343 admin/class-wp-movie-collector-admin.php:1381 admin/class-wp-movie-collector-admin.php:1484
+msgid "You do not have sufficient permissions to perform this action."
+msgstr ""
+
+#: admin/class-wp-movie-collector-admin.php:1281 admin/class-wp-movie-collector-admin.php:1902 admin/class-wp-movie-collector-admin.php:1975 admin/class-wp-movie-collector-admin.php:2010 admin/class-wp-movie-collector-admin.php:2043 admin/class-wp-movie-collector-admin.php:2092
+msgid "You do not have sufficient permissions."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-dashboard.php:302
+msgid "Your collection contains %1$d movies and %2$d box sets, spanning release years %3$s to %4$s."
+msgstr ""
+
+#: admin/partials/wp-movie-collector-admin-movies.php:170
+msgid "of"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:56
+msgctxt "add new on admin bar"
+msgid "Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:23
+msgctxt "add new on admin bar"
+msgid "Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:55
+msgctxt "admin menu"
+msgid "Box Sets"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:22
+msgctxt "admin menu"
+msgid "Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:57
+msgctxt "box set"
+msgid "Add New"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:24
+msgctxt "movie"
+msgid "Add New"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:53
+msgctxt "post type general name"
+msgid "Box Sets"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:20
+msgctxt "post type general name"
+msgid "Movies"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:54
+msgctxt "post type singular name"
+msgid "Box Set"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:21
+msgctxt "post type singular name"
+msgid "Movie"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:165
+msgctxt "taxonomy general name"
+msgid "Actors"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:117
+msgctxt "taxonomy general name"
+msgid "Directors"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:93
+msgctxt "taxonomy general name"
+msgid "Genres"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:141
+msgctxt "taxonomy general name"
+msgid "Studios"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:166
+msgctxt "taxonomy singular name"
+msgid "Actor"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:118
+msgctxt "taxonomy singular name"
+msgid "Director"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:94
+msgctxt "taxonomy singular name"
+msgid "Genre"
+msgstr ""
+
+#: includes/class-wp-movie-collector-post-types.php:142
+msgctxt "taxonomy singular name"
+msgid "Studio"
+msgstr ""
+

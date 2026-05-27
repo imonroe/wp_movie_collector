@@ -24,6 +24,7 @@ class WP_Movie_Collector {
 	 */
 	public function __construct() {
 		$this->load_dependencies();
+		$this->set_locale();
 		$this->maybe_update();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
@@ -76,6 +77,29 @@ class WP_Movie_Collector {
 		require_once WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'includes/class-wp-movie-collector-rest-controller.php';
 
 		$this->loader = new WP_Movie_Collector_Loader();
+	}
+
+	/**
+	 * Define the locale for internationalization.
+	 *
+	 * @since    1.3.0
+	 * @access   private
+	 */
+	private function set_locale() {
+		$this->loader->add_action( 'init', $this, 'load_plugin_textdomain' );
+	}
+
+	/**
+	 * Load the plugin text domain for translation.
+	 *
+	 * @since    1.3.0
+	 */
+	public function load_plugin_textdomain() {
+		load_plugin_textdomain(
+			'wp-movie-collector',
+			false,
+			dirname( plugin_basename( WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'wp-movie-collector.php' ) ) . '/languages/'
+		);
 	}
 
 	/**

@@ -2290,25 +2290,34 @@ class WP_Movie_Collector_Admin {
 		global $wpdb;
 
 		$db = new WP_Movie_Collector_DB();
+
+		// Capture the last DB error after each step (before the SHOW TABLES
+		// checks below overwrite it). create_tables()/update_tables() run many
+		// queries and return no status, so $wpdb->last_error only reflects the
+		// final query of each — a best-effort signal of a failed CREATE/ALTER.
+		$wpdb->last_error = '';
 		$db->create_tables();
+		$create_error = $wpdb->last_error;
+
+		$wpdb->last_error = '';
 		$db->update_tables();
+		$update_error = $wpdb->last_error;
 
-		// create_tables()/update_tables() return no status and run many
-		// queries, so $wpdb->last_error only reflects the final one. The
-		// authoritative success signal for a "repair" is that the expected
-		// tables now exist — verify all three rather than trusting last_error.
-		$expected = array(
-			$db->get_movies_table(),
-			$db->get_box_sets_table(),
-			$db->get_relationships_table(),
-		);
-
-		foreach ( $expected as $table ) {
+		// The authoritative success signal for a "repair" is that the expected
+		// tables now exist; verify all three. Combined with the per-step error
+		// capture above, a partial failure can't be reported as success.
+		$missing_table = false;
+		foreach ( array( $db->get_movies_table(), $db->get_box_sets_table(), $db->get_relationships_table() ) as $table ) {
 			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
 			if ( $found !== $table ) {
-				wp_safe_redirect( add_query_arg( 'db_repair_error', 'missing_table', $redirect_url ) );
-				exit;
+				$missing_table = true;
+				break;
 			}
+		}
+
+		if ( $missing_table || '' !== $create_error || '' !== $update_error ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', $missing_table ? 'missing_table' : 'query', $redirect_url ) );
+			exit;
 		}
 
 		wp_safe_redirect( add_query_arg( 'db_repaired', '1', $redirect_url ) );

@@ -191,6 +191,30 @@ class WP_Movie_Collector_DB {
 			}
 		}
 
+		// Drop the redundant standalone `format` index from both tables. The
+		// composite format_year (format, release_year) added above already
+		// satisfies format-only lookups via its leftmost prefix, so the
+		// single-column index is pure write/storage overhead. Only drop it once
+		// format_year exists so format-only queries stay covered.
+		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
+			$format_index    = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+					'format'
+				)
+			);
+			$composite_index = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+					'format_year'
+				)
+			);
+
+			if ( ! empty( $format_index ) && ! empty( $composite_index ) ) {
+				$this->run_schema_query( "ALTER TABLE `{$table}` DROP INDEX format" );
+			}
+		}
+
 		// Add single-column indexes on created_at and acquisition_date to
 		// both the movies and box sets tables. Both columns appear in the
 		// search ORDER BY whitelist (search_movies / search_box_sets) and
@@ -280,7 +304,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY box_set_id (box_set_id),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
@@ -308,7 +331,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
             KEY format_year (format, release_year),

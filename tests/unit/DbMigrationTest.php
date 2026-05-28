@@ -143,6 +143,26 @@ class DbMigrationTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Get the captured created_at / acquisition_date ALTER queries for a table.
+	 *
+	 * Scopes assertions to the timestamp-index batching under test, ignoring
+	 * unrelated migrations (e.g. the redundant-`format`-index drop) that also
+	 * issue ALTER TABLE against the same table.
+	 *
+	 * @param string $table Table name to match.
+	 * @return array<int, string>
+	 */
+	private function timestamp_index_alters_for( string $table ): array {
+		return array_values(
+			array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool =>
+					str_contains( $q, 'created_at' ) || str_contains( $q, 'acquisition_date' )
+			)
+		);
+	}
+
 	// ------------------------------------------------------------------
 	// "Already migrated" — no ALTER fires for the new indexes
 	// ------------------------------------------------------------------
@@ -185,8 +205,8 @@ class DbMigrationTest extends TestCase {
 		$db = new WP_Movie_Collector_DB();
 		$db->update_tables();
 
-		$movies   = $this->alter_queries_for( 'wp_movie_collection' );
-		$box_sets = $this->alter_queries_for( 'wp_movie_box_sets' );
+		$movies   = $this->timestamp_index_alters_for( 'wp_movie_collection' );
+		$box_sets = $this->timestamp_index_alters_for( 'wp_movie_box_sets' );
 
 		$this->assertCount( 1, $movies, 'Movies table should receive one ALTER TABLE.' );
 		$this->assertCount( 1, $box_sets, 'Box sets table should receive one ALTER TABLE.' );
@@ -211,11 +231,58 @@ class DbMigrationTest extends TestCase {
 		$db = new WP_Movie_Collector_DB();
 		$db->update_tables();
 
-		$movies = $this->alter_queries_for( 'wp_movie_collection' );
+		$movies = $this->timestamp_index_alters_for( 'wp_movie_collection' );
 
 		$this->assertCount( 1, $movies );
 		$this->assertStringContainsString( 'ADD INDEX acquisition_date (acquisition_date)', $movies[0] );
 		$this->assertStringNotContainsString( 'ADD INDEX created_at (created_at)', $movies[0] );
+	}
+
+	// ------------------------------------------------------------------
+	// Redundant standalone `format` index drop
+	// ------------------------------------------------------------------
+
+	/**
+	 * Test that the redundant standalone `format` index is dropped from both
+	 * tables once the composite format_year index is present (so format-only
+	 * lookups stay covered by the composite's leftmost prefix).
+	 */
+	public function test_update_tables_drops_redundant_format_index(): void {
+		// Nothing missing: both `format` and `format_year` exist on each table.
+		$this->install_wpdb_mock( array() );
+
+		$db = new WP_Movie_Collector_DB();
+		$db->update_tables();
+
+		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
+			$drops = array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool => str_contains( $q, 'DROP INDEX format' )
+			);
+			$this->assertCount( 1, $drops, "{$table} should drop the redundant format index." );
+		}
+	}
+
+	/**
+	 * Test that the `format` drop is skipped when the composite format_year
+	 * index does not yet exist, so format-only queries are never left without
+	 * any covering index mid-migration.
+	 */
+	public function test_update_tables_keeps_format_index_until_composite_exists(): void {
+		// format_year missing on both tables: the standalone format index must
+		// be retained (and the composite added instead).
+		$this->install_wpdb_mock( array( 'format_year' ) );
+
+		$db = new WP_Movie_Collector_DB();
+		$db->update_tables();
+
+		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
+			$drops = array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool => str_contains( $q, 'DROP INDEX format' )
+			);
+			$this->assertCount( 0, $drops, "{$table} must not drop format before format_year exists." );
+		}
 	}
 
 	// ------------------------------------------------------------------

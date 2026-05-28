@@ -1843,8 +1843,6 @@ class WP_Movie_Collector_Admin {
 	 * @return   int|WP_Error              Count of imported items or error.
 	 */
 	private function import_from_csv( $file_path, $import_type ) {
-		$db = new WP_Movie_Collector_DB();
-
 		// Open the file
 		$handle = fopen( $file_path, 'r' );
 		if ( ! $handle ) {
@@ -1861,16 +1859,9 @@ class WP_Movie_Collector_Admin {
 		// Clean empty cells from headers
 		$headers = array_map( 'trim', $headers );
 
-		// If replacing, truncate tables first
-		if ( $import_type === 'replace' ) {
-			global $wpdb;
-			$wpdb->query( "TRUNCATE TABLE {$db->get_relationships_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_movies_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_box_sets_table()}" );
-		}
-
-		// Process rows
-		$count    = 0;
+		// Stage every row before touching the database so that a parse error
+		// or a failed insert in replace mode can't destroy the existing
+		// collection (see persist_import()).
 		$movies   = array();
 		$box_sets = array();
 
@@ -1883,50 +1874,101 @@ class WP_Movie_Collector_Admin {
 			// Create an associative array from the row
 			$item = array();
 			foreach ( $headers as $i => $header ) {
-				if ( isset( $row[ $i ] ) ) {
-					$item[ $header ] = $row[ $i ];
-				} else {
-					$item[ $header ] = '';
-				}
+				$item[ $header ] = isset( $row[ $i ] ) ? $row[ $i ] : '';
 			}
 
 			// Set timestamps
 			$item['created_at'] = current_time( 'mysql' );
 			$item['updated_at'] = current_time( 'mysql' );
 
-			// Determine if this is a movie or box set
+			// Determine if this is a movie or box set, then drop the
+			// non-column id/type fields.
 			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			unset( $item['id'], $item['type'] );
 
-			// Remove ID and type fields if present
-			unset( $item['id'] );
-			unset( $item['type'] );
-
-			// Import the item (skip per-row cache invalidation during bulk import)
-			if ( $type === 'box_set' ) {
-				// Store box sets to process after movies
+			if ( 'box_set' === $type ) {
 				$box_sets[] = $item;
 			} else {
-				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item, true );
-				if ( $movie_id ) {
-					++$count;
-					$movies[ $item['title'] ] = $movie_id;
-				}
+				$movies[] = $item;
 			}
 		}
 
-		// Process box sets after movies (to handle relationships)
-		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set, true );
-			if ( $box_set_id ) {
+		fclose( $handle );
+
+		return $this->persist_import( $movies, $box_sets, $import_type );
+	}
+
+	/**
+	 * Persist staged import rows, optionally replacing the existing collection.
+	 *
+	 * In replace mode the destructive delete and the inserts run inside a
+	 * single transaction using DELETE (not TRUNCATE, which implicitly commits
+	 * and cannot be rolled back); if any row fails to insert the whole import
+	 * is rolled back so the user's collection is never left partially wiped.
+	 *
+	 * @since 1.5.0
+	 * @param array  $movies      Staged movie rows.
+	 * @param array  $box_sets    Staged box-set rows.
+	 * @param string $import_type 'append' or 'replace'.
+	 * @return int|WP_Error Count of imported items, or WP_Error on failure.
+	 */
+	private function persist_import( array $movies, array $box_sets, $import_type ) {
+		global $wpdb;
+		$db      = new WP_Movie_Collector_DB();
+		$replace = ( 'replace' === $import_type );
+
+		if ( $replace ) {
+			$wpdb->query( 'START TRANSACTION' );
+			$wpdb->query( "DELETE FROM {$db->get_relationships_table()}" );
+			$wpdb->query( "DELETE FROM {$db->get_movies_table()}" );
+			$wpdb->query( "DELETE FROM {$db->get_box_sets_table()}" );
+		}
+
+		$count  = 0;
+		$failed = 0;
+
+		// Insert movies first, then box sets. Pass true to skip per-row cache
+		// invalidation during the bulk import.
+		foreach ( $movies as $movie ) {
+			if ( $db->insert_movie( $movie, true ) ) {
 				++$count;
+			} else {
+				++$failed;
 			}
+		}
+
+		foreach ( $box_sets as $box_set ) {
+			if ( $db->insert_box_set( $box_set, true ) ) {
+				++$count;
+			} else {
+				++$failed;
+			}
+		}
+
+		if ( $replace ) {
+			if ( $failed > 0 ) {
+				// Don't leave the collection destroyed by a partial import.
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_Error(
+					'import_failed',
+					sprintf(
+						/* translators: %d: number of rows that failed to import */
+						_n(
+							'%d row failed to import; no changes were made.',
+							'%d rows failed to import; no changes were made.',
+							$failed,
+							'wp-movie-collector'
+						),
+						$failed
+					)
+				);
+			}
+			$wpdb->query( 'COMMIT' );
 		}
 
 		// Invalidate stats cache once after all imports complete.
 		$db->invalidate_stats_cache();
 
-		fclose( $handle );
 		return $count;
 	}
 
@@ -1939,8 +1981,6 @@ class WP_Movie_Collector_Admin {
 	 * @return   int|WP_Error              Count of imported items or error.
 	 */
 	private function import_from_json( $file_path, $import_type ) {
-		$db = new WP_Movie_Collector_DB();
-
 		// Read the file content
 		$json_data = file_get_contents( $file_path );
 		if ( ! $json_data ) {
@@ -1953,22 +1993,20 @@ class WP_Movie_Collector_Admin {
 			return new WP_Error( 'json_error', __( 'Invalid JSON format.', 'wp-movie-collector' ) );
 		}
 
-		// If replacing, truncate tables first
-		if ( $import_type === 'replace' ) {
-			global $wpdb;
-			$wpdb->query( "TRUNCATE TABLE {$db->get_relationships_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_movies_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_box_sets_table()}" );
+		// A syntactically valid JSON scalar (e.g. "hello", 42, null) passes the
+		// error check above; reject it here, before any destructive operation,
+		// so a malformed file can't wipe the collection.
+		if ( ! is_array( $data ) ) {
+			return new WP_Error( 'json_error', __( 'Invalid JSON format: expected an array of items.', 'wp-movie-collector' ) );
 		}
 
-		// Process items
-		$count    = 0;
+		// Stage every row before touching the database (see persist_import()).
 		$movies   = array();
 		$box_sets = array();
 
 		foreach ( $data as $item ) {
-			// Skip empty items
-			if ( empty( $item['title'] ) ) {
+			// Skip empty or malformed items
+			if ( ! is_array( $item ) || empty( $item['title'] ) ) {
 				continue;
 			}
 
@@ -1976,39 +2014,19 @@ class WP_Movie_Collector_Admin {
 			$item['created_at'] = current_time( 'mysql' );
 			$item['updated_at'] = current_time( 'mysql' );
 
-			// Determine if this is a movie or box set
+			// Determine if this is a movie or box set, then drop the
+			// non-column id/type fields.
 			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			unset( $item['id'], $item['type'] );
 
-			// Remove ID and type fields if present
-			unset( $item['id'] );
-			unset( $item['type'] );
-
-			// Import the item (skip per-row cache invalidation during bulk import)
-			if ( $type === 'box_set' ) {
-				// Store box sets to process after movies
+			if ( 'box_set' === $type ) {
 				$box_sets[] = $item;
 			} else {
-				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item, true );
-				if ( $movie_id ) {
-					++$count;
-					$movies[ $item['title'] ] = $movie_id;
-				}
+				$movies[] = $item;
 			}
 		}
 
-		// Process box sets after movies (to handle relationships)
-		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set, true );
-			if ( $box_set_id ) {
-				++$count;
-			}
-		}
-
-		// Invalidate stats cache once after all imports complete.
-		$db->invalidate_stats_cache();
-
-		return $count;
+		return $this->persist_import( $movies, $box_sets, $import_type );
 	}
 
 	/**

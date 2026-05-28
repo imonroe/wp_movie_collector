@@ -13,6 +13,8 @@
 
 namespace WP_Movie_Collector\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Stub_Wpdb;
 use WP_Movie_Collector_DB;
@@ -224,7 +226,11 @@ class DbMigrationTest extends TestCase {
 	 * Test that a failed migration query is logged (under WP_DEBUG) and the
 	 * failure result is returned rather than silently swallowed.
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function test_run_schema_query_logs_failure_when_debug_enabled(): void {
+		// Runs in a separate process so defining WP_DEBUG cannot leak into and
+		// reorder the rest of the suite.
 		if ( ! defined( 'WP_DEBUG' ) ) {
 			define( 'WP_DEBUG', true );
 		}

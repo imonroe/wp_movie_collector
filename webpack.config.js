@@ -47,7 +47,15 @@ module.exports = ( env, argv ) => {
 		plugins: [
 			new MiniCssExtractPlugin( {
 				filename: ( pathData ) => {
-					const base = cssOutputByEntry[ pathData.chunk.name ] || pathData.chunk.name;
+					const base = cssOutputByEntry[ pathData.chunk.name ];
+					if ( ! base ) {
+						// Fail fast: a new entry with extracted CSS must be added to
+						// cssOutputByEntry, otherwise CSS would silently emit under
+						// the JS entry path (e.g. admin/js/foo.css).
+						throw new Error(
+							`No CSS output path mapped for entry "${ pathData.chunk.name }"; add it to cssOutputByEntry in webpack.config.js.`
+						);
+					}
 					return base + ( isProduction ? '.min.css' : '.css' );
 				},
 			} ),

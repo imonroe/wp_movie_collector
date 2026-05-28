@@ -128,6 +128,25 @@ class WP_Movie_Collector_DB {
 			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD INDEX box_set_order (box_set_id, display_order)" );
 		}
 
+		// Add a UNIQUE (movie_id, box_set_id) constraint so a movie can't be
+		// added to the same box set twice. Existing duplicates would block the
+		// index, so delete them first (keeping the lowest id of each pair).
+		$unique_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM `{$relationships_table}` WHERE Key_name = %s",
+				'movie_box'
+			)
+		);
+
+		if ( empty( $unique_exists ) ) {
+			$this->run_schema_query(
+				"DELETE r1 FROM `{$relationships_table}` r1
+				INNER JOIN `{$relationships_table}` r2
+				ON r1.movie_id = r2.movie_id AND r1.box_set_id = r2.box_set_id AND r1.id > r2.id"
+			);
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD UNIQUE KEY movie_box (movie_id, box_set_id)" );
+		}
+
 		// Add composite index (title, release_year) on movies table for duplicate detection.
 		$movies_table = $this->get_movies_table();
 		$index_exists = $wpdb->get_results(
@@ -301,6 +320,7 @@ class WP_Movie_Collector_DB {
             box_set_id bigint(20) NOT NULL,
             display_order int(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
+            UNIQUE KEY movie_box (movie_id, box_set_id),
             KEY movie_id (movie_id),
             KEY box_set_id (box_set_id),
             KEY box_set_order (box_set_id, display_order)
@@ -728,7 +748,10 @@ class WP_Movie_Collector_DB {
 	public function add_movie_to_box_set( $movie_id, $box_set_id ) {
 		global $wpdb;
 
-		// Check if the relationship already exists
+		$movie_id   = (int) $movie_id;
+		$box_set_id = (int) $box_set_id;
+
+		// Return the existing relationship id if the pairing already exists.
 		$existing = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
@@ -738,7 +761,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( $existing ) {
-			return $existing;
+			return (int) $existing;
 		}
 
 		// Get the next display_order value for this box set.
@@ -749,21 +772,34 @@ class WP_Movie_Collector_DB {
 			)
 		);
 
-		// Add the relationship
-		$result = $wpdb->insert(
-			$this->relationships_table,
-			array(
-				'movie_id'      => $movie_id,
-				'box_set_id'    => $box_set_id,
-				'display_order' => $next_order,
+		// Insert the relationship. INSERT IGNORE relies on the UNIQUE
+		// (movie_id, box_set_id) key so a concurrent duplicate from a parallel
+		// request is silently skipped rather than creating a duplicate row,
+		// closing the check-then-insert race.
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO $this->relationships_table (movie_id, box_set_id, display_order) VALUES (%d, %d, %d)",
+				$movie_id,
+				$box_set_id,
+				$next_order
 			)
 		);
 
 		if ( $result ) {
-			return $wpdb->insert_id;
+			return (int) $wpdb->insert_id;
 		}
 
-		return false;
+		// INSERT IGNORE skipped a row a concurrent request just inserted —
+		// return that existing relationship's id.
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
+				$movie_id,
+				$box_set_id
+			)
+		);
+
+		return $existing ? (int) $existing : false;
 	}
 
 	/**

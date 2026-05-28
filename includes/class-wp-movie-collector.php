@@ -44,6 +44,14 @@ class WP_Movie_Collector {
 	 * @access   private
 	 */
 	private function maybe_update() {
+		// Schema migrations (ALTER TABLE) must not run on front-end /
+		// anonymous requests: they're slow and shouldn't be triggered while
+		// serving a public page. Defer the check to the admin context so the
+		// migration runs the next time an admin loads wp-admin.
+		if ( ! is_admin() ) {
+			return;
+		}
+
 		$current_version = get_option( 'wp_movie_collector_version', '0.0.0' );
 
 		if ( version_compare( $current_version, WP_MOVIE_COLLECTOR_VERSION, '<' ) ) {

@@ -15,6 +15,16 @@ class WP_Movie_Collector_Post_Types {
     /**
      * Register custom post types.
      *
+     * Note on visibility: the `movie` and `box_set` post types are
+     * intentionally registered as public ('public' => true,
+     * 'publicly_queryable' => true, 'show_in_rest' => true) and the sync layer
+     * publishes their mirror posts. This is by design — these posts are an SEO
+     * / permalink "view layer" (see class-wp-movie-collector-sync.php) that
+     * makes collection items work with permalinks, WordPress search,
+     * taxonomies, and SEO plugins, and exposes them on the front end and via
+     * the core REST API. The custom tables remain the source of truth; the
+     * public posts are a deliberate, read-oriented projection of them.
+     *
      * @since    1.0.0
      */
     public function register_post_types() {

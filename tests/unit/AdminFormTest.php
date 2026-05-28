@@ -17,13 +17,48 @@
 namespace WP_Movie_Collector\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
+use Stub_Wpdb;
 use WP_Movie_Collector_Admin;
 
 /**
  * Admin form/export unit tests.
  */
 class AdminFormTest extends TestCase {
+
+	/**
+	 * The $wpdb value that existed before a test replaced it (if any).
+	 *
+	 * @var mixed
+	 */
+	private mixed $previous_wpdb = null;
+
+	/**
+	 * Restore any global $wpdb a test swapped in.
+	 */
+	protected function tearDown(): void {
+		if ( null === $this->previous_wpdb ) {
+			unset( $GLOBALS['wpdb'] );
+		} else {
+			$GLOBALS['wpdb'] = $this->previous_wpdb;
+		}
+		$this->previous_wpdb = null;
+		parent::tearDown();
+	}
+
+	/**
+	 * Install a mocked $wpdb global and return it for configuration.
+	 *
+	 * @return Stub_Wpdb&MockObject
+	 */
+	private function install_wpdb_mock() {
+		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+		$wpdb                = $this->createMock( Stub_Wpdb::class );
+		$wpdb->prefix        = 'wp_';
+		$GLOBALS['wpdb']     = $wpdb;
+		return $wpdb;
+	}
 
 	/**
 	 * Invoke a private/protected method on the admin object.
@@ -173,5 +208,112 @@ class AdminFormTest extends TestCase {
 		$result = $this->call_private( 'validate_and_sanitize_movie_data', array( $input, 5 ) );
 
 		$this->assertSame( '2022-03-15', $result['acquisition_date'] );
+	}
+
+	// ------------------------------------------------------------------
+	// Import safety (issue #62).
+	// ------------------------------------------------------------------
+
+	/**
+	 * A syntactically valid JSON scalar must be rejected before any DB write,
+	 * so a malformed file can't wipe the collection in replace mode.
+	 */
+	public function test_import_from_json_rejects_scalar_before_any_db_write(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// No destructive query and no insert may run for a rejected payload.
+		$wpdb->expects( $this->never() )->method( 'insert' );
+		$wpdb->expects( $this->never() )->method( 'query' );
+
+		$file = tempnam( sys_get_temp_dir(), 'wpmc' );
+		file_put_contents( $file, '42' );
+
+		$result = $this->call_private( 'import_from_json', array( $file, 'replace' ) );
+
+		unlink( $file );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'json_error', $result->get_error_code() );
+	}
+
+	/**
+	 * Replace-mode import must ROLLBACK and report an error (leaving the
+	 * collection intact) when a row fails to insert.
+	 */
+	public function test_persist_import_replace_rolls_back_on_insert_failure(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// Transactional engine so the replace path proceeds.
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+		// Every row insert fails.
+		$wpdb->method( 'insert' )->willReturn( false );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'Doomed' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * Replace-mode import must abort before deleting anything when the tables
+	 * use a non-transactional engine (ROLLBACK would be a silent no-op).
+	 */
+	public function test_persist_import_replace_aborts_on_non_transactional_engine(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->method( 'get_var' )->willReturn( 'MyISAM' );
+		// Nothing destructive may run.
+		$wpdb->expects( $this->never() )->method( 'query' );
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'X' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_no_transaction', $result->get_error_code() );
+	}
+
+	/**
+	 * A movie's denormalized box_set_id must be remapped to the id assigned to
+	 * the box set imported alongside it.
+	 */
+	public function test_persist_import_remaps_box_set_id_references(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->insert_id = 200;
+
+		$captured_movie = null;
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured_movie ) {
+				if ( false !== strpos( $table, 'movie_collection' ) ) {
+					$captured_movie = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array( array( 'title' => 'M', 'box_set_id' => 5 ) ),
+				array( array( 'title' => 'BS', '__source_id' => 5 ) ),
+				'append',
+			)
+		);
+
+		$this->assertSame( 2, $count );
+		$this->assertNotNull( $captured_movie );
+		$this->assertSame( 200, $captured_movie['box_set_id'] );
 	}
 }

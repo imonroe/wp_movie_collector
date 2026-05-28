@@ -1883,11 +1883,15 @@ class WP_Movie_Collector_Admin {
 
 			// Determine if this is a movie or box set, then drop the
 			// non-column id/type fields.
-			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$type      = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$source_id = isset( $item['id'] ) ? (int) $item['id'] : 0;
 			unset( $item['id'], $item['type'] );
 
 			if ( 'box_set' === $type ) {
-				$box_sets[] = $item;
+				// Remember the exported id so movie box_set_id references can be
+				// remapped to the ids assigned on insert (see persist_import()).
+				$item['__source_id'] = $source_id;
+				$box_sets[]          = $item;
 			} else {
 				$movies[] = $item;
 			}
@@ -1906,7 +1910,7 @@ class WP_Movie_Collector_Admin {
 	 * and cannot be rolled back); if any row fails to insert the whole import
 	 * is rolled back so the user's collection is never left partially wiped.
 	 *
-	 * @since 1.5.0
+	 * @since 1.3.0
 	 * @param array  $movies      Staged movie rows.
 	 * @param array  $box_sets    Staged box-set rows.
 	 * @param string $import_type 'append' or 'replace'.
@@ -1918,7 +1922,22 @@ class WP_Movie_Collector_Admin {
 		$replace = ( 'replace' === $import_type );
 
 		if ( $replace ) {
-			$wpdb->query( 'START TRANSACTION' );
+			// Replace mode deletes the whole collection before re-inserting. That
+			// is only safe if a failed import can be rolled back, which requires a
+			// transactional engine — bail before deleting anything otherwise.
+			if ( ! $this->tables_support_transactions( $db ) ) {
+				return new WP_Error(
+					'import_no_transaction',
+					__( 'Replace-mode import requires transactional (InnoDB) database tables so a failed import can be rolled back. The plugin tables use a non-transactional engine; aborting to avoid data loss.', 'wp-movie-collector' )
+				);
+			}
+
+			if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+				return new WP_Error(
+					'import_failed',
+					__( 'Could not start a database transaction for the import; no changes were made.', 'wp-movie-collector' )
+				);
+			}
 			$wpdb->query( "DELETE FROM {$db->get_relationships_table()}" );
 			$wpdb->query( "DELETE FROM {$db->get_movies_table()}" );
 			$wpdb->query( "DELETE FROM {$db->get_box_sets_table()}" );
@@ -1927,18 +1946,41 @@ class WP_Movie_Collector_Admin {
 		$count  = 0;
 		$failed = 0;
 
-		// Insert movies first, then box sets. Pass true to skip per-row cache
-		// invalidation during the bulk import.
-		foreach ( $movies as $movie ) {
-			if ( $db->insert_movie( $movie, true ) ) {
+		// Insert box sets first, building a map from each row's exported id to
+		// the id assigned on insert. Movie rows carry a denormalized box_set_id
+		// that must be translated to the new id: in replace mode the old ids were
+		// just deleted, and even in append mode AUTO_INCREMENT assigns fresh ids.
+		// Pass true to skip per-row cache invalidation during the bulk import.
+		$id_map = array();
+		foreach ( $box_sets as $box_set ) {
+			$source_id = isset( $box_set['__source_id'] ) ? (int) $box_set['__source_id'] : 0;
+			unset( $box_set['__source_id'] );
+
+			$new_id = $db->insert_box_set( $box_set, true );
+			if ( $new_id ) {
 				++$count;
+				if ( $source_id > 0 ) {
+					$id_map[ $source_id ] = (int) $new_id;
+				}
 			} else {
 				++$failed;
 			}
 		}
 
-		foreach ( $box_sets as $box_set ) {
-			if ( $db->insert_box_set( $box_set, true ) ) {
+		foreach ( $movies as $movie ) {
+			if ( ! empty( $movie['box_set_id'] ) ) {
+				$old = (int) $movie['box_set_id'];
+				if ( isset( $id_map[ $old ] ) ) {
+					$movie['box_set_id'] = $id_map[ $old ];
+				} elseif ( $replace ) {
+					// The referenced box set wasn't part of this import and the old
+					// ids were wiped, so the reference can no longer resolve.
+					$movie['box_set_id'] = null;
+				}
+				// Append mode: leave as-is; the referenced box set may still exist.
+			}
+
+			if ( $db->insert_movie( $movie, true ) ) {
 				++$count;
 			} else {
 				++$failed;
@@ -1970,6 +2012,44 @@ class WP_Movie_Collector_Admin {
 		$db->invalidate_stats_cache();
 
 		return $count;
+	}
+
+	/**
+	 * Whether the plugin's tables use a transactional storage engine.
+	 *
+	 * Replace-mode import relies on transactions/ROLLBACK to avoid wiping the
+	 * collection when an import fails. On a non-transactional engine (e.g.
+	 * MyISAM) ROLLBACK is a silent no-op, so we must detect that and refuse to
+	 * delete. An engine that can't be determined (null) is treated as
+	 * acceptable so imports aren't blocked when the lookup is unavailable.
+	 *
+	 * @since 1.3.0
+	 * @param WP_Movie_Collector_DB $db Database helper.
+	 * @return bool True if all plugin tables are transactional (or unknown).
+	 */
+	private function tables_support_transactions( $db ) {
+		global $wpdb;
+
+		$tables = array(
+			$db->get_movies_table(),
+			$db->get_box_sets_table(),
+			$db->get_relationships_table(),
+		);
+
+		foreach ( $tables as $table ) {
+			$engine = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s',
+					$table
+				)
+			);
+
+			if ( null !== $engine && 'innodb' !== strtolower( (string) $engine ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -2018,11 +2098,15 @@ class WP_Movie_Collector_Admin {
 
 			// Determine if this is a movie or box set, then drop the
 			// non-column id/type fields.
-			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$type      = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$source_id = isset( $item['id'] ) ? (int) $item['id'] : 0;
 			unset( $item['id'], $item['type'] );
 
 			if ( 'box_set' === $type ) {
-				$box_sets[] = $item;
+				// Remember the exported id so movie box_set_id references can be
+				// remapped to the ids assigned on insert (see persist_import()).
+				$item['__source_id'] = $source_id;
+				$box_sets[]          = $item;
 			} else {
 				$movies[] = $item;
 			}

@@ -306,7 +306,7 @@ jQuery(document).ready(function($) {
         
         // Display cover image preview if URL exists
         if (box_set.cover_image_url) {
-            $('#box-set-cover-image-url').siblings('.image-preview').html('<img src="' + box_set.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#box-set-cover-image-url').siblings('.image-preview'), box_set.cover_image_url);
             $('#box-set-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         

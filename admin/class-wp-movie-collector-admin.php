@@ -76,6 +76,11 @@ class WP_Movie_Collector_Admin {
 
 		// Add shared escHtml helper for safe DOM text insertion
 		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s));return d.innerHTML;}', 'before' );
+
+		// Add shared image-preview helper that builds the <img> via DOM APIs
+		// and only accepts http(s) URLs, so untrusted cover_image_url values
+		// (from external APIs / imports) can't inject markup or javascript: URIs.
+		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorSetImagePreview($preview,url){$preview.empty();if(typeof url==="string"&&/^https?:\/\//i.test(url)){jQuery("<img>",{alt:""}).attr("src",url).css({"max-width":"150px","max-height":"150px"}).appendTo($preview);}}', 'before' );
 	}
 
 	/**

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="wp-movie-collector-single-header">
         <div class="wp-movie-collector-single-image">
             <?php if (!empty($box_set['cover_image_url'])) : ?>
-                <img src="<?php echo esc_url($box_set['cover_image_url']); ?>" alt="<?php echo esc_attr($box_set['title']); ?>">
+                <img src="<?php echo esc_url($box_set['cover_image_url']); ?>" alt="">
             <?php else : ?>
                 <div class="wp-movie-collector-no-image">
                     <span><?php esc_html_e('No Image Available', 'wp-movie-collector'); ?></span>
@@ -51,7 +51,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <?php if (!empty($box_set['acquisition_date'])) : ?>
                     <div class="wp-movie-collector-single-meta-item">
                         <span class="wp-movie-collector-single-meta-label"><?php esc_html_e('Acquired On:', 'wp-movie-collector'); ?></span>
-                        <span><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($box_set['acquisition_date']))); ?></span>
+                        <span><?php
+                            $acquired_raw   = $box_set['acquisition_date'];
+                            $acquired_parts = array();
+                            $acquired_valid = preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $acquired_raw, $acquired_parts)
+                                && checkdate((int) $acquired_parts[2], (int) $acquired_parts[3], (int) $acquired_parts[1]);
+                            echo esc_html($acquired_valid ? date_i18n(get_option('date_format'), strtotime($acquired_raw)) : $acquired_raw);
+                        ?></span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -81,7 +87,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="wp-movie-collector-item">
                         <div class="wp-movie-collector-item-image">
                             <?php if (!empty($movie['cover_image_url'])) : ?>
-                                <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="<?php echo esc_attr($movie['title']); ?>">
+                                <img src="<?php echo esc_url($movie['cover_image_url']); ?>" alt="">
                             <?php else : ?>
                                 <div class="wp-movie-collector-no-image">
                                     <span><?php esc_html_e('No Image', 'wp-movie-collector'); ?></span>

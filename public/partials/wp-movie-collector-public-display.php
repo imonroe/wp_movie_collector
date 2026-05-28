@@ -138,8 +138,10 @@ $genres = get_terms(array(
 ));
 
 // Get years range
-$current_year = date('Y');
-$years = range($current_year, 1900);
+$current_year = (int) date('Y');
+// Range top matches the year filter's validation bound (current year + 1) so a
+// validated ?year=<next year> has a matching, selectable option.
+$years = range($current_year + 1, 1900);
 
 // Get directors from taxonomy
 $directors = get_terms(array(

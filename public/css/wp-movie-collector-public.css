@@ -93,7 +93,6 @@
     gap: 10px;
 }
 
-.wp-movie-collector-search input[type="text"],
 .wp-movie-collector-search input[type="search"] {
     flex: 1;
 }
@@ -247,7 +246,9 @@
 }
 
 .wp-movie-collector-pagination .page-numbers.current {
-    background-color: #f7f7f7;
+    background-color: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
     font-weight: bold;
 }
 

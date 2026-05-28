@@ -21,13 +21,6 @@
     }
 
     /**
-     * Initialize the movie grid layout
-     */
-    function initGrid() {
-        // If using a masonry layout or similar, initialize it here
-    }
-
-    /**
      * Setup AJAX for loading more movies
      */
     function initLoadMore() {
@@ -76,7 +69,6 @@
      */
     $(function() {
         initFilters();
-        initGrid();
         initLoadMore();
     });
 

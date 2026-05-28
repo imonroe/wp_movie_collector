@@ -92,7 +92,7 @@ class WP_Movie_Collector_Post_Types {
      */
     public function register_taxonomies() {
         // Register the 'genre' taxonomy
-        register_taxonomy('genre', array('movie', 'box_set'), array(
+        register_taxonomy('genre', array('movie'), array(
             'labels' => array(
                 'name'              => _x('Genres', 'taxonomy general name', 'wp-movie-collector'),
                 'singular_name'     => _x('Genre', 'taxonomy singular name', 'wp-movie-collector'),
@@ -116,7 +116,7 @@ class WP_Movie_Collector_Post_Types {
         ));
 
         // Register the 'director' taxonomy
-        register_taxonomy('director', array('movie', 'box_set'), array(
+        register_taxonomy('director', array('movie'), array(
             'labels' => array(
                 'name'              => _x('Directors', 'taxonomy general name', 'wp-movie-collector'),
                 'singular_name'     => _x('Director', 'taxonomy singular name', 'wp-movie-collector'),
@@ -140,7 +140,7 @@ class WP_Movie_Collector_Post_Types {
         ));
 
         // Register the 'studio' taxonomy
-        register_taxonomy('studio', array('movie', 'box_set'), array(
+        register_taxonomy('studio', array('movie'), array(
             'labels' => array(
                 'name'              => _x('Studios', 'taxonomy general name', 'wp-movie-collector'),
                 'singular_name'     => _x('Studio', 'taxonomy singular name', 'wp-movie-collector'),
@@ -164,7 +164,7 @@ class WP_Movie_Collector_Post_Types {
         ));
 
         // Register the 'actor' taxonomy
-        register_taxonomy('actor', array('movie', 'box_set'), array(
+        register_taxonomy('actor', array('movie'), array(
             'labels' => array(
                 'name'              => _x('Actors', 'taxonomy general name', 'wp-movie-collector'),
                 'singular_name'     => _x('Actor', 'taxonomy singular name', 'wp-movie-collector'),

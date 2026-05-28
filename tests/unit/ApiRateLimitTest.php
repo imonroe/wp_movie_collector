@@ -270,6 +270,51 @@ class ApiRateLimitTest extends TestCase {
 	}
 
 	/**
+	 * Test that get_api_issues() does not mutate circuit-breaker state.
+	 *
+	 * Regression: after cooldown, the old code routed through
+	 * is_circuit_open(), which acquired the single half-open probe lock,
+	 * so merely rendering an admin notice blocked the next real request.
+	 */
+	public function test_get_api_issues_does_not_acquire_half_open_lock(): void {
+		$GLOBALS['wp_movie_test_transients'] = array();
+
+		$provider  = 'tmdb';
+		$threshold = \WP_Movie_Collector_API_Client::CIRCUIT_FAILURE_THRESHOLD;
+		$cooldown  = \WP_Movie_Collector_API_Client::CIRCUIT_COOLDOWN_SECONDS;
+
+		// Circuit opened long enough ago that the cooldown has elapsed —
+		// the old code would acquire the half-open probe lock here.
+		set_transient(
+			"wp_movie_api_circuit_{$provider}",
+			array(
+				'failures'  => $threshold,
+				'opened_at' => time() - ( $cooldown + 10 ),
+			),
+			0
+		);
+		set_transient(
+			'wp_movie_api_issues',
+			array(
+				$provider => array(
+					'provider'  => $provider,
+					'timestamp' => time(),
+				),
+			),
+			0
+		);
+
+		\WP_Movie_Collector_API_Client::get_api_issues();
+
+		$this->assertFalse(
+			get_transient( "wp_movie_api_halfopen_{$provider}" ),
+			'get_api_issues() must not acquire the half-open probe lock.'
+		);
+
+		$GLOBALS['wp_movie_test_transients'] = array();
+	}
+
+	/**
 	 * Read the API client source file.
 	 *
 	 * @return string The file contents.

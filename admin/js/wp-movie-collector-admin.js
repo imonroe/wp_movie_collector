@@ -258,7 +258,7 @@
                 nonce: wp_movie_collector_admin.nonce
             },
             success: function(response) {
-                if (response.success && response.data.length > 0) {
+                if (response.success && Array.isArray(response.data) && response.data.length > 0) {
                     // Get details for the first match
                     var movieId = response.data[0].id;
                     

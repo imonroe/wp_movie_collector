@@ -1871,9 +1871,15 @@ class WP_Movie_Collector_Admin {
 				continue;
 			}
 
-			// Create an associative array from the row
+			// Create an associative array from the row. Skip blank header
+			// columns (e.g. a trailing delimiter / empty column) so they don't
+			// become an empty '' key that would fail $wpdb->insert() with an
+			// "Unknown column ''" error.
 			$item = array();
 			foreach ( $headers as $i => $header ) {
+				if ( '' === $header ) {
+					continue;
+				}
 				$item[ $header ] = isset( $row[ $i ] ) ? $row[ $i ] : '';
 			}
 

@@ -136,7 +136,7 @@ class DbMigrationTest extends TestCase {
 		return array_values(
 			array_filter(
 				$this->captured_queries,
-				static fn( string $q ): bool => str_contains( $q, "ALTER TABLE {$table} " )
+				static fn( string $q ): bool => str_contains( $q, "ALTER TABLE `{$table}` " )
 			)
 		);
 	}

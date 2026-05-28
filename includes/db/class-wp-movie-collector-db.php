@@ -88,13 +88,16 @@ class WP_Movie_Collector_DB {
 	 */
 	public function update_tables() {
 		global $wpdb;
+		// All migration DDL below runs through run_schema_query() so a failed
+		// ALTER (permissions, locked table, partial prior migration) is logged
+		// rather than silently swallowed.
 
 		// Check if cover_image_id column exists in movies table
 		$movies_table  = $this->get_movies_table();
 		$column_exists = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$movies_table}` WHERE Field = %s", 'cover_image_id' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $movies_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
+			$this->run_schema_query( "ALTER TABLE `{$movies_table}` ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
 		}
 
 		// Check if cover_image_id column exists in box sets table
@@ -102,7 +105,7 @@ class WP_Movie_Collector_DB {
 		$column_exists  = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$box_sets_table}` WHERE Field = %s", 'cover_image_id' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $box_sets_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
+			$this->run_schema_query( "ALTER TABLE `{$box_sets_table}` ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
 		}
 
 		// Check if display_order column exists in relationships table
@@ -110,7 +113,7 @@ class WP_Movie_Collector_DB {
 		$column_exists       = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$relationships_table}` WHERE Field = %s", 'display_order' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $relationships_table ADD COLUMN display_order int(11) NOT NULL DEFAULT 0" );
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD COLUMN display_order int(11) NOT NULL DEFAULT 0" );
 		}
 
 		// Add composite index (box_set_id, display_order) if missing.
@@ -122,7 +125,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $relationships_table ADD INDEX box_set_order (box_set_id, display_order)" );
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD INDEX box_set_order (box_set_id, display_order)" );
 		}
 
 		// Add composite index (title, release_year) on movies table for duplicate detection.
@@ -135,7 +138,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $movies_table ADD INDEX title_year (title, release_year)" );
+			$this->run_schema_query( "ALTER TABLE `{$movies_table}` ADD INDEX title_year (title, release_year)" );
 		}
 
 		// Add composite index (title, release_year) on box sets table for duplicate detection.
@@ -148,7 +151,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $box_sets_table ADD INDEX title_year (title, release_year)" );
+			$this->run_schema_query( "ALTER TABLE `{$box_sets_table}` ADD INDEX title_year (title, release_year)" );
 		}
 
 		// Add composite index (format, release_year) to both tables. Format
@@ -165,7 +168,7 @@ class WP_Movie_Collector_DB {
 			);
 
 			if ( empty( $exists ) ) {
-				$wpdb->query( "ALTER TABLE {$table} ADD INDEX format_year (format, release_year)" );
+				$this->run_schema_query( "ALTER TABLE `{$table}` ADD INDEX format_year (format, release_year)" );
 			}
 		}
 
@@ -193,9 +196,34 @@ class WP_Movie_Collector_DB {
 			}
 
 			if ( ! empty( $add_clauses ) ) {
-				$wpdb->query( "ALTER TABLE {$table} " . implode( ', ', $add_clauses ) );
+				$this->run_schema_query( "ALTER TABLE `{$table}` " . implode( ', ', $add_clauses ) );
 			}
 		}
+	}
+
+	/**
+	 * Run a schema-migration query, surfacing failures instead of swallowing them.
+	 *
+	 * The DDL run during update_tables() previously ignored $wpdb->query()
+	 * return values, so a failed ALTER left the schema in an unknown state
+	 * with no signal. Log a failure (when WP_DEBUG is on) so it can be
+	 * diagnosed.
+	 *
+	 * @since 1.5.0
+	 * @param string $sql The DDL statement to run.
+	 * @return bool|int The $wpdb->query() result.
+	 */
+	private function run_schema_query( $sql ) {
+		global $wpdb;
+
+		$result = $wpdb->query( $sql );
+
+		if ( false === $result && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Surface failed schema migrations.
+			error_log( sprintf( '[WP Movie Collector] Schema migration failed: %s — %s', $sql, $wpdb->last_error ) );
+		}
+
+		return $result;
 	}
 
 	/**

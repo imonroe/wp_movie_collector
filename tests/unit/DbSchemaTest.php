@@ -194,7 +194,7 @@ class DbSchemaTest extends TestCase {
 		);
 		// ...and applied as a single ALTER TABLE per table.
 		$this->assertMatchesRegularExpression(
-			'/ALTER TABLE \{\$table\} "\s*\.\s*implode\(\s*\',\s*\',\s*\$add_clauses\s*\)/',
+			'/ALTER TABLE `\{\$table\}` "\s*\.\s*implode\(\s*\',\s*\',\s*\$add_clauses\s*\)/',
 			$body,
 			'Migration should batch missing indexes into a single ALTER TABLE per table.'
 		);

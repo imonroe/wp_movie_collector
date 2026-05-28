@@ -1122,6 +1122,13 @@ class Stub_Wpdb {
 	public int $insert_id = 0;
 
 	/**
+	 * The most recent database error message.
+	 *
+	 * @var string
+	 */
+	public string $last_error = '';
+
+	/**
 	 * Prepare a SQL query for safe execution.
 	 *
 	 * @param string $query   SQL query with placeholders.

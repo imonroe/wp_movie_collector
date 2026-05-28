@@ -228,6 +228,20 @@ $studios = get_terms(array(
             </div>
 
             <div class="filter-group">
+                <label for="studio-filter"><?php esc_html_e('Studio', 'wp-movie-collector'); ?></label>
+                <select id="studio-filter" name="studio">
+                    <option value=""><?php esc_html_e('All Studios', 'wp-movie-collector'); ?></option>
+                    <?php if (!empty($studios) && !is_wp_error($studios)) : ?>
+                        <?php foreach ($studios as $studio) : ?>
+                            <option value="<?php echo esc_attr($studio->slug); ?>" <?php selected($filter_studio, $studio->slug); ?>>
+                                <?php echo esc_html($studio->name); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="filter-group">
                 <label for="sort-filter"><?php esc_html_e('Sort By', 'wp-movie-collector'); ?></label>
                 <?php
                 $sort_options = array(

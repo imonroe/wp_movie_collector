@@ -133,6 +133,9 @@ class PublicShortcodeTest extends TestCase {
 		$this->assertStringContainsString( 'name="search"', $html );
 		$this->assertStringContainsString( 'id="format-filter"', $html );
 		$this->assertStringContainsString( 'name="format"', $html );
+		// The studio filter control should be rendered (issue #90).
+		$this->assertStringContainsString( 'id="studio-filter"', $html );
+		$this->assertStringContainsString( 'name="studio"', $html );
 	}
 
 	/**

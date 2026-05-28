@@ -158,6 +158,14 @@ class WP_Movie_Collector_API_Client {
 				// Re-check rate limit before each retry to avoid exceeding quota.
 				if ( self::is_rate_limited( $provider ) ) {
 					self::log_failure( $provider, $url, 'Rate limit reached during retry', $attempt );
+					$last_error = new WP_Error(
+						'rate_limited',
+						sprintf(
+							/* translators: %s: API provider name */
+							__( 'The %s API rate limit has been reached. Please wait and try again.', 'wp-movie-collector' ),
+							$provider
+						)
+					);
 					break;
 				}
 			}

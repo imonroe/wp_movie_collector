@@ -466,4 +466,29 @@ class AdminFormTest extends TestCase {
 		$this->assertSame( 'Solaris', $result['data']['title'] );
 		$this->assertSame( 1972, $result['data']['release_year'] );
 	}
+
+	public function test_validate_box_set_fields_returns_errors_without_redirecting(): void {
+		$result = $this->call_private( 'validate_box_set_fields', array( array(), 0 ) );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'errors', $result );
+		$this->assertArrayHasKey( 'data', $result );
+		$this->assertNotEmpty( $result['errors'] );
+	}
+
+	public function test_validate_box_set_fields_returns_sanitized_data_on_valid_input(): void {
+		$input = array(
+			'title'        => 'The Apu Trilogy',
+			'release_year' => '1959',
+			'format'       => 'Blu-ray',
+			'region_code'  => 'A',
+		);
+
+		// Edit context (id=5) skips the DB-backed duplicate check.
+		$result = $this->call_private( 'validate_box_set_fields', array( $input, 5 ) );
+
+		$this->assertEmpty( $result['errors'] );
+		$this->assertSame( 'The Apu Trilogy', $result['data']['title'] );
+		$this->assertSame( 1959, $result['data']['release_year'] );
+	}
 }

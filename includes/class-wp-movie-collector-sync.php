@@ -184,7 +184,7 @@ class WP_Movie_Collector_Sync {
 			}
 
 			$page++;
-		} while ( count( $rows ) === $batch_size );
+		} while ( is_array( $rows ) && count( $rows ) === $batch_size );
 
 		return $synced;
 	}

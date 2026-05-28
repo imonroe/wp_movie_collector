@@ -461,41 +461,57 @@ class DbTest extends TestCase {
 	 */
 	public function test_add_movie_to_box_set_creates_new_relationship(): void {
 		// First get_var returns null (no existing), second returns "3" (next order).
-		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
 		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '3' );
 
-		$captured_data = null;
+		// Capture the bound values passed to prepare() for the INSERT IGNORE.
+		$insert_args = null;
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$insert_args ) {
+				if ( false !== stripos( $sql, 'INSERT' ) ) {
+					$insert_args = $args;
+				}
+				return $sql;
+			}
+		);
 
-		$this->wpdb->expects( $this->once() )
-			->method( 'insert' )
-			->with(
-				$this->equalTo( 'wp_movie_box_set_relationships' ),
-				$this->callback(
-					function ( $data ) use ( &$captured_data ) {
-						$captured_data = $data;
-						return true;
-					}
-				)
-			)
-			->willReturn( 1 );
+		// The relationship is inserted via query() (INSERT IGNORE), not insert().
+		$this->wpdb->expects( $this->never() )->method( 'insert' );
+		$this->wpdb->expects( $this->once() )->method( 'query' )->willReturn( 1 );
 
 		$this->wpdb->insert_id = 101;
 
 		$this->assertSame( 101, $this->db->add_movie_to_box_set( 3, 5 ) );
-		$this->assertSame( 3, $captured_data['movie_id'] );
-		$this->assertSame( 5, $captured_data['box_set_id'] );
-		$this->assertSame( 3, $captured_data['display_order'] );
+		// movie_id, box_set_id, display_order.
+		$this->assertSame( array( 3, 5, 3 ), $insert_args );
 	}
 
 	/**
-	 * add_movie_to_box_set should return false if the insert fails.
+	 * add_movie_to_box_set should return false if the insert fails and no
+	 * concurrent row exists.
 	 */
 	public function test_add_movie_to_box_set_returns_false_on_insert_failure(): void {
 		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
-		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1' );
-		$this->wpdb->method( 'insert' )->willReturn( false );
+		// existing-check (null), next-order ('1'), post-failure fallback (null).
+		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1', null );
+		$this->wpdb->method( 'query' )->willReturn( false );
 
 		$this->assertFalse( $this->db->add_movie_to_box_set( 3, 5 ) );
+	}
+
+	/**
+	 * When INSERT IGNORE skips the row (query() returns 0 because a concurrent
+	 * request already inserted the same pairing), the method should look the
+	 * existing relationship up and return its id as an int.
+	 */
+	public function test_add_movie_to_box_set_returns_existing_id_when_insert_ignored(): void {
+		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
+		// existing-check (null), next-order ('1'), post-skip fallback ('55').
+		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1', '55' );
+		// INSERT IGNORE skipped the duplicate row → 0 affected rows.
+		$this->wpdb->method( 'query' )->willReturn( 0 );
+
+		$result = $this->db->add_movie_to_box_set( 3, 5 );
+		$this->assertSame( 55, $result );
 	}
 
 	/**

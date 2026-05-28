@@ -499,6 +499,22 @@ class DbTest extends TestCase {
 	}
 
 	/**
+	 * When INSERT IGNORE skips the row (query() returns 0 because a concurrent
+	 * request already inserted the same pairing), the method should look the
+	 * existing relationship up and return its id as an int.
+	 */
+	public function test_add_movie_to_box_set_returns_existing_id_when_insert_ignored(): void {
+		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
+		// existing-check (null), next-order ('1'), post-skip fallback ('55').
+		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1', '55' );
+		// INSERT IGNORE skipped the duplicate row → 0 affected rows.
+		$this->wpdb->method( 'query' )->willReturn( 0 );
+
+		$result = $this->db->add_movie_to_box_set( 3, 5 );
+		$this->assertSame( 55, $result );
+	}
+
+	/**
 	 * remove_movie_from_box_set should delete the relationship.
 	 */
 	public function test_remove_movie_from_box_set_returns_true_on_success(): void {

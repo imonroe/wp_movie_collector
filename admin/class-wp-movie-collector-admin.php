@@ -996,7 +996,7 @@ class WP_Movie_Collector_Admin {
 	public function tmdb_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_tmdb_api_key' );
 		echo '<input type="text" name="wp_movie_collector_tmdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . wp_kses_post( __( 'Get your API key from <a href="https://www.themoviedb.org/settings/api" target="_blank">TMDb</a>.', 'wp-movie-collector' ) ) . '</p>';
+		echo '<p class="description">' . wp_kses( __( 'Get your API key from <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">TMDb</a>.', 'wp-movie-collector' ), array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**
@@ -1007,7 +1007,7 @@ class WP_Movie_Collector_Admin {
 	public function omdb_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_omdb_api_key' );
 		echo '<input type="text" name="wp_movie_collector_omdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . wp_kses_post( __( 'Get your API key from <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">OMDb</a>.', 'wp-movie-collector' ) ) . '</p>';
+		echo '<p class="description">' . wp_kses( __( 'Get your API key from <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener noreferrer">OMDb</a>.', 'wp-movie-collector' ), array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**
@@ -1018,7 +1018,7 @@ class WP_Movie_Collector_Admin {
 	public function barcode_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_barcode_api_key' );
 		echo '<input type="text" name="wp_movie_collector_barcode_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . wp_kses_post( __( 'Get your API key from <a href="https://barcodelookup.com/api" target="_blank">BarcodeLookup</a>.', 'wp-movie-collector' ) ) . '</p>';
+		echo '<p class="description">' . wp_kses( __( 'Get your API key from <a href="https://barcodelookup.com/api" target="_blank" rel="noopener noreferrer">BarcodeLookup</a>.', 'wp-movie-collector' ), array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**

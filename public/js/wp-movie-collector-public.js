@@ -20,56 +20,12 @@
         });
     }
 
-    /**
-     * Setup AJAX for loading more movies
-     */
-    function initLoadMore() {
-        $('.wp-movie-collector-load-more').on('click', function(e) {
-            e.preventDefault();
-            
-            const $button = $(this);
-            const page = $button.data('page');
-            const args = $button.data('args');
-            
-            $button.text(wp_movie_collector_public.loading_text).prop('disabled', true);
-            
-            $.ajax({
-                url: wp_movie_collector_public.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'wp_movie_collector_load_more',
-                    page: page,
-                    args: args,
-                    nonce: wp_movie_collector_public.nonce
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Append new items to the grid
-                        $('.wp-movie-collector-grid').append(response.data.html);
-                        
-                        // Update button or hide if no more pages
-                        if (response.data.has_more) {
-                            $button.data('page', page + 1).text(wp_movie_collector_public.load_more_text).prop('disabled', false);
-                        } else {
-                            $button.remove();
-                        }
-                    } else {
-                        $button.text(wp_movie_collector_public.error_text).prop('disabled', false);
-                    }
-                },
-                error: function() {
-                    $button.text(wp_movie_collector_public.error_text).prop('disabled', false);
-                }
-            });
-        });
-    }
 
     /**
      * Document ready handler
      */
     $(function() {
         initFilters();
-        initLoadMore();
     });
 
 })(jQuery);

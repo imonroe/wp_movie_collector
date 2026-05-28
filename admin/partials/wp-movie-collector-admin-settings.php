@@ -128,7 +128,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
         <tr>
             <th scope="row"><?php esc_html_e('Clear API Cache', 'wp-movie-collector'); ?></th>
             <td>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                     <?php wp_nonce_field('wp_movie_collector_clear_cache', 'wp_movie_collector_nonce'); ?>
                     <input type="hidden" name="action" value="wp_movie_collector_clear_api_cache">
                     <p>

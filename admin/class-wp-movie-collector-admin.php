@@ -2238,11 +2238,14 @@ class WP_Movie_Collector_Admin {
 	}
 
 	/**
-	 * AJAX handler for clearing API cache.
+	 * admin-post handler for clearing the API cache.
+	 *
+	 * Handles the Clear API Cache form (admin-post.php) and redirects back
+	 * to the settings screen with a cache_cleared / cache_error notice.
 	 *
 	 * @since    1.0.0
 	 */
-	public function ajax_clear_api_cache() {
+	public function handle_clear_api_cache() {
 		$redirect_url = admin_url( 'admin.php?page=wp-movie-collector-settings' );
 
 		if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_clear_cache' ) ) {

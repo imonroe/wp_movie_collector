@@ -392,9 +392,9 @@ class WP_Movie_Collector_Admin {
 		);
 
 		add_settings_field(
-			'wp_movie_collector_upc_api_key',
+			'wp_movie_collector_barcode_api_key',
 			__( 'UPC Database API Key', 'wp-movie-collector' ),
-			array( $this, 'upc_api_key_callback' ),
+			array( $this, 'barcode_api_key_callback' ),
 			'wp_movie_collector_settings',
 			'wp_movie_collector_api_settings'
 		);
@@ -1015,7 +1015,7 @@ class WP_Movie_Collector_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function upc_api_key_callback() {
+	public function barcode_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_barcode_api_key' );
 		echo '<input type="text" name="wp_movie_collector_barcode_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
 		echo '<p class="description">' . __( 'Get your API key from <a href="https://barcodelookup.com/api" target="_blank">BarcodeLookup</a>.', 'wp-movie-collector' ) . '</p>';

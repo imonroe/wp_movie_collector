@@ -129,7 +129,27 @@ if ( ! current_user_can( 'manage_options' ) ) {
 						<?php foreach ( $movies as $index => $movie ) : ?>
 						<tr class="movie-item" data-movie-id="<?php echo esc_attr( $movie['id'] ); ?>">
 							<td>
-								<span class="dashicons dashicons-move"></span>
+								<span class="dashicons dashicons-move" aria-hidden="true"></span>
+								<span class="screen-reader-text">
+									<?php
+									/* translators: %s: movie title */
+									printf( esc_html__( 'Drag to reorder %s', 'wp-movie-collector' ), esc_html( $movie['title'] ) );
+									?>
+								</span>
+								<span class="wp-movie-collector-reorder-buttons">
+									<button type="button" class="button button-small wp-movie-collector-move-up" aria-label="
+										<?php
+										/* translators: %s: movie title */
+										printf( esc_attr__( 'Move %s up', 'wp-movie-collector' ), esc_attr( $movie['title'] ) );
+										?>
+									">&uarr;</button>
+									<button type="button" class="button button-small wp-movie-collector-move-down" aria-label="
+										<?php
+										/* translators: %s: movie title */
+										printf( esc_attr__( 'Move %s down', 'wp-movie-collector' ), esc_attr( $movie['title'] ) );
+										?>
+									">&darr;</button>
+								</span>
 							</td>
 							<td><?php echo esc_html( $movie['title'] ); ?></td>
 							<td><?php echo esc_html( $movie['release_year'] ); ?></td>
@@ -363,20 +383,46 @@ jQuery(document).ready(function($) {
 		}
 	});
 	
-	// Sortable functionality for reordering movies
+	// Rebuild the hidden reorder inputs to match the current row order. Shared
+	// by the mouse (jQuery UI sortable) and keyboard (up/down button) paths.
+	function syncReorderInputs() {
+		var $container = $('#wp-movie-collector-reorder-inputs');
+		$container.empty();
+		$('#sortable-movies tr').each(function() {
+			$container.append('<input type="hidden" name="movie_order[]" value="' + parseInt($(this).data('movie-id'), 10) + '">');
+		});
+	}
+
+	// Sortable functionality for reordering movies (mouse/pointer).
 	if ($('#sortable-movies').length) {
 		$('#sortable-movies').sortable({
 			handle: '.dashicons-move',
-			update: function(event, ui) {
-				// Rebuild hidden inputs in the separate reorder form to match new order
-				var $container = $('#wp-movie-collector-reorder-inputs');
-				$container.empty();
-				$('#sortable-movies tr').each(function() {
-					$container.append('<input type="hidden" name="movie_order[]" value="' + parseInt($(this).data('movie-id'), 10) + '">');
-				});
+			update: function() {
+				syncReorderInputs();
 			}
 		});
 	}
+
+	// Keyboard-accessible reordering: Up/Down buttons move a row and keep the
+	// hidden inputs in sync, so reordering works without a mouse.
+	$('#sortable-movies').on('click', '.wp-movie-collector-move-up', function() {
+		var $row  = $(this).closest('tr');
+		var $prev = $row.prev('tr');
+		if ($prev.length) {
+			$row.insertBefore($prev);
+			syncReorderInputs();
+			$(this).trigger('focus');
+		}
+	});
+	$('#sortable-movies').on('click', '.wp-movie-collector-move-down', function() {
+		var $row  = $(this).closest('tr');
+		var $next = $row.next('tr');
+		if ($next.length) {
+			$row.insertAfter($next);
+			syncReorderInputs();
+			$(this).trigger('focus');
+		}
+	});
 	
 	// Select all movies checkbox
 	$('#select-all-movies').on('change', function() {

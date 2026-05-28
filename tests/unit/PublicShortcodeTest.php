@@ -150,6 +150,7 @@ class PublicShortcodeTest extends TestCase {
 				'title'           => 'Brazil',
 				'release_year'    => 1985,
 				'format'          => 'Blu-ray',
+				'region_code'     => 'B',
 				'cover_image_url' => '',
 			)
 		);

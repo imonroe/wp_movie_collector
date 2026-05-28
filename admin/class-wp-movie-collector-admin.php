@@ -2288,18 +2288,27 @@ class WP_Movie_Collector_Admin {
 		}
 
 		global $wpdb;
-		$wpdb->last_error = '';
 
 		$db = new WP_Movie_Collector_DB();
 		$db->create_tables();
 		$db->update_tables();
 
-		// create_tables()/update_tables() don't return a status, so detect a
-		// failed CREATE/ALTER via the last DB error and surface it rather than
-		// reporting a false success.
-		if ( ! empty( $wpdb->last_error ) ) {
-			wp_safe_redirect( add_query_arg( 'db_repair_error', 'query', $redirect_url ) );
-			exit;
+		// create_tables()/update_tables() return no status and run many
+		// queries, so $wpdb->last_error only reflects the final one. The
+		// authoritative success signal for a "repair" is that the expected
+		// tables now exist — verify all three rather than trusting last_error.
+		$expected = array(
+			$db->get_movies_table(),
+			$db->get_box_sets_table(),
+			$db->get_relationships_table(),
+		);
+
+		foreach ( $expected as $table ) {
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+			if ( $found !== $table ) {
+				wp_safe_redirect( add_query_arg( 'db_repair_error', 'missing_table', $redirect_url ) );
+				exit;
+			}
 		}
 
 		wp_safe_redirect( add_query_arg( 'db_repaired', '1', $redirect_url ) );

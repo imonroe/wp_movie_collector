@@ -920,12 +920,15 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided. Append raw placeholders and push the
-		// values so the whole statement is prepared exactly once below,
-		// rather than calling prepare() on already-prepared SQL.
-		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
-			$per_page = intval( $criteria['per_page'] );
-			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
+		// Apply pagination whenever a per_page is provided. Default page to 1
+		// and clamp both values so a missing/zero/negative page cannot produce
+		// a negative OFFSET (a SQL error that returns null) and per_page stays
+		// positive. Append raw placeholders and push the values so the whole
+		// statement is prepared exactly once below.
+		if ( isset( $criteria['per_page'] ) ) {
+			$per_page = max( 1, intval( $criteria['per_page'] ) );
+			$page     = isset( $criteria['page'] ) ? max( 1, intval( $criteria['page'] ) ) : 1;
+			$offset   = ( $page - 1 ) * $per_page;
 			$sql     .= ' LIMIT %d OFFSET %d';
 			$values[] = $per_page;
 			$values[] = $offset;
@@ -1237,12 +1240,15 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided. Append raw placeholders and push the
-		// values so the whole statement is prepared exactly once below,
-		// rather than calling prepare() on already-prepared SQL.
-		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
-			$per_page = intval( $criteria['per_page'] );
-			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
+		// Apply pagination whenever a per_page is provided. Default page to 1
+		// and clamp both values so a missing/zero/negative page cannot produce
+		// a negative OFFSET (a SQL error that returns null) and per_page stays
+		// positive. Append raw placeholders and push the values so the whole
+		// statement is prepared exactly once below.
+		if ( isset( $criteria['per_page'] ) ) {
+			$per_page = max( 1, intval( $criteria['per_page'] ) );
+			$page     = isset( $criteria['page'] ) ? max( 1, intval( $criteria['page'] ) ) : 1;
+			$offset   = ( $page - 1 ) * $per_page;
 			$sql     .= ' LIMIT %d OFFSET %d';
 			$values[] = $per_page;
 			$values[] = $offset;

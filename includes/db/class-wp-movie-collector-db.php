@@ -223,13 +223,15 @@ class WP_Movie_Collector_DB {
 	/**
 	 * Run a schema-migration query, surfacing failures instead of swallowing them.
 	 *
-	 * The DDL run during update_tables() previously ignored $wpdb->query()
-	 * return values, so a failed ALTER left the schema in an unknown state
-	 * with no signal. Log a failure (when WP_DEBUG is on) so it can be
-	 * diagnosed.
+	 * The migration statements run during update_tables() previously ignored
+	 * $wpdb->query() return values, so a failed ALTER (or a data-cleanup DELETE
+	 * run as part of a migration, e.g. de-duplicating rows before adding a
+	 * UNIQUE key) left the schema in an unknown state with no signal. Log a
+	 * failure (when WP_DEBUG is on) so it can be diagnosed.
 	 *
 	 * @since 1.5.0
-	 * @param string $sql The DDL statement to run.
+	 * @param string $sql The schema-migration statement to run (DDL, or the
+	 *                     DML cleanup that accompanies a DDL change).
 	 * @return bool|int The $wpdb->query() result.
 	 */
 	private function run_schema_query( $sql ) {

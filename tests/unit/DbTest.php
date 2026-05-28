@@ -656,6 +656,85 @@ class DbTest extends TestCase {
 	}
 
 	/**
+	 * Find a captured prepare() call whose SQL contains the given needle.
+	 *
+	 * @param array  $calls  Captured prepare() calls.
+	 * @param string $needle Substring to look for in the SQL.
+	 * @return array|null The matching call, or null.
+	 */
+	private function find_prepare_call( array $calls, string $needle ): ?array {
+		foreach ( $calls as $call ) {
+			if ( is_string( $call['sql'] ) && false !== stripos( $call['sql'], $needle ) ) {
+				return $call;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * A zero/negative page must not produce a negative OFFSET.
+	 */
+	public function test_search_movies_clamps_negative_page_offset(): void {
+		$prepare_args = array();
+
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$prepare_args ) {
+				$prepare_args[] = array(
+					'sql'  => $sql,
+					'args' => $args,
+				);
+				return $sql;
+			}
+		);
+		$this->wpdb->method( 'get_results' )->willReturn( array() );
+
+		$this->db->search_movies(
+			array(
+				'per_page' => 10,
+				'page'     => 0,
+			)
+		);
+
+		$limit_call = $this->find_prepare_call( $prepare_args, 'LIMIT %d OFFSET %d' );
+		$this->assertNotNull( $limit_call, 'Expected a prepare() call with the LIMIT/OFFSET clause.' );
+
+		$args = $limit_call['args'];
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = $args[0];
+		}
+		$this->assertSame( array( 10, 0 ), $args, 'Offset should be clamped to 0, not negative.' );
+	}
+
+	/**
+	 * A per_page with no page should still apply LIMIT (page defaults to 1).
+	 */
+	public function test_search_movies_applies_limit_with_only_per_page(): void {
+		$prepare_args = array();
+
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$prepare_args ) {
+				$prepare_args[] = array(
+					'sql'  => $sql,
+					'args' => $args,
+				);
+				return $sql;
+			}
+		);
+		$this->wpdb->method( 'get_results' )->willReturn( array() );
+
+		$this->db->search_movies( array( 'per_page' => 5 ) );
+
+		$limit_call = $this->find_prepare_call( $prepare_args, 'LIMIT %d OFFSET %d' );
+		$this->assertNotNull( $limit_call, 'Expected LIMIT to be applied when only per_page is set.' );
+
+		$args = $limit_call['args'];
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = $args[0];
+		}
+		$this->assertSame( array( 5, 0 ), $args );
+	}
+
+	/**
 	 * search_movies should apply LIMIT/OFFSET when paginated.
 	 */
 	public function test_search_movies_applies_pagination(): void {

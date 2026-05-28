@@ -230,9 +230,9 @@ class WP_Movie_Collector_API {
      */
     private function format_movie_data($data) {
         $movie = array(
-            'title' => $data['title'],
+            'title' => $data['title'] ?? '',
             'release_year' => substr($data['release_date'] ?? '', 0, 4),
-            'description' => $data['overview'],
+            'description' => $data['overview'] ?? '',
             'cover_image_url' => !empty($data['poster_path']) ? 'https://image.tmdb.org/t/p/w500' . $data['poster_path'] : '',
             'api_source' => 'TMDb',
         );
@@ -664,14 +664,15 @@ class WP_Movie_Collector_API {
      * @return   array            The formatted movie data.
      */
     private function format_omdb_movie_data($data) {
+        $poster = $data['Poster'] ?? '';
         $movie = array(
-            'title' => $data['Title'],
-            'release_year' => $data['Year'],
-            'director' => $data['Director'],
-            'actors' => $data['Actors'],
-            'description' => $data['Plot'],
-            'cover_image_url' => $data['Poster'] !== 'N/A' ? $data['Poster'] : '',
-            'genre' => $data['Genre'],
+            'title' => $data['Title'] ?? '',
+            'release_year' => $data['Year'] ?? '',
+            'director' => $data['Director'] ?? '',
+            'actors' => $data['Actors'] ?? '',
+            'description' => $data['Plot'] ?? '',
+            'cover_image_url' => ('N/A' !== $poster) ? $poster : '',
+            'genre' => $data['Genre'] ?? '',
             'api_source' => 'OMDb',
         );
 

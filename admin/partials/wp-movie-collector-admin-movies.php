@@ -207,6 +207,10 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 				foreach ( $columns as $col_key => $col_label ) {
 					$col_order    = ( $orderby === $col_key ) ? $toggle_order : 'ASC';
 					$sorted_class = ( $orderby === $col_key ) ? 'sorted ' . strtolower( $order ) : 'sortable asc';
+					// Expose the active sort state to assistive tech, not just visually.
+					$aria_sort = ( $orderby === $col_key )
+						? ' aria-sort="' . ( 'desc' === strtolower( $order ) ? 'descending' : 'ascending' ) . '"'
+						: '';
 					$sort_url     = add_query_arg(
 						array(
 							'page'    => 'wp-movie-collector-movies',
@@ -219,11 +223,12 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 						$base_url
 					);
 					printf(
-						'<th scope="col" class="manage-column column-%1$s %2$s"><a href="%3$s"><span>%4$s</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>',
+						'<th scope="col" class="manage-column column-%1$s %2$s"%5$s><a href="%3$s"><span>%4$s</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>',
 						esc_attr( $col_key ),
 						esc_attr( $sorted_class ),
 						esc_url( $sort_url ),
-						esc_html( $col_label )
+						esc_html( $col_label ),
+						$aria_sort
 					);
 				}
 				?>
@@ -292,6 +297,10 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 				foreach ( $columns as $col_key => $col_label ) {
 					$col_order    = ( $orderby === $col_key ) ? $toggle_order : 'ASC';
 					$sorted_class = ( $orderby === $col_key ) ? 'sorted ' . strtolower( $order ) : 'sortable asc';
+					// Expose the active sort state to assistive tech, not just visually.
+					$aria_sort = ( $orderby === $col_key )
+						? ' aria-sort="' . ( 'desc' === strtolower( $order ) ? 'descending' : 'ascending' ) . '"'
+						: '';
 					$sort_url     = add_query_arg(
 						array(
 							'page'    => 'wp-movie-collector-movies',
@@ -304,11 +313,12 @@ $base_url = admin_url( 'admin.php?page=wp-movie-collector-movies' );
 						$base_url
 					);
 					printf(
-						'<th scope="col" class="manage-column column-%1$s %2$s"><a href="%3$s"><span>%4$s</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>',
+						'<th scope="col" class="manage-column column-%1$s %2$s"%5$s><a href="%3$s"><span>%4$s</span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a></th>',
 						esc_attr( $col_key ),
 						esc_attr( $sorted_class ),
 						esc_url( $sort_url ),
-						esc_html( $col_label )
+						esc_html( $col_label ),
+						$aria_sort
 					);
 				}
 				?>

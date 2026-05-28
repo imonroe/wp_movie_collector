@@ -406,3 +406,10 @@
         min-height: 44px;
     }
 }
+
+/* Narrow utility columns in the box-set manager tables (replaces the
+   deprecated presentational width="20" attribute on <th>). */
+.wp-movie-collector-tab-pane .column-order,
+.wp-movie-collector-tab-pane .column-select {
+    width: 2em;
+}

@@ -306,8 +306,12 @@ class AdminFormTest extends TestCase {
 		$count = $this->call_private(
 			'persist_import',
 			array(
-				array( array( 'title' => 'M', 'box_set_id' => 5 ) ),
-				array( array( 'title' => 'BS', '__source_id' => 5 ) ),
+				array(
+					array( 'title' => 'M', 'release_year' => '2000', 'format' => 'Blu-ray', 'region_code' => 'A', 'box_set_id' => 5 ),
+				),
+				array(
+					array( 'title' => 'BS', 'release_year' => '2001', 'format' => 'Blu-ray', 'region_code' => 'A', '__source_id' => 5 ),
+				),
 				'append',
 			)
 		);
@@ -416,11 +420,14 @@ class AdminFormTest extends TestCase {
 				array(),
 				array(
 					array(
-						'title'    => 'Trilogy',
-						'director' => 'Someone',
-						'genre'    => 'Sci-Fi',
-						'actors'   => 'A, B',
-						'box_set_id' => 3,
+						'title'        => 'Trilogy',
+						'release_year' => '2004',
+						'format'       => 'Blu-ray',
+						'region_code'  => 'A',
+						'director'     => 'Someone',
+						'genre'        => 'Sci-Fi',
+						'actors'       => 'A, B',
+						'box_set_id'   => 3,
 					),
 				),
 				'append',
@@ -434,6 +441,57 @@ class AdminFormTest extends TestCase {
 		$this->assertArrayNotHasKey( 'genre', $captured_box_set );
 		$this->assertArrayNotHasKey( 'actors', $captured_box_set );
 		$this->assertArrayNotHasKey( 'box_set_id', $captured_box_set );
+	}
+
+	/**
+	 * Imported rows must be sanitized and integrity-checked (issue #65): a
+	 * crafted text field is sanitized before insert, and a row that fails
+	 * validation (e.g. invalid format) is skipped rather than stored verbatim.
+	 */
+	public function test_persist_import_sanitizes_and_skips_invalid_movie_rows(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+
+		$captured = array();
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured ) {
+				if ( false !== strpos( $table, 'movie_collection' ) ) {
+					$captured[] = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array(
+					// Valid row with a crafted description (stored-XSS attempt).
+					array(
+						'title'        => 'Clean',
+						'release_year' => '1999',
+						'format'       => 'DVD',
+						'region_code'  => 'R1',
+						'description'  => 'Nice<script>alert(1)</script>',
+					),
+					// Invalid row: format not in the whitelist -> must be skipped.
+					array(
+						'title'        => 'Bogus',
+						'release_year' => '1999',
+						'format'       => 'Betamax',
+						'region_code'  => 'R1',
+					),
+				),
+				array(),
+				'append',
+			)
+		);
+
+		// Only the valid row is inserted; the invalid one is skipped.
+		$this->assertSame( 1, $count );
+		$this->assertCount( 1, $captured );
+		$this->assertSame( 'Clean', $captured[0]['title'] );
+		$this->assertStringNotContainsString( '<script>', $captured[0]['description'] );
 	}
 
 	// ------------------------------------------------------------------

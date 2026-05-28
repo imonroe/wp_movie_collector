@@ -1314,14 +1314,31 @@ class WP_Movie_Collector_Admin {
 		$relationship_table = $db->get_relationships_table();
 		$success            = true;
 
+		// Build the set of movie IDs that are actually members of this box set,
+		// so a bogus or partially-bogus movie_order can't report success while
+		// silently reordering nothing ($wpdb->update returns 0 — not false — for
+		// rows that don't exist).
+		$member_ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare( "SELECT movie_id FROM $relationship_table WHERE box_set_id = %d", $box_set_id )
+			)
+		);
+
 		// Begin transaction
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Update the display order for each movie
+			// Update the display order for each movie.
 			foreach ( $_POST['movie_order'] as $order => $movie_id ) {
 				$movie_id = intval( $movie_id );
 				$order    = intval( $order ) + 1; // Make order 1-based instead of 0-based
+
+				// Reject IDs that aren't members of this box set.
+				if ( ! in_array( $movie_id, $member_ids, true ) ) {
+					$success = false;
+					break;
+				}
 
 				$result = $wpdb->update(
 					$relationship_table,

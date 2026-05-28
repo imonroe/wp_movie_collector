@@ -1517,8 +1517,8 @@ class WP_Movie_Collector_Admin {
 			wp_safe_redirect(
 				add_query_arg(
 					array(
-						'error'   => 'import_failed',
-						'message' => urlencode( $result->get_error_message() ),
+						'error'        => 'import_failed',
+						'error_detail' => rawurlencode( $result->get_error_message() ),
 					),
 					admin_url( 'admin.php?page=wp-movie-collector-import-export' )
 				)

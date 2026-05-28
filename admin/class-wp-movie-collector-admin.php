@@ -2265,6 +2265,37 @@ class WP_Movie_Collector_Admin {
 	}
 
 	/**
+	 * admin-post handler for repairing the database tables.
+	 *
+	 * Recreates any missing tables and applies pending schema updates, then
+	 * redirects back to the settings screen with a db_repaired /
+	 * db_repair_error notice. Runs as a POST action (not a GET link) so the
+	 * state change cannot be re-triggered by prefetchers or history.
+	 *
+	 * @since    1.0.0
+	 */
+	public function handle_repair_database() {
+		$redirect_url = admin_url( 'admin.php?page=wp-movie-collector-settings' );
+
+		if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_repair_db' ) ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', 'nonce', $redirect_url ) );
+			exit;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', 'permission', $redirect_url ) );
+			exit;
+		}
+
+		$db = new WP_Movie_Collector_DB();
+		$db->create_tables();
+		$db->update_tables();
+
+		wp_safe_redirect( add_query_arg( 'db_repaired', '1', $redirect_url ) );
+		exit;
+	}
+
+	/**
 	 * Display admin notices when API issues are detected.
 	 *
 	 * Shows a warning banner when one or more external API providers

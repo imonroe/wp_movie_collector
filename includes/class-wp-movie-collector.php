@@ -150,6 +150,7 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_get_movie_details', $plugin_admin, 'ajax_get_movie_details' );
 		$this->loader->add_action( 'admin_post_wp_movie_collector_clear_api_cache', $plugin_admin, 'handle_clear_api_cache' );
+		$this->loader->add_action( 'admin_post_wp_movie_collector_repair_db', $plugin_admin, 'handle_repair_database' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_search_available_movies', $plugin_admin, 'ajax_search_available_movies' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_check_duplicate_movie', $plugin_admin, 'ajax_check_duplicate_movie' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_check_duplicate_box_set', $plugin_admin, 'ajax_check_duplicate_box_set' );

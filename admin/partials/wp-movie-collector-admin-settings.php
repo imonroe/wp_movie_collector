@@ -44,7 +44,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <tr>
                 <th scope="row"><label for="wp_movie_collector_tmdb_api_key"><?php esc_html_e('TMDb API Key', 'wp-movie-collector'); ?></label></th>
                 <td>
-                    <input type="text" id="wp_movie_collector_tmdb_api_key" name="wp_movie_collector_tmdb_api_key" 
+                    <input type="password" autocomplete="off" id="wp_movie_collector_tmdb_api_key" name="wp_movie_collector_tmdb_api_key"
                            value="<?php echo esc_attr(get_option('wp_movie_collector_tmdb_api_key')); ?>" class="regular-text">
                     <p class="description">
                         <?php echo wp_kses(__('Enter your TMDb API key. You can get one from <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">TMDb</a>.', 'wp-movie-collector'), array('a' => array('href' => array(), 'target' => array(), 'rel' => array()))); ?>
@@ -54,7 +54,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <tr>
                 <th scope="row"><label for="wp_movie_collector_omdb_api_key"><?php esc_html_e('OMDb API Key', 'wp-movie-collector'); ?></label></th>
                 <td>
-                    <input type="text" id="wp_movie_collector_omdb_api_key" name="wp_movie_collector_omdb_api_key" 
+                    <input type="password" autocomplete="off" id="wp_movie_collector_omdb_api_key" name="wp_movie_collector_omdb_api_key"
                            value="<?php echo esc_attr(get_option('wp_movie_collector_omdb_api_key')); ?>" class="regular-text">
                     <p class="description">
                         <?php echo wp_kses(__('Enter your OMDb API key. You can get one from <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener noreferrer">OMDb</a>.', 'wp-movie-collector'), array('a' => array('href' => array(), 'target' => array(), 'rel' => array()))); ?>
@@ -64,7 +64,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             <tr>
                 <th scope="row"><label for="wp_movie_collector_barcode_api_key"><?php esc_html_e('BarcodeLookup API Key', 'wp-movie-collector'); ?></label></th>
                 <td>
-                    <input type="text" id="wp_movie_collector_barcode_api_key" name="wp_movie_collector_barcode_api_key" 
+                    <input type="password" autocomplete="off" id="wp_movie_collector_barcode_api_key" name="wp_movie_collector_barcode_api_key"
                            value="<?php echo esc_attr(get_option('wp_movie_collector_barcode_api_key')); ?>" class="regular-text">
                     <p class="description">
                         <?php echo wp_kses(__('Enter your BarcodeLookup API key. You can get one from <a href="https://barcodelookup.com/api" target="_blank" rel="noopener noreferrer">BarcodeLookup</a>.', 'wp-movie-collector'), array('a' => array('href' => array(), 'target' => array(), 'rel' => array()))); ?>

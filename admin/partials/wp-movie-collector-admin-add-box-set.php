@@ -163,11 +163,6 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 </button>
             </p>
         </form>
-        
-        <div id="wp-movie-collector-box-set-movies">
-            <h3><?php esc_html_e('Movies in this Box Set', 'wp-movie-collector'); ?></h3>
-            <p><?php esc_html_e('After saving the box set, you can add movies to it.', 'wp-movie-collector'); ?></p>
-        </div>
     </div>
 </div>
 

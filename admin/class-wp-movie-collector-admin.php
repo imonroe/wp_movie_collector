@@ -1981,9 +1981,11 @@ class WP_Movie_Collector_Admin {
 	 * @return   int|WP_Error              Count of imported items or error.
 	 */
 	private function import_from_json( $file_path, $import_type ) {
-		// Read the file content
+		// Read the file content. Use a strict false check so a valid-but-falsy
+		// payload (e.g. a file containing just "0") isn't treated as a read
+		// failure — JSON validation below handles the contents.
 		$json_data = file_get_contents( $file_path );
-		if ( ! $json_data ) {
+		if ( false === $json_data ) {
 			return new WP_Error( 'file_error', __( 'Could not read file for import.', 'wp-movie-collector' ) );
 		}
 

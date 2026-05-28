@@ -885,19 +885,21 @@ class WP_Movie_Collector_DB {
 	}
 
 	/**
-	 * Search movies by criteria.
+	 * Build the WHERE predicates and bound values for a movie search/count.
 	 *
-	 * @since    1.0.0
-	 * @param    array $criteria    The search criteria.
-	 * @return   array                 The matching movies.
+	 * Shared by search_movies() and count_movies() so the filters can never
+	 * drift between them (which would make the paginated total disagree with
+	 * the returned rows).
+	 *
+	 * @since 1.5.0
+	 * @param array $criteria Search criteria.
+	 * @param array $values   Bound values, appended in placeholder order.
+	 * @return array List of "column OP %x" predicate strings.
 	 */
-	public function search_movies( $criteria ) {
+	private function build_movie_where( array $criteria, array &$values ) {
 		global $wpdb;
+		$where = array();
 
-		$where  = array();
-		$values = array();
-
-		// Build the WHERE clause based on criteria
 		if ( ! empty( $criteria['title'] ) ) {
 			$where[]  = 'title LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
@@ -932,6 +934,55 @@ class WP_Movie_Collector_DB {
 			$where[]  = 'studio LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $criteria['studio'] ) . '%';
 		}
+
+		return $where;
+	}
+
+	/**
+	 * Build the WHERE predicates and bound values for a box-set search/count.
+	 *
+	 * Shared by search_box_sets() and count_box_sets(). Box sets only support
+	 * the title/year/format filters (the table has no director/genre/etc.).
+	 *
+	 * @since 1.5.0
+	 * @param array $criteria Search criteria.
+	 * @param array $values   Bound values, appended in placeholder order.
+	 * @return array List of "column OP %x" predicate strings.
+	 */
+	private function build_box_set_where( array $criteria, array &$values ) {
+		global $wpdb;
+		$where = array();
+
+		if ( ! empty( $criteria['title'] ) ) {
+			$where[]  = 'title LIKE %s';
+			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
+		}
+
+		if ( ! empty( $criteria['year'] ) ) {
+			$where[]  = 'release_year = %d';
+			$values[] = $criteria['year'];
+		}
+
+		if ( ! empty( $criteria['format'] ) ) {
+			$where[]  = 'format = %s';
+			$values[] = $criteria['format'];
+		}
+
+		return $where;
+	}
+
+	/**
+	 * Search movies by criteria.
+	 *
+	 * @since    1.0.0
+	 * @param    array $criteria    The search criteria.
+	 * @return   array                 The matching movies.
+	 */
+	public function search_movies( $criteria ) {
+		global $wpdb;
+
+		$values = array();
+		$where  = $this->build_movie_where( $criteria, $values );
 
 		// Whitelist allowed ORDER BY columns to prevent SQL injection
 		$allowed_orderby = array( 'id', 'title', 'release_year', 'format', 'director', 'studio', 'genre', 'created_at', 'updated_at', 'acquisition_date' );
@@ -983,43 +1034,8 @@ class WP_Movie_Collector_DB {
 	public function count_movies( $criteria = array() ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
-
-		if ( ! empty( $criteria['director'] ) ) {
-			$where[]  = 'director LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['director'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['actor'] ) ) {
-			$where[]  = 'actors LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['actor'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['genre'] ) ) {
-			$where[]  = 'genre LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['genre'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['studio'] ) ) {
-			$where[]  = 'studio LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['studio'] ) . '%';
-		}
+		$where  = $this->build_movie_where( $criteria, $values );
 
 		$sql = "SELECT COUNT(*) FROM $this->movies_table";
 
@@ -1044,23 +1060,8 @@ class WP_Movie_Collector_DB {
 	public function count_box_sets( $criteria = array() ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
+		$where  = $this->build_box_set_where( $criteria, $values );
 
 		$sql = "SELECT COUNT(*) FROM $this->box_sets_table";
 
@@ -1234,24 +1235,8 @@ class WP_Movie_Collector_DB {
 	public function search_box_sets( $criteria ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		// Build the WHERE clause based on criteria
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
+		$where  = $this->build_box_set_where( $criteria, $values );
 
 		// Whitelist allowed ORDER BY columns to prevent SQL injection
 		$allowed_orderby = array( 'id', 'title', 'release_year', 'format', 'created_at', 'updated_at', 'acquisition_date' );

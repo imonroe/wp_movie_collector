@@ -653,6 +653,39 @@ class WP_Movie_Collector_Admin {
 	 * @return   array                 The validated and sanitized movie data.
 	 */
 	private function validate_and_sanitize_movie_data( $movie, $movie_id = 0 ) {
+		$result = $this->validate_movie_fields( $movie, $movie_id );
+
+		// Validation failure here redirects back to the form with the errors
+		// stored in a transient (the form-handler contract). Reusable callers
+		// should use validate_movie_fields() directly instead.
+		if ( ! empty( $result['errors'] ) ) {
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $result['errors'], 60 * 5 );
+			if ( $movie_id ) {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+			} else {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-movie' ) ) );
+			}
+			exit;
+		}
+
+		return $result['data'];
+	}
+
+	/**
+	 * Validate and sanitize movie fields without redirecting.
+	 *
+	 * Returns the sanitized data plus any validation errors so callers can
+	 * decide how to handle failure (redirect, roll back, skip a row, etc.).
+	 * This makes the routine reusable from non-redirecting contexts such as
+	 * the CSV/JSON importer.
+	 *
+	 * @since 1.3.0
+	 * @param array $movie    Raw movie data.
+	 * @param int   $movie_id Optional movie ID for edit context (excludes the
+	 *                        row from its own duplicate check).
+	 * @return array{data: array, errors: array}
+	 */
+	private function validate_movie_fields( $movie, $movie_id = 0 ) {
 		$sanitized = array();
 		$errors    = array();
 
@@ -813,19 +846,10 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message.
-		if ( ! empty( $errors ) ) {
-			// Store errors in transient.
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
-			if ( $movie_id ) {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
-			} else {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-movie' ) ) );
-			}
-			exit;
-		}
-
-		return $sanitized;
+		return array(
+			'data'   => $sanitized,
+			'errors' => $errors,
+		);
 	}
 
 	/**
@@ -837,6 +861,32 @@ class WP_Movie_Collector_Admin {
 	 * @return   array                   The validated and sanitized box set data.
 	 */
 	private function validate_and_sanitize_box_set_data( $box_set, $box_set_id = 0 ) {
+		$result = $this->validate_box_set_fields( $box_set, $box_set_id );
+
+		// Validation failure here redirects back to the form (the form-handler
+		// contract). Reusable callers should use validate_box_set_fields().
+		if ( ! empty( $result['errors'] ) ) {
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $result['errors'], 60 * 5 );
+			if ( $box_set_id ) {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
+			} else {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-box-set' ) ) );
+			}
+			exit;
+		}
+
+		return $result['data'];
+	}
+
+	/**
+	 * Validate and sanitize box-set fields without redirecting.
+	 *
+	 * @since 1.3.0
+	 * @param array $box_set    Raw box-set data.
+	 * @param int   $box_set_id Optional box-set ID for edit context.
+	 * @return array{data: array, errors: array}
+	 */
+	private function validate_box_set_fields( $box_set, $box_set_id = 0 ) {
 		$sanitized = array();
 		$errors    = array();
 
@@ -973,18 +1023,10 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message.
-		if ( ! empty( $errors ) ) {
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
-			if ( $box_set_id ) {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
-			} else {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-box-set' ) ) );
-			}
-			exit;
-		}
-
-		return $sanitized;
+		return array(
+			'data'   => $sanitized,
+			'errors' => $errors,
+		);
 	}
 
 	/**

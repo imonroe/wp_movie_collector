@@ -425,7 +425,7 @@ jQuery(document).ready(function($) {
         
         // Display cover image preview if URL exists
         if (movie.cover_image_url) {
-            $('#movie-cover-image-url').siblings('.image-preview').html('<img src="' + movie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#movie-cover-image-url').siblings('.image-preview'), movie.cover_image_url);
             $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         
@@ -542,8 +542,7 @@ jQuery(document).ready(function($) {
         // Handle cover image - prefer TMDB's higher quality images
         if (tmdbMovie.cover_image_url) {
             $('#movie-cover-image-url').val(tmdbMovie.cover_image_url);
-            $('#movie-cover-image-url').siblings('.image-preview')
-                .html('<img src="' + tmdbMovie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#movie-cover-image-url').siblings('.image-preview'), tmdbMovie.cover_image_url);
             $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         

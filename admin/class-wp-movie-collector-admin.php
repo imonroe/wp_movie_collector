@@ -1938,9 +1938,23 @@ class WP_Movie_Collector_Admin {
 					__( 'Could not start a database transaction for the import; no changes were made.', 'wp-movie-collector' )
 				);
 			}
-			$wpdb->query( "DELETE FROM {$db->get_relationships_table()}" );
-			$wpdb->query( "DELETE FROM {$db->get_movies_table()}" );
-			$wpdb->query( "DELETE FROM {$db->get_box_sets_table()}" );
+			// Each DELETE must succeed; a failed clear (permissions, missing
+			// table) would otherwise leave old rows in place while new rows are
+			// appended and later committed. Roll back and bail on any failure.
+			$delete_tables = array(
+				$db->get_relationships_table(),
+				$db->get_movies_table(),
+				$db->get_box_sets_table(),
+			);
+			foreach ( $delete_tables as $delete_table ) {
+				if ( false === $wpdb->query( "DELETE FROM {$delete_table}" ) ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error(
+						'import_failed',
+						__( 'Could not clear the existing collection for the import; no changes were made.', 'wp-movie-collector' )
+					);
+				}
+			}
 		}
 
 		$count  = 0;
@@ -2005,7 +2019,15 @@ class WP_Movie_Collector_Admin {
 					)
 				);
 			}
-			$wpdb->query( 'COMMIT' );
+			if ( false === $wpdb->query( 'COMMIT' ) ) {
+				// A failed COMMIT means the import isn't durable; roll back and
+				// report failure rather than misreporting success.
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_Error(
+					'import_failed',
+					__( 'Could not commit the import to the database; no changes were made.', 'wp-movie-collector' )
+				);
+			}
 		}
 
 		// Invalidate stats cache once after all imports complete.

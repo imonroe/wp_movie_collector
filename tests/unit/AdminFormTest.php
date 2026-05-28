@@ -316,4 +316,62 @@ class AdminFormTest extends TestCase {
 		$this->assertNotNull( $captured_movie );
 		$this->assertSame( 200, $captured_movie['box_set_id'] );
 	}
+
+	/**
+	 * Replace-mode import must ROLLBACK and error if clearing the existing
+	 * collection fails, rather than appending onto stale rows.
+	 */
+	public function test_persist_import_replace_rolls_back_when_delete_fails(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				// The DELETE that clears the existing collection fails.
+				return ( false !== stripos( $sql, 'DELETE FROM' ) ) ? false : 1;
+			}
+		);
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'X' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * A failed COMMIT must roll back and report failure rather than returning a
+	 * success count for an uncommitted import.
+	 */
+	public function test_persist_import_replace_rolls_back_when_commit_fails(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return ( 'COMMIT' === $sql ) ? false : 1;
+			}
+		);
+		// All row inserts succeed.
+		$wpdb->method( 'insert' )->willReturn( 1 );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'Good' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+	}
 }

@@ -53,7 +53,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <span class="wp-movie-collector-single-meta-label"><?php esc_html_e('Acquired On:', 'wp-movie-collector'); ?></span>
                         <span><?php
                             $acquired_ts = strtotime($box_set['acquisition_date']);
-                            echo esc_html($acquired_ts ? date_i18n(get_option('date_format'), $acquired_ts) : $box_set['acquisition_date']);
+                            echo esc_html(false !== $acquired_ts ? date_i18n(get_option('date_format'), $acquired_ts) : $box_set['acquisition_date']);
                         ?></span>
                     </div>
                 <?php endif; ?>

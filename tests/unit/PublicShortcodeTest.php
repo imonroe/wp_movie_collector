@@ -165,4 +165,36 @@ class PublicShortcodeTest extends TestCase {
 		$this->assertStringContainsString( 'Brazil', $html );
 		$this->assertStringNotContainsString( 'wp-movie-collector-grid', $html );
 	}
+
+	/**
+	 * A box_set_id query arg should render the single box-set detail view
+	 * instead of the collection grid.
+	 */
+	public function test_shortcode_renders_single_box_set_for_box_set_id_query_arg(): void {
+		$wpdb = $this->getMockBuilder( Stub_Wpdb::class )
+			->onlyMethods( array( 'prepare', 'get_row', 'get_results' ) )
+			->getMock();
+		$wpdb->method( 'prepare' )->willReturnArgument( 0 );
+		$wpdb->method( 'get_row' )->willReturn(
+			array(
+				'id'              => 9,
+				'title'           => 'Alien Anthology',
+				'release_year'    => 2010,
+				'format'          => 'Blu-ray',
+				'region_code'     => 'A',
+				'cover_image_url' => '',
+			)
+		);
+		// No movies in the set.
+		$wpdb->method( 'get_results' )->willReturn( array() );
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$_GET['box_set_id'] = '9';
+
+		$html = $this->render( array( 'type' => 'all' ) );
+
+		$this->assertStringContainsString( 'wp-movie-collector-box-set', $html );
+		$this->assertStringContainsString( 'Alien Anthology', $html );
+		$this->assertStringNotContainsString( 'wp-movie-collector-grid', $html );
+	}
 }

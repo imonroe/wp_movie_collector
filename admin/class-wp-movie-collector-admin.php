@@ -1761,12 +1761,25 @@ class WP_Movie_Collector_Admin {
 
 		// Write header row if there's data
 		if ( ! empty( $data ) ) {
-			$headers = array_keys( $data[0] );
+			// For an "all" export, $data merges movie and box-set rows from two
+			// tables with different column sets. Build the union of all keys
+			// (not just the first row's) and write every row in that fixed
+			// order, filling missing keys with '', so box-set rows aren't
+			// written positionally under movie headers.
+			$headers = array();
+			foreach ( $data as $row ) {
+				$headers += $row;
+			}
+			$headers = array_keys( $headers );
 			fputcsv( $output, $headers );
 
-			// Write data rows
+			// Write data rows in the unified column order.
 			foreach ( $data as $row ) {
-				fputcsv( $output, $row );
+				$ordered = array();
+				foreach ( $headers as $key ) {
+					$ordered[] = isset( $row[ $key ] ) ? $row[ $key ] : '';
+				}
+				fputcsv( $output, $ordered );
 			}
 		} else {
 			// Just write headers for an empty file

@@ -342,12 +342,14 @@ class WP_Movie_Collector_API_Client {
 	 *
 	 * Unlike is_circuit_open(), this is a pure predicate: it never acquires
 	 * the half-open probe lock, so read-only callers (e.g. rendering admin
-	 * notices) cannot consume the single probe slot. Returns true while the
-	 * circuit is open and within its cooldown window; once the cooldown has
-	 * elapsed the circuit is recovering and is no longer reported as tripped.
+	 * notices) cannot consume the single probe slot. It reports the circuit
+	 * as tripped while requests are actually blocked: within the cooldown
+	 * window, or after cooldown while a half-open probe lock is held (which
+	 * blocks all non-probe callers). It reads the lock transient but never
+	 * sets it, so the predicate remains side-effect-free.
 	 *
 	 * @param string $provider The provider key.
-	 * @return bool True if the circuit is open and within cooldown.
+	 * @return bool True if requests are currently blocked for this provider.
 	 */
 	private static function is_circuit_tripped( $provider ) {
 		$state = get_transient( "wp_movie_api_circuit_{$provider}" );
@@ -363,7 +365,15 @@ class WP_Movie_Collector_API_Client {
 			return false;
 		}
 
-		return ( time() - $opened_at ) < self::CIRCUIT_COOLDOWN_SECONDS;
+		// Within cooldown the circuit is open for every caller.
+		if ( ( time() - $opened_at ) < self::CIRCUIT_COOLDOWN_SECONDS ) {
+			return true;
+		}
+
+		// After cooldown a half-open probe may be in flight: if the probe
+		// lock is currently held, other callers are still blocked. Read the
+		// lock without acquiring it to keep this side-effect-free.
+		return ( false !== get_transient( "wp_movie_api_halfopen_{$provider}" ) );
 	}
 
 	/**

@@ -20,7 +20,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             $errors = get_transient('wp_movie_collector_form_errors_' . get_current_user_id());
             if ($errors && is_array($errors)) {
                 echo '<div class="notice notice-error is-dismissible">';
-                echo '<p><strong>' . __('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
+                echo '<p><strong>' . esc_html__('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
                 echo '<ul>';
                 foreach ($errors as $error) {
                     echo '<li>' . esc_html($error) . '</li>';

@@ -704,8 +704,13 @@ class WP_Movie_Collector_DB {
 	public function delete_box_set( $box_set_id ) {
 		global $wpdb;
 
-		// First delete any relationships
-		$wpdb->delete(
+		// Relationship deletion, pointer clearing, and the box-set delete must
+		// be atomic so a mid-sequence failure can't leave orphaned relationship
+		// rows or dangling box_set_id pointers.
+		$wpdb->query( 'START TRANSACTION' );
+
+		// First delete any relationships.
+		$rel_deleted = $wpdb->delete(
 			$this->relationships_table,
 			array( 'box_set_id' => $box_set_id )
 		);
@@ -719,24 +724,29 @@ class WP_Movie_Collector_DB {
 			array( 'box_set_id' => $box_set_id )
 		);
 
-		// Then delete the box set
+		// Then delete the box set.
 		$result = $wpdb->delete(
 			$this->box_sets_table,
 			array( 'id' => $box_set_id )
 		);
 
-		if ( $result !== false ) {
-			$this->invalidate_stats_cache();
-			/**
-			 * Fires after a box set is deleted from the custom table.
-			 *
-			 * @since 1.4.0
-			 * @param int $box_set_id The deleted box set ID.
-			 */
-			do_action( 'wp_movie_collector_box_set_deleted', (int) $box_set_id );
+		if ( false === $rel_deleted || false === $cleared || false === $result ) {
+			$wpdb->query( 'ROLLBACK' );
+			return false;
 		}
 
-		return $result !== false && $cleared !== false;
+		$wpdb->query( 'COMMIT' );
+
+		$this->invalidate_stats_cache();
+		/**
+		 * Fires after a box set is deleted from the custom table.
+		 *
+		 * @since 1.4.0
+		 * @param int $box_set_id The deleted box set ID.
+		 */
+		do_action( 'wp_movie_collector_box_set_deleted', (int) $box_set_id );
+
+		return true;
 	}
 
 	/**
@@ -836,6 +846,9 @@ class WP_Movie_Collector_DB {
 	public function remove_movie_from_all_box_sets( $movie_id ) {
 		global $wpdb;
 
+		// Relationship deletion and pointer clearing must be atomic.
+		$wpdb->query( 'START TRANSACTION' );
+
 		$result = $wpdb->delete(
 			$this->relationships_table,
 			array( 'movie_id' => $movie_id )
@@ -849,7 +862,14 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $movie_id )
 		);
 
-		return $result !== false && $cleared !== false;
+		if ( false === $result || false === $cleared ) {
+			$wpdb->query( 'ROLLBACK' );
+			return false;
+		}
+
+		$wpdb->query( 'COMMIT' );
+
+		return true;
 	}
 
 	/**

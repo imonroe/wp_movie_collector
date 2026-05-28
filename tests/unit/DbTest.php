@@ -437,6 +437,48 @@ class DbTest extends TestCase {
 		$this->assertSame( array( 'box_set_id' => 8 ), $update_calls[0]['where'] );
 	}
 
+	/**
+	 * delete_box_set should ROLLBACK and return false if a step fails, so the
+	 * multi-statement delete stays atomic.
+	 */
+	public function test_delete_box_set_rolls_back_when_a_step_fails(): void {
+		// Relationship delete succeeds; the final box-set delete fails.
+		$this->wpdb->method( 'delete' )->willReturnOnConsecutiveCalls( 1, false );
+		$this->wpdb->method( 'update' )->willReturn( 1 );
+
+		$queries = array();
+		$this->wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+
+		$this->assertFalse( $this->db->delete_box_set( 8 ) );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * remove_movie_from_all_box_sets should ROLLBACK and return false if the
+	 * pointer-clearing update fails.
+	 */
+	public function test_remove_movie_from_all_box_sets_rolls_back_on_failure(): void {
+		$this->wpdb->method( 'delete' )->willReturn( 1 );
+		$this->wpdb->method( 'update' )->willReturn( false );
+
+		$queries = array();
+		$this->wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+
+		$this->assertFalse( $this->db->remove_movie_from_all_box_sets( 4 ) );
+		$this->assertContains( 'ROLLBACK', $queries );
+	}
+
 	// ------------------------------------------------------------------
 	// Box set relationships.
 	// ------------------------------------------------------------------

@@ -134,4 +134,35 @@ class PublicShortcodeTest extends TestCase {
 		$this->assertStringContainsString( 'id="format-filter"', $html );
 		$this->assertStringContainsString( 'name="format"', $html );
 	}
+
+	/**
+	 * A movie_id query arg should render the single-movie detail view instead
+	 * of the collection grid.
+	 */
+	public function test_shortcode_renders_single_movie_for_movie_id_query_arg(): void {
+		$wpdb = $this->getMockBuilder( Stub_Wpdb::class )
+			->onlyMethods( array( 'prepare', 'get_row', 'get_results' ) )
+			->getMock();
+		$wpdb->method( 'prepare' )->willReturnArgument( 0 );
+		$wpdb->method( 'get_row' )->willReturn(
+			array(
+				'id'              => 5,
+				'title'           => 'Brazil',
+				'release_year'    => 1985,
+				'format'          => 'Blu-ray',
+				'cover_image_url' => '',
+			)
+		);
+		// No containing box sets.
+		$wpdb->method( 'get_results' )->willReturn( array() );
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$_GET['movie_id'] = '5';
+
+		$html = $this->render( array( 'type' => 'all' ) );
+
+		$this->assertStringContainsString( 'wp-movie-collector-single', $html );
+		$this->assertStringContainsString( 'Brazil', $html );
+		$this->assertStringNotContainsString( 'wp-movie-collector-grid', $html );
+	}
 }

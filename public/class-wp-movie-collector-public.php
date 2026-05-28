@@ -87,6 +87,22 @@ class WP_Movie_Collector_Public {
             'order' => '',
         ), $atts, 'movie_collection');
 
+        // Grid items link back to this same page with a movie_id / box_set_id
+        // query arg to request a single-item detail view. Render that view when
+        // requested, otherwise fall back to the collection grid.
+        // Guard with is_scalar(): intval() on an array returns 1, so a crafted
+        // ?movie_id[]=5 would otherwise route to item ID 1.
+        $movie_id   = ( isset($_GET['movie_id']) && is_scalar($_GET['movie_id']) ) ? intval(wp_unslash($_GET['movie_id'])) : 0;
+        $box_set_id = ( isset($_GET['box_set_id']) && is_scalar($_GET['box_set_id']) ) ? intval(wp_unslash($_GET['box_set_id'])) : 0;
+
+        if ($movie_id > 0) {
+            return $this->display_movie($movie_id);
+        }
+
+        if ($box_set_id > 0) {
+            return $this->display_box_set($box_set_id);
+        }
+
         // Start output buffering
         ob_start();
 

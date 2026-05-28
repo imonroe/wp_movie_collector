@@ -223,6 +223,21 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( '_n' ) ) {
+	/**
+	 * Polyfill for WordPress _n().
+	 *
+	 * @param string $single The singular form.
+	 * @param string $plural The plural form.
+	 * @param int    $number The number to decide singular/plural.
+	 * @param string $domain Text domain (ignored).
+	 * @return string The singular or plural form based on $number.
+	 */
+	function _n( $single, $plural, $number, $domain = 'default' ) {
+		return ( 1 === (int) $number ) ? $single : $plural;
+	}
+}
+
 if ( ! function_exists( 'sanitize_key' ) ) {
 	/**
 	 * Polyfill for WordPress sanitize_key().

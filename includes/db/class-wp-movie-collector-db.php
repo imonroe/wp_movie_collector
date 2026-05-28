@@ -920,14 +920,19 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided
+		// Apply pagination if provided. Append raw placeholders and push the
+		// values so the whole statement is prepared exactly once below,
+		// rather than calling prepare() on already-prepared SQL.
 		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
 			$per_page = intval( $criteria['per_page'] );
 			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
-			$sql     .= $wpdb->prepare( ' LIMIT %d OFFSET %d', $per_page, $offset );
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$values[] = $per_page;
+			$values[] = $offset;
 		}
 
-		// Prepare and execute the query
+		// Prepare and execute the query. Call prepare() once over all
+		// placeholders; run the bare SQL only when there are none.
 		if ( ! empty( $values ) ) {
 			$sql = $wpdb->prepare( $sql, $values );
 		}
@@ -1232,14 +1237,19 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided
+		// Apply pagination if provided. Append raw placeholders and push the
+		// values so the whole statement is prepared exactly once below,
+		// rather than calling prepare() on already-prepared SQL.
 		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
 			$per_page = intval( $criteria['per_page'] );
 			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
-			$sql     .= $wpdb->prepare( ' LIMIT %d OFFSET %d', $per_page, $offset );
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$values[] = $per_page;
+			$values[] = $offset;
 		}
 
-		// Prepare and execute the query
+		// Prepare and execute the query. Call prepare() once over all
+		// placeholders; run the bare SQL only when there are none.
 		if ( ! empty( $values ) ) {
 			$sql = $wpdb->prepare( $sql, $values );
 		}

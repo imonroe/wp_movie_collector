@@ -1,33 +1,26 @@
 /**
- * Small DOM-safety helpers shared by the admin scripts.
+ * Small DOM-safety helper shared by the admin scripts.
  *
- * These mirror the inline helpers registered via wp_add_inline_script (which
- * remain as a fallback for the unbuilt source path); when the webpack bundle
- * is loaded these exported, unit-tested implementations are exposed on the
- * window instead.
+ * Mirrors the inline helper registered via wp_add_inline_script (which remains
+ * as a fallback for the unbuilt source path); when the webpack bundle is loaded
+ * this exported, unit-tested implementation is exposed on the window instead.
  */
 
 /**
- * Escape a value for safe insertion as HTML text.
+ * Escape a value for safe insertion as HTML — text or attribute context.
+ *
+ * Encodes &, <, >, " and ' so the result is safe both as element text and
+ * when concatenated into a double/single-quoted attribute value (preventing
+ * attribute breakout).
  *
  * @param {*} value The value to escape.
  * @return {string} The HTML-escaped string.
  */
 export function escHtml( value ) {
-	const div = document.createElement( 'div' );
-	div.appendChild( document.createTextNode( String( value ) ) );
-	return div.innerHTML;
-}
-
-/**
- * Whether a value is a string http(s) URL safe to use as an image src.
- *
- * Rejects non-strings, relative URLs, and dangerous schemes such as
- * javascript: and data:.
- *
- * @param {*} url The candidate URL.
- * @return {boolean} True if the URL is an http(s) URL.
- */
-export function isAllowedImageUrl( url ) {
-	return typeof url === 'string' && /^https?:\/\//i.test( url );
+	return String( value )
+		.replace( /&/g, '&amp;' )
+		.replace( /</g, '&lt;' )
+		.replace( />/g, '&gt;' )
+		.replace( /"/g, '&quot;' )
+		.replace( /'/g, '&#039;' );
 }

@@ -74,8 +74,11 @@ class WP_Movie_Collector_Admin {
 		);
 		wp_localize_script( 'wp-movie-collector-admin', 'wp_movie_collector_admin', $localize_data );
 
-		// Add shared escHtml helper for safe DOM text insertion
-		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s));return d.innerHTML;}', 'before' );
+		// Add shared escHtml helper for safe HTML insertion (text and attribute
+		// contexts). Encodes &, <, >, " and ' so a value concatenated into a
+		// quoted attribute can't break out. Fallback for the unbuilt source
+		// path; the webpack bundle exposes the same implementation.
+		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\'/g,"&#039;");}', 'before' );
 
 		// Add shared image-preview helper that builds the <img> via DOM APIs
 		// and only accepts http(s) URLs, so untrusted cover_image_url values

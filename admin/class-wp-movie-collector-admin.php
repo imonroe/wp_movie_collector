@@ -531,6 +531,12 @@ class WP_Movie_Collector_Admin {
 			exit;
 		}
 
+		// Ensure the movie payload exists and has the expected structure.
+		if ( ! isset( $_POST['movie'] ) || ! is_array( $_POST['movie'] ) ) {
+			wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+			exit;
+		}
+
 		// Validate and sanitize movie data
 		$movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ), $movie_id );
 

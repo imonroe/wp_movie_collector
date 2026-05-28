@@ -22,6 +22,18 @@ if ( ! current_user_can( 'manage_options' ) ) {
         </div>
     <?php endif; ?>
 
+    <?php if (isset($_GET['db_repaired'])) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php echo esc_html__('Database tables checked and repaired successfully.', 'wp-movie-collector'); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['db_repair_error'])) : ?>
+        <div class="notice notice-error is-dismissible">
+            <p><?php echo esc_html__('Failed to repair the database tables. Please try again.', 'wp-movie-collector'); ?></p>
+        </div>
+    <?php endif; ?>
+
     <form method="post" action="options.php">
         <?php
         settings_fields('wp_movie_collector_settings');
@@ -115,11 +127,15 @@ if ( ! current_user_can( 'manage_options' ) ) {
         <tr>
             <th scope="row"><?php esc_html_e('Repair Database', 'wp-movie-collector'); ?></th>
             <td>
-                <p>
-                    <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=wp-movie-collector-settings&action=repair_db'), 'wp_movie_collector_repair_db', 'wp_movie_collector_nonce')); ?>" class="button">
-                        <?php esc_html_e('Repair Database Tables', 'wp-movie-collector'); ?>
-                    </a>
-                </p>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('wp_movie_collector_repair_db', 'wp_movie_collector_nonce'); ?>
+                    <input type="hidden" name="action" value="wp_movie_collector_repair_db">
+                    <p>
+                        <button type="submit" class="button">
+                            <?php esc_html_e('Repair Database Tables', 'wp-movie-collector'); ?>
+                        </button>
+                    </p>
+                </form>
                 <p class="description">
                     <?php esc_html_e('This will attempt to recreate any missing database tables.', 'wp-movie-collector'); ?>
                 </p>

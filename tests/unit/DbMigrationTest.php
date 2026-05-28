@@ -243,9 +243,29 @@ class DbMigrationTest extends TestCase {
 	// ------------------------------------------------------------------
 
 	/**
-	 * Test that the redundant standalone `format` index is dropped from both
-	 * tables once the composite format_year index is present (so format-only
-	 * lookups stay covered by the composite's leftmost prefix).
+	 * Get the format-index reconciliation ALTER for a table.
+	 *
+	 * The migration touches the format indexes in a single ALTER TABLE per
+	 * table (ADD format_year and/or DROP format), so this returns the one
+	 * statement that references either format index.
+	 *
+	 * @param string $table Table name to match.
+	 * @return array<int, string>
+	 */
+	private function format_index_alters_for( string $table ): array {
+		return array_values(
+			array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool =>
+					str_contains( $q, 'INDEX format_year' ) || str_contains( $q, 'INDEX format' )
+			)
+		);
+	}
+
+	/**
+	 * Test that when the composite format_year index already exists, the only
+	 * format-index work is dropping the redundant standalone index — in a
+	 * single ALTER that does not re-add the composite.
 	 */
 	public function test_update_tables_drops_redundant_format_index(): void {
 		// Nothing missing: both `format` and `format_year` exist on each table.
@@ -255,33 +275,32 @@ class DbMigrationTest extends TestCase {
 		$db->update_tables();
 
 		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
-			$drops = array_filter(
-				$this->alter_queries_for( $table ),
-				static fn( string $q ): bool => str_contains( $q, 'DROP INDEX format' )
-			);
-			$this->assertCount( 1, $drops, "{$table} should drop the redundant format index." );
+			$alters = $this->format_index_alters_for( $table );
+			$this->assertCount( 1, $alters, "{$table} should issue one format-index ALTER." );
+			$this->assertStringContainsString( 'DROP INDEX format', $alters[0] );
+			$this->assertStringNotContainsString( 'ADD INDEX format_year', $alters[0] );
 		}
 	}
 
 	/**
-	 * Test that the `format` drop is skipped when the composite format_year
-	 * index does not yet exist, so format-only queries are never left without
-	 * any covering index mid-migration.
+	 * Test the common upgrade path (composite missing, standalone present):
+	 * the ADD format_year and DROP format are batched into a single ALTER per
+	 * table, so each table rebuilds once and — because ALTER TABLE is atomic —
+	 * format-only lookups stay covered by the newly-added composite throughout.
 	 */
-	public function test_update_tables_keeps_format_index_until_composite_exists(): void {
-		// format_year missing on both tables: the standalone format index must
-		// be retained (and the composite added instead).
+	public function test_update_tables_batches_format_year_add_and_format_drop(): void {
+		// format_year missing on both tables; the standalone `format` index
+		// still exists (it is not in the missing list).
 		$this->install_wpdb_mock( array( 'format_year' ) );
 
 		$db = new WP_Movie_Collector_DB();
 		$db->update_tables();
 
 		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
-			$drops = array_filter(
-				$this->alter_queries_for( $table ),
-				static fn( string $q ): bool => str_contains( $q, 'DROP INDEX format' )
-			);
-			$this->assertCount( 0, $drops, "{$table} must not drop format before format_year exists." );
+			$alters = $this->format_index_alters_for( $table );
+			$this->assertCount( 1, $alters, "{$table} should batch format-index work into one ALTER." );
+			$this->assertStringContainsString( 'ADD INDEX format_year (format, release_year)', $alters[0] );
+			$this->assertStringContainsString( 'DROP INDEX format', $alters[0] );
 		}
 	}
 

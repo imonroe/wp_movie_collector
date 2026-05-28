@@ -29,7 +29,6 @@ class WP_Movie_Collector {
 	public function __construct() {
 		$this->load_dependencies();
 		$this->set_locale();
-		$this->maybe_update();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 		$this->define_post_types();
@@ -38,17 +37,19 @@ class WP_Movie_Collector {
 	}
 
 	/**
-	 * Check and perform plugin updates if needed.
+	 * Check and perform plugin schema migrations if needed.
+	 *
+	 * Hooked on admin_init (not run from the constructor) so it only fires in
+	 * the admin context, after authentication is established, and only for a
+	 * user who can manage options. Schema migrations (ALTER TABLE) are slow
+	 * and must never run on front-end or anonymous requests — including
+	 * unauthenticated admin-ajax.php / admin-post.php, where is_admin() alone
+	 * is true.
 	 *
 	 * @since    1.0.0
-	 * @access   private
 	 */
-	private function maybe_update() {
-		// Schema migrations (ALTER TABLE) must not run on front-end /
-		// anonymous requests: they're slow and shouldn't be triggered while
-		// serving a public page. Defer the check to the admin context so the
-		// migration runs the next time an admin loads wp-admin.
-		if ( ! is_admin() ) {
+	public function maybe_update() {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
@@ -133,6 +134,10 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
 		$this->loader->add_action( 'current_screen', $plugin_admin, 'add_help_tabs' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
+
+		// Run schema migrations only in the admin context, after auth, for an
+		// authorized user (see maybe_update()).
+		$this->loader->add_action( 'admin_init', $this, 'maybe_update' );
 
 		// Process form submissions
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'process_add_movie_form' );

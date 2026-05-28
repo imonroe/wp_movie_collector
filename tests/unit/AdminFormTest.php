@@ -390,4 +390,49 @@ class AdminFormTest extends TestCase {
 		$this->assertInstanceOf( 'WP_Error', $result );
 		$this->assertSame( 'import_empty', $result->get_error_code() );
 	}
+
+	/**
+	 * Box-set rows carrying movie-only columns (from a shared CSV header) must
+	 * be stripped to real box-set columns before insert, so insert_box_set()
+	 * doesn't hit an "Unknown column" error.
+	 */
+	public function test_persist_import_strips_movie_only_columns_from_box_sets(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+
+		$captured_box_set = null;
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured_box_set ) {
+				if ( false !== strpos( $table, 'movie_box_sets' ) ) {
+					$captured_box_set = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array(),
+				array(
+					array(
+						'title'    => 'Trilogy',
+						'director' => 'Someone',
+						'genre'    => 'Sci-Fi',
+						'actors'   => 'A, B',
+						'box_set_id' => 3,
+					),
+				),
+				'append',
+			)
+		);
+
+		$this->assertSame( 1, $count );
+		$this->assertNotNull( $captured_box_set );
+		$this->assertArrayHasKey( 'title', $captured_box_set );
+		$this->assertArrayNotHasKey( 'director', $captured_box_set );
+		$this->assertArrayNotHasKey( 'genre', $captured_box_set );
+		$this->assertArrayNotHasKey( 'actors', $captured_box_set );
+		$this->assertArrayNotHasKey( 'box_set_id', $captured_box_set );
+	}
 }

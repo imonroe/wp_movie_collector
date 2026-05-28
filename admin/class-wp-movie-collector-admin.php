@@ -1976,10 +1976,33 @@ class WP_Movie_Collector_Admin {
 		// that must be translated to the new id: in replace mode the old ids were
 		// just deleted, and even in append mode AUTO_INCREMENT assigns fresh ids.
 		// Pass true to skip per-row cache invalidation during the bulk import.
+		//
+		// CSV/JSON imports can share one header row across movies and box sets,
+		// so a box-set row may arrive carrying movie-only fields (director,
+		// studio, actors, genre, box_set_id). Those aren't columns on the
+		// box-sets table and would make insert_box_set()'s $wpdb->insert() fail
+		// with "Unknown column"; keep only real box-set columns.
+		$box_set_columns = array_flip(
+			array(
+				'title',
+				'release_year',
+				'format',
+				'region_code',
+				'barcode',
+				'cover_image_url',
+				'cover_image_id',
+				'description',
+				'acquisition_date',
+				'special_features',
+				'api_source',
+				'custom_notes',
+			)
+		);
 		$id_map = array();
 		foreach ( $box_sets as $box_set ) {
 			$source_id = isset( $box_set['__source_id'] ) ? (int) $box_set['__source_id'] : 0;
 			unset( $box_set['__source_id'] );
+			$box_set = array_intersect_key( $box_set, $box_set_columns );
 
 			$new_id = $db->insert_box_set( $box_set, true );
 			if ( $new_id ) {

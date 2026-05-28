@@ -18,8 +18,11 @@ class WP_Movie_Collector_Deactivator {
      * @since    1.0.0
      */
     public static function deactivate() {
-        // Nothing to do here for now
-        // We don't want to delete the database tables on deactivation
-        // to avoid data loss. We'll only do that on uninstall if needed.
+        // We don't delete the database tables on deactivation to avoid data
+        // loss; that only happens on uninstall.
+
+        // Flush rewrite rules so the plugin's custom post type / taxonomy
+        // rewrite rules are removed once the plugin is no longer active.
+        flush_rewrite_rules();
     }
 }

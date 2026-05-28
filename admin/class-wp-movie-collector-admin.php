@@ -2078,32 +2078,28 @@ class WP_Movie_Collector_Admin {
 		$movie   = $db->get_movie_by_barcode( $barcode );
 		$box_set = $db->get_box_set_by_barcode( $barcode );
 
-		// Prioritize the matching context, but return either if found.
+		// Enrich whichever records exist so the right one can be returned.
 		if ( $box_set ) {
-			$box_set['existing_in_db']  = true;
-			$box_set['existing_type']   = 'box_set';
-			$box_set['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
-			if ( 'box_set' === $context ) {
-				wp_send_json_success( $box_set );
-			}
+			$box_set['existing_in_db'] = true;
+			$box_set['existing_type']  = 'box_set';
+			$box_set['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
 		}
-
 		if ( $movie ) {
-			$movie['existing_in_db']  = true;
-			$movie['existing_type']   = 'movie';
-			$movie['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
-			if ( 'movie' === $context ) {
-				wp_send_json_success( $movie );
-			}
+			$movie['existing_in_db'] = true;
+			$movie['existing_type']  = 'movie';
+			$movie['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
 		}
 
-		// Return cross-type match if the barcode exists in the other table.
-		if ( $movie ) {
-			wp_send_json_success( $movie );
-		}
+		// Prefer the record matching the requested context, then fall back to a
+		// match in the other table, then fall through to the API lookup.
+		$context_match    = ( 'box_set' === $context ) ? $box_set : $movie;
+		$cross_type_match = ( 'box_set' === $context ) ? $movie : $box_set;
 
-		if ( $box_set ) {
-			wp_send_json_success( $box_set );
+		if ( $context_match ) {
+			wp_send_json_success( $context_match );
+		}
+		if ( $cross_type_match ) {
+			wp_send_json_success( $cross_type_match );
 		}
 
 		// If not in our database, try to look it up via API.

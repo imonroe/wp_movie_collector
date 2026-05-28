@@ -338,6 +338,35 @@ class WP_Movie_Collector_API_Client {
 	}
 
 	/**
+	 * Check whether a provider's circuit is tripped, without side effects.
+	 *
+	 * Unlike is_circuit_open(), this is a pure predicate: it never acquires
+	 * the half-open probe lock, so read-only callers (e.g. rendering admin
+	 * notices) cannot consume the single probe slot. Returns true while the
+	 * circuit is open and within its cooldown window; once the cooldown has
+	 * elapsed the circuit is recovering and is no longer reported as tripped.
+	 *
+	 * @param string $provider The provider key.
+	 * @return bool True if the circuit is open and within cooldown.
+	 */
+	private static function is_circuit_tripped( $provider ) {
+		$state = get_transient( "wp_movie_api_circuit_{$provider}" );
+
+		if ( false === $state || ! is_array( $state ) ) {
+			return false;
+		}
+
+		$failures  = isset( $state['failures'] ) ? (int) $state['failures'] : 0;
+		$opened_at = isset( $state['opened_at'] ) ? (int) $state['opened_at'] : 0;
+
+		if ( $failures < self::CIRCUIT_FAILURE_THRESHOLD ) {
+			return false;
+		}
+
+		return ( time() - $opened_at ) < self::CIRCUIT_COOLDOWN_SECONDS;
+	}
+
+	/**
 	 * Try to acquire the half-open probe lock for a provider.
 	 *
 	 * Only one request is allowed through after cooldown. A short-lived
@@ -445,10 +474,11 @@ class WP_Movie_Collector_API_Client {
 			return array();
 		}
 
-		// Filter out stale entries.
+		// Filter out stale entries. Use the side-effect-free predicate so
+		// rendering admin notices does not consume the half-open probe lock.
 		$active = array();
 		foreach ( $issues as $provider => $info ) {
-			if ( self::is_circuit_open( $provider ) ) {
+			if ( self::is_circuit_tripped( $provider ) ) {
 				$active[ $provider ] = $info;
 			}
 		}

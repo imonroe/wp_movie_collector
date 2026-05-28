@@ -185,10 +185,6 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_action( 'init', $plugin_public, 'register_shortcodes' );
-
-		// Register AJAX handlers for public-facing functionality
-		$this->loader->add_action( 'wp_ajax_wp_movie_collector_load_more', $plugin_public, 'ajax_load_more' );
-		$this->loader->add_action( 'wp_ajax_nopriv_wp_movie_collector_load_more', $plugin_public, 'ajax_load_more' );
 	}
 
 	/**

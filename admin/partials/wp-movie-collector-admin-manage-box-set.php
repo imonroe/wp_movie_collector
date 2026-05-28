@@ -97,14 +97,14 @@ if ( ! current_user_can( 'manage_options' ) ) {
 	</div>
 	
 	<div class="wp-movie-collector-tabs">
-		<ul class="wp-movie-collector-tabs-nav">
-			<li class="active"><a href="#current-movies"><?php esc_html_e( 'Current Movies', 'wp-movie-collector' ); ?></a></li>
-			<li><a href="#add-movies"><?php esc_html_e( 'Add Movies', 'wp-movie-collector' ); ?></a></li>
+		<ul class="wp-movie-collector-tabs-nav" role="tablist">
+			<li class="active" role="presentation"><a href="#current-movies" id="tab-current-movies" role="tab" aria-controls="current-movies" aria-selected="true"><?php esc_html_e( 'Current Movies', 'wp-movie-collector' ); ?></a></li>
+			<li role="presentation"><a href="#add-movies" id="tab-add-movies" role="tab" aria-controls="add-movies" aria-selected="false" tabindex="-1"><?php esc_html_e( 'Add Movies', 'wp-movie-collector' ); ?></a></li>
 		</ul>
 		
 		<div class="wp-movie-collector-tab-content">
 			<!-- Current Movies Tab -->
-			<div id="current-movies" class="wp-movie-collector-tab-pane active">
+			<div id="current-movies" class="wp-movie-collector-tab-pane active" role="tabpanel" aria-labelledby="tab-current-movies" tabindex="0">
 				<h3><?php esc_html_e( 'Movies in this Box Set', 'wp-movie-collector' ); ?></h3>
 				
 				<?php
@@ -118,11 +118,11 @@ if ( ! current_user_can( 'manage_options' ) ) {
 				<table class="wp-list-table widefat fixed striped">
 					<thead>
 						<tr>
-							<th width="20"><?php esc_html_e( 'Order', 'wp-movie-collector' ); ?></th>
-							<th><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
-							<th><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
-							<th><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
-							<th><?php esc_html_e( 'Actions', 'wp-movie-collector' ); ?></th>
+							<th scope="col" class="column-order"><?php esc_html_e( 'Order', 'wp-movie-collector' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Actions', 'wp-movie-collector' ); ?></th>
 						</tr>
 					</thead>
 					<tbody id="sortable-movies">
@@ -173,7 +173,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 			</div>
 			
 			<!-- Add Movies Tab -->
-			<div id="add-movies" class="wp-movie-collector-tab-pane">
+			<div id="add-movies" class="wp-movie-collector-tab-pane" role="tabpanel" aria-labelledby="tab-add-movies" tabindex="0">
 				<h3><?php esc_html_e( 'Add Movies to Box Set', 'wp-movie-collector' ); ?></h3>
 				
 				<div class="wp-movie-collector-search">
@@ -215,10 +215,10 @@ if ( ! current_user_can( 'manage_options' ) ) {
 						<table class="wp-list-table widefat fixed striped">
 							<thead>
 								<tr>
-									<th width="20"><input type="checkbox" id="select-all-movies"></th>
-									<th><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
-									<th><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
-									<th><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
+									<th scope="col" class="column-select"><input type="checkbox" id="select-all-movies" aria-label="<?php esc_attr_e( 'Select all movies', 'wp-movie-collector' ); ?>"></th>
+									<th scope="col"><?php esc_html_e( 'Title', 'wp-movie-collector' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Release Year', 'wp-movie-collector' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Format', 'wp-movie-collector' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -318,17 +318,49 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 <script>
 jQuery(document).ready(function($) {
-	// Tab functionality
-	$('.wp-movie-collector-tabs-nav a').on('click', function(e) {
-		e.preventDefault();
-		
-		// Remove active class from all tabs
+	// Tab functionality (WAI-ARIA tabs pattern).
+	var $tabs = $('.wp-movie-collector-tabs-nav a[role="tab"]');
+
+	function activateTab($tab, setFocus) {
+		// Reset all tabs/panes.
 		$('.wp-movie-collector-tabs-nav li').removeClass('active');
 		$('.wp-movie-collector-tab-pane').removeClass('active');
-		
-		// Add active class to clicked tab
-		$(this).parent().addClass('active');
-		$($(this).attr('href')).addClass('active');
+		$tabs.attr('aria-selected', 'false').attr('tabindex', '-1');
+
+		// Activate the chosen tab and its pane.
+		$tab.parent().addClass('active');
+		$tab.attr('aria-selected', 'true').attr('tabindex', '0');
+		$($tab.attr('href')).addClass('active');
+
+		if (setFocus) {
+			$tab.trigger('focus');
+		}
+	}
+
+	$tabs.on('click', function(e) {
+		e.preventDefault();
+		activateTab($(this), false);
+	});
+
+	// Left/right (and home/end) arrow-key navigation between tabs.
+	$tabs.on('keydown', function(e) {
+		var index = $tabs.index(this);
+		var newIndex = null;
+
+		if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+			newIndex = (index + 1) % $tabs.length;
+		} else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+			newIndex = (index - 1 + $tabs.length) % $tabs.length;
+		} else if (e.key === 'Home') {
+			newIndex = 0;
+		} else if (e.key === 'End') {
+			newIndex = $tabs.length - 1;
+		}
+
+		if (newIndex !== null) {
+			e.preventDefault();
+			activateTab($tabs.eq(newIndex), true);
+		}
 	});
 	
 	// Sortable functionality for reordering movies
@@ -381,10 +413,10 @@ jQuery(document).ready(function($) {
 					
 					resultsHtml += '<table class="wp-list-table widefat fixed striped">';
 					resultsHtml += '<thead><tr>';
-					resultsHtml += '<th width="20"><input type="checkbox" id="select-all-search-results"></th>';
-					resultsHtml += '<th>' + <?php echo wp_json_encode( esc_html__( 'Title', 'wp-movie-collector' ) ); ?> + '</th>';
-					resultsHtml += '<th>' + <?php echo wp_json_encode( esc_html__( 'Release Year', 'wp-movie-collector' ) ); ?> + '</th>';
-					resultsHtml += '<th>' + <?php echo wp_json_encode( esc_html__( 'Format', 'wp-movie-collector' ) ); ?> + '</th>';
+					resultsHtml += '<th scope="col" class="column-select"><input type="checkbox" id="select-all-search-results" aria-label="' + <?php echo wp_json_encode( esc_attr__( 'Select all search results', 'wp-movie-collector' ) ); ?> + '"></th>';
+					resultsHtml += '<th scope="col">' + <?php echo wp_json_encode( esc_html__( 'Title', 'wp-movie-collector' ) ); ?> + '</th>';
+					resultsHtml += '<th scope="col">' + <?php echo wp_json_encode( esc_html__( 'Release Year', 'wp-movie-collector' ) ); ?> + '</th>';
+					resultsHtml += '<th scope="col">' + <?php echo wp_json_encode( esc_html__( 'Format', 'wp-movie-collector' ) ); ?> + '</th>';
 					resultsHtml += '</tr></thead><tbody>';
 					
 					$.each(response.data, function(index, movie) {

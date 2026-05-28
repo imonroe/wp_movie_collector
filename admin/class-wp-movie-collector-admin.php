@@ -2287,9 +2287,20 @@ class WP_Movie_Collector_Admin {
 			exit;
 		}
 
+		global $wpdb;
+		$wpdb->last_error = '';
+
 		$db = new WP_Movie_Collector_DB();
 		$db->create_tables();
 		$db->update_tables();
+
+		// create_tables()/update_tables() don't return a status, so detect a
+		// failed CREATE/ALTER via the last DB error and surface it rather than
+		// reporting a false success.
+		if ( ! empty( $wpdb->last_error ) ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', 'query', $redirect_url ) );
+			exit;
+		}
 
 		wp_safe_redirect( add_query_arg( 'db_repaired', '1', $redirect_url ) );
 		exit;

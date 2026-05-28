@@ -2058,34 +2058,28 @@ class WP_Movie_Collector_Admin {
 		// just deleted, and even in append mode AUTO_INCREMENT assigns fresh ids.
 		// Pass true to skip per-row cache invalidation during the bulk import.
 		//
-		// CSV/JSON imports can share one header row across movies and box sets,
-		// so a box-set row may arrive carrying movie-only fields (director,
-		// studio, actors, genre, box_set_id). Those aren't columns on the
-		// box-sets table and would make insert_box_set()'s $wpdb->insert() fail
-		// with "Unknown column"; keep only real box-set columns.
-		$box_set_columns = array_flip(
-			array(
-				'title',
-				'release_year',
-				'format',
-				'region_code',
-				'barcode',
-				'cover_image_url',
-				'cover_image_id',
-				'description',
-				'acquisition_date',
-				'special_features',
-				'api_source',
-				'custom_notes',
-			)
-		);
+		// Each staged row is run through the shared field validator/sanitizer
+		// (issue #65) so imported CSV/JSON content is sanitized (no stored XSS)
+		// and integrity-checked (year range, format/region whitelist) exactly
+		// like the add/edit forms. The validator's output contains only real
+		// table columns, which also drops any movie-only fields a shared CSV
+		// header carries into a box-set row (avoiding "Unknown column" on
+		// insert). allow_duplicate skips the add-only duplicate check, which
+		// doesn't apply to a bulk import. Rows that fail validation are skipped
+		// (and counted as failures, which rolls back a replace-mode import).
 		$id_map = array();
 		foreach ( $box_sets as $box_set ) {
 			$source_id = isset( $box_set['__source_id'] ) ? (int) $box_set['__source_id'] : 0;
 			unset( $box_set['__source_id'] );
-			$box_set = array_intersect_key( $box_set, $box_set_columns );
 
-			$new_id = $db->insert_box_set( $box_set, true );
+			$box_set['allow_duplicate'] = true;
+			$validated                  = $this->validate_box_set_fields( $box_set );
+			if ( ! empty( $validated['errors'] ) ) {
+				++$failed;
+				continue;
+			}
+
+			$new_id = $db->insert_box_set( $validated['data'], true );
 			if ( $new_id ) {
 				++$count;
 				if ( $source_id > 0 ) {
@@ -2097,27 +2091,37 @@ class WP_Movie_Collector_Admin {
 		}
 
 		foreach ( $movies as $movie ) {
+			// Resolve box-set membership separately from content validation: the
+			// movie validator rejects a box_set_id that doesn't exist, but on
+			// import the referenced set's id is remapped (replace mode just
+			// deleted the old ids). Validate the content without box_set_id, then
+			// re-apply the remapped id afterward.
+			$old = ! empty( $movie['box_set_id'] ) ? (int) $movie['box_set_id'] : 0;
+			unset( $movie['box_set_id'] );
+
+			$movie['allow_duplicate'] = true;
+			$validated                = $this->validate_movie_fields( $movie );
+			if ( ! empty( $validated['errors'] ) ) {
+				++$failed;
+				continue;
+			}
+			$row = $validated['data'];
+
 			// The relationships table (which most lookups use) is only repopulated
-			// for box sets imported alongside this movie; replace mode just
-			// cleared it. Track that resolved id separately from the denormalized
-			// column.
+			// for box sets imported alongside this movie; replace mode cleared it.
 			$linked_box_set_id = 0;
-			if ( ! empty( $movie['box_set_id'] ) ) {
-				$old = (int) $movie['box_set_id'];
+			if ( $old ) {
 				if ( isset( $id_map[ $old ] ) ) {
-					$movie['box_set_id'] = $id_map[ $old ];
-					$linked_box_set_id   = $id_map[ $old ];
-				} elseif ( $replace ) {
-					// The referenced box set wasn't part of this import and the old
-					// ids were wiped, so the reference can no longer resolve.
-					$movie['box_set_id'] = null;
+					$row['box_set_id'] = $id_map[ $old ];
+					$linked_box_set_id = $id_map[ $old ];
+				} elseif ( ! $replace ) {
+					// Append mode: keep the original reference (the set may exist).
+					$row['box_set_id'] = $old;
 				}
-				// Append mode: leave the denormalized column as-is; the referenced
-				// box set may still exist, but we only create a relationship row
-				// for sets imported in this batch (known-good ids).
+				// Replace mode + unmapped: leave box_set_id unset; the old ids were wiped.
 			}
 
-			$new_movie_id = $db->insert_movie( $movie, true );
+			$new_movie_id = $db->insert_movie( $row, true );
 			if ( $new_movie_id ) {
 				++$count;
 				// Mirror the membership into the relationships table so box sets

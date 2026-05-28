@@ -91,8 +91,20 @@ if (!empty($search_term)) {
 }
 
 // Get the results and total counts for pagination.
-// When type=all, each type is paginated independently (separate LIMIT/OFFSET queries),
-// so total_pages should be the max of per-type page counts, not the sum.
+//
+// Design note (issue #91): when type=all, movies and box sets are queried as
+// two *independent* streams — each with its own LIMIT/OFFSET against its own
+// table and its own ORDER BY — and rendered movies-first, then box sets. They
+// are intentionally NOT merged into one globally sorted, globally paginated
+// list, because the two live in separate tables with differing schemas and a
+// cross-table UNION + global sort/paginate would be a substantial rewrite of
+// the DB layer and this template. Consequences callers should expect:
+//   - total_pages is the max of the two per-type page counts (not the sum), so
+//     a later page can contain only one type once the shorter stream is
+//     exhausted; and
+//   - the combined grid is sorted within each type, not across the merger.
+// If a single globally sorted/paginated "all" view is ever required, query a
+// unified result set (UNION with a combined ORDER BY/LIMIT) instead.
 $results       = array();
 $total_movies  = 0;
 $total_box_sets_count = 0;

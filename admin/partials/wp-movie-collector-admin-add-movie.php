@@ -66,7 +66,8 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_attr_e('Search movie title...', 'wp-movie-collector'); ?>">
                 <button type="button" id="wp-movie-collector-search-movie" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
             </div>
-            <div id="wp-movie-collector-search-results" role="status" aria-live="polite" aria-atomic="true"></div>
+            <div id="wp-movie-collector-search-status" class="wp-movie-collector-search-status" role="status" aria-live="polite" aria-atomic="true"></div>
+            <div id="wp-movie-collector-search-results"></div>
         </div>
         
         <h3><?php esc_html_e('Movie Details', 'wp-movie-collector'); ?></h3>
@@ -278,8 +279,9 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching...', 'wp-movie-collector') . '</p>'); ?>);
-        
+        $('#wp-movie-collector-search-status').text(<?php echo wp_json_encode(esc_html__('Searching...', 'wp-movie-collector')); ?>);
+        $('#wp-movie-collector-search-results').empty();
+
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
             type: 'POST',
@@ -290,6 +292,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
+                    $('#wp-movie-collector-search-status').empty();
                     var resultsHtml = '<div class="wp-movie-collector-search-results">';
                     resultsHtml += '<h4>' + <?php echo wp_json_encode(esc_html__('Search Results', 'wp-movie-collector')); ?> + '</h4>';
                     resultsHtml += '<ul>';
@@ -326,11 +329,13 @@ jQuery(document).ready(function($) {
                         });
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('No movies found matching that title.', 'wp-movie-collector') . '</p>'); ?>);
+                    $('#wp-movie-collector-search-results').empty();
+                    $('#wp-movie-collector-search-status').html(<?php echo wp_json_encode('<span class="error">' . esc_html__('No movies found matching that title.', 'wp-movie-collector') . '</span>'); ?>);
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for movie. Please try again.', 'wp-movie-collector') . '</p>'); ?>);
+                $('#wp-movie-collector-search-results').empty();
+                $('#wp-movie-collector-search-status').html(<?php echo wp_json_encode('<span class="error">' . esc_html__('Error searching for movie. Please try again.', 'wp-movie-collector') . '</span>'); ?>);
             }
         });
     });

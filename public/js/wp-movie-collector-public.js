@@ -8,10 +8,9 @@
      * Initialize filters and search functionality
      */
     function initFilters() {
-        // Auto-submit filters when changed (including sort dropdown)
-        $('.wp-movie-collector-filters select').on('change', function() {
-            $(this).closest('form').submit();
-        });
+        // Filters are applied via the visible submit button so keyboard and
+        // screen-reader users get a predictable, explicit action rather than a
+        // surprise navigation on every select change.
 
         // Clear filters button
         $('.wp-movie-collector-clear-filters').on('click', function(e) {

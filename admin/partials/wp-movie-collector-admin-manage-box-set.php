@@ -201,7 +201,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 					<button type="button" id="wp-movie-collector-search-movies" class="button"><?php esc_html_e( 'Search', 'wp-movie-collector' ); ?></button>
 				</div>
 				
-				<div id="wp-movie-collector-search-results">
+				<div id="wp-movie-collector-search-results" role="status" aria-live="polite" aria-atomic="true">
 					<!-- Search results will be displayed here -->
 				</div>
 				

@@ -66,7 +66,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 <input type="text" id="wp-movie-collector-movie-search" class="regular-text" placeholder="<?php esc_attr_e('Search movie title...', 'wp-movie-collector'); ?>">
                 <button type="button" id="wp-movie-collector-search-movie" class="button"><?php esc_html_e('Search', 'wp-movie-collector'); ?></button>
             </div>
-            <div id="wp-movie-collector-search-results"></div>
+            <div id="wp-movie-collector-search-results" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
         
         <h3><?php esc_html_e('Movie Details', 'wp-movie-collector'); ?></h3>

@@ -228,6 +228,11 @@ class WP_Movie_Collector_Sync {
 	private function upsert_post( $post_type, $meta_key, $source_id, $title, $content ) {
 		$existing = $this->find_post( $post_type, $meta_key, $source_id );
 
+		// Mirror posts are published intentionally: together with the public
+		// CPT registration (see class-wp-movie-collector-post-types.php) this
+		// makes collection items publicly visible on the front end and via the
+		// REST API as an SEO/permalink view layer. This public exposure is by
+		// design.
 		$postarr = array(
 			'post_type'    => $post_type,
 			'post_title'   => $title,

@@ -56,8 +56,8 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 $error_message = __('Invalid file format. Please upload a CSV or JSON file.', 'wp-movie-collector');
                 break;
             case 'import_failed':
-                if (isset($_GET['message'])) {
-                    $error_message = urldecode($_GET['message']);
+                if (isset($_GET['error_detail'])) {
+                    $error_message = sanitize_text_field(wp_unslash($_GET['error_detail']));
                 } else {
                     $error_message = __('Import failed. Please check your file and try again.', 'wp-movie-collector');
                 }

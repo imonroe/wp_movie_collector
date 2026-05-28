@@ -215,4 +215,50 @@ class DbMigrationTest extends TestCase {
 		$this->assertStringContainsString( 'ADD INDEX acquisition_date (acquisition_date)', $movies[0] );
 		$this->assertStringNotContainsString( 'ADD INDEX created_at (created_at)', $movies[0] );
 	}
+
+	// ------------------------------------------------------------------
+	// Failure logging
+	// ------------------------------------------------------------------
+
+	/**
+	 * Test that a failed migration query is logged (under WP_DEBUG) and the
+	 * failure result is returned rather than silently swallowed.
+	 */
+	public function test_run_schema_query_logs_failure_when_debug_enabled(): void {
+		if ( ! defined( 'WP_DEBUG' ) ) {
+			define( 'WP_DEBUG', true );
+		}
+		if ( ! WP_DEBUG ) {
+			$this->markTestSkipped( 'WP_DEBUG is disabled in this environment.' );
+		}
+
+		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+
+		$wpdb         = $this->createMock( Stub_Wpdb::class );
+		$wpdb->prefix = 'wp_';
+		$wpdb->method( 'query' )->willReturn( false );
+		$wpdb->last_error = 'boom: simulated ALTER failure';
+		$GLOBALS['wpdb']  = $wpdb;
+
+		$db = new WP_Movie_Collector_DB();
+
+		// Redirect error_log output to a temp file so we can assert on it.
+		$logfile  = tempnam( sys_get_temp_dir(), 'wpmc-schema-log-' );
+		$previous = ini_set( 'error_log', $logfile );
+
+		$method = new \ReflectionMethod( WP_Movie_Collector_DB::class, 'run_schema_query' );
+		$method->setAccessible( true );
+		$result = $method->invoke( $db, 'ALTER TABLE `wp_movie_collection` ADD INDEX x (x)' );
+
+		if ( false !== $previous ) {
+			ini_set( 'error_log', $previous );
+		}
+
+		$logged = (string) file_get_contents( $logfile );
+		@unlink( $logfile );
+
+		$this->assertFalse( $result, 'run_schema_query should return the failing query result.' );
+		$this->assertStringContainsString( 'Schema migration failed', $logged );
+		$this->assertStringContainsString( 'boom: simulated ALTER failure', $logged );
+	}
 }

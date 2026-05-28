@@ -85,7 +85,7 @@
 
         // Handle barcode scanner input - scanners typically append Enter key
         $('#wp-movie-collector-barcode').on('keypress', function(e) {
-            if (e.which === 13 && $(this).val().length > 0) {
+            if (e.key === 'Enter' && $(this).val().length > 0) {
                 e.preventDefault();
                 $('#wp-movie-collector-lookup-barcode').trigger('click');
             }
@@ -100,7 +100,7 @@
 
         // Movie title search auto-complete
         $('#wp-movie-collector-movie-search').on('keypress', function(e) {
-            if (e.which === 13) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 $('#wp-movie-collector-search-movie').trigger('click');
             }

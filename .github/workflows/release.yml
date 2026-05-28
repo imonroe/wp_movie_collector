@@ -24,6 +24,14 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php8.2-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php8.2-
+
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 

@@ -1922,6 +1922,17 @@ class WP_Movie_Collector_Admin {
 		$replace = ( 'replace' === $import_type );
 
 		if ( $replace ) {
+			// Never wipe the collection for an import that has nothing to insert
+			// (e.g. an empty file, or a payload with no valid rows). Without this
+			// guard replace mode would delete everything and commit an empty
+			// import.
+			if ( empty( $movies ) && empty( $box_sets ) ) {
+				return new WP_Error(
+					'import_empty',
+					__( 'The import file contained no valid rows; the existing collection was left unchanged.', 'wp-movie-collector' )
+				);
+			}
+
 			// Replace mode deletes the whole collection before re-inserting. That
 			// is only safe if a failed import can be rolled back, which requires a
 			// transactional engine — bail before deleting anything otherwise.
@@ -1982,20 +1993,34 @@ class WP_Movie_Collector_Admin {
 		}
 
 		foreach ( $movies as $movie ) {
+			// The relationships table (which most lookups use) is only repopulated
+			// for box sets imported alongside this movie; replace mode just
+			// cleared it. Track that resolved id separately from the denormalized
+			// column.
+			$linked_box_set_id = 0;
 			if ( ! empty( $movie['box_set_id'] ) ) {
 				$old = (int) $movie['box_set_id'];
 				if ( isset( $id_map[ $old ] ) ) {
 					$movie['box_set_id'] = $id_map[ $old ];
+					$linked_box_set_id   = $id_map[ $old ];
 				} elseif ( $replace ) {
 					// The referenced box set wasn't part of this import and the old
 					// ids were wiped, so the reference can no longer resolve.
 					$movie['box_set_id'] = null;
 				}
-				// Append mode: leave as-is; the referenced box set may still exist.
+				// Append mode: leave the denormalized column as-is; the referenced
+				// box set may still exist, but we only create a relationship row
+				// for sets imported in this batch (known-good ids).
 			}
 
-			if ( $db->insert_movie( $movie, true ) ) {
+			$new_movie_id = $db->insert_movie( $movie, true );
+			if ( $new_movie_id ) {
 				++$count;
+				// Mirror the membership into the relationships table so box sets
+				// list their movies after import (replace mode wiped it).
+				if ( $linked_box_set_id && false === $db->add_movie_to_box_set( (int) $new_movie_id, $linked_box_set_id ) ) {
+					++$failed;
+				}
 			} else {
 				++$failed;
 			}
@@ -2097,10 +2122,11 @@ class WP_Movie_Collector_Admin {
 			return new WP_Error( 'json_error', __( 'Invalid JSON format.', 'wp-movie-collector' ) );
 		}
 
-		// A syntactically valid JSON scalar (e.g. "hello", 42, null) passes the
-		// error check above; reject it here, before any destructive operation,
-		// so a malformed file can't wipe the collection.
-		if ( ! is_array( $data ) ) {
+		// A syntactically valid JSON scalar (e.g. "hello", 42, null) or object
+		// (e.g. {"items":[]}) passes the error check above; require a JSON list
+		// of items here, before any destructive operation, so a malformed file
+		// can't wipe the collection in replace mode.
+		if ( ! is_array( $data ) || ! array_is_list( $data ) ) {
 			return new WP_Error( 'json_error', __( 'Invalid JSON format: expected an array of items.', 'wp-movie-collector' ) );
 		}
 

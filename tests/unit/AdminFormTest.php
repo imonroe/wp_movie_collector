@@ -374,4 +374,20 @@ class AdminFormTest extends TestCase {
 		$this->assertSame( 'import_failed', $result->get_error_code() );
 		$this->assertContains( 'ROLLBACK', $queries );
 	}
+
+	/**
+	 * Replace mode must not wipe the collection when there are no rows to
+	 * import (e.g. an empty file or a payload with no valid rows).
+	 */
+	public function test_persist_import_replace_aborts_when_nothing_to_import(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// No destructive query may run for an empty replace import.
+		$wpdb->expects( $this->never() )->method( 'query' );
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private( 'persist_import', array( array(), array(), 'replace' ) );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_empty', $result->get_error_code() );
+	}
 }

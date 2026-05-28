@@ -21,8 +21,22 @@ class WP_Movie_Collector_Deactivator {
         // We don't delete the database tables on deactivation to avoid data
         // loss; that only happens on uninstall.
 
-        // Flush rewrite rules so the plugin's custom post type / taxonomy
-        // rewrite rules are removed once the plugin is no longer active.
+        // The CPTs/taxonomies have already been registered on `init` by the
+        // time deactivation runs, so flushing alone would persist their
+        // rewrite rules. Unregister them first (guarded), then flush so the
+        // plugin's rewrite rules are actually removed.
+        foreach ( array( 'movie', 'box_set' ) as $post_type ) {
+            if ( post_type_exists( $post_type ) ) {
+                unregister_post_type( $post_type );
+            }
+        }
+
+        foreach ( array( 'genre', 'director', 'studio', 'actor' ) as $taxonomy ) {
+            if ( taxonomy_exists( $taxonomy ) ) {
+                unregister_taxonomy( $taxonomy );
+            }
+        }
+
         flush_rewrite_rules();
     }
 }

@@ -80,8 +80,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="wp-movie-collector-single-meta-item">
                         <span class="wp-movie-collector-single-meta-label"><?php esc_html_e('Acquired On:', 'wp-movie-collector'); ?></span>
                         <span><?php
-                            $acquired_ts = strtotime($movie['acquisition_date']);
-                            echo esc_html(false !== $acquired_ts ? date_i18n(get_option('date_format'), $acquired_ts) : $movie['acquisition_date']);
+                            $acquired_raw   = $movie['acquisition_date'];
+                            $acquired_parts = array();
+                            $acquired_valid = preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $acquired_raw, $acquired_parts)
+                                && checkdate((int) $acquired_parts[2], (int) $acquired_parts[3], (int) $acquired_parts[1]);
+                            echo esc_html($acquired_valid ? date_i18n(get_option('date_format'), strtotime($acquired_raw)) : $acquired_raw);
                         ?></span>
                     </div>
                 <?php endif; ?>

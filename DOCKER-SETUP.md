@@ -51,7 +51,8 @@ cd wp-content/plugins/wp-movie-collector
 # Run commands (examples)
 composer install
 npm install
-npm run build
+composer run test
+npm test
 ```
 
 ## Database

@@ -26,14 +26,13 @@ class WP_Movie_Collector_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		$css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css';
-		if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
-			$built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/admin/css/wp-movie-collector-admin.min.css';
-			if ( file_exists( $built_path ) ) {
-				$css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/css/wp-movie-collector-admin.min.css';
-			}
-		}
-		wp_enqueue_style( 'wp-movie-collector-admin', $css_url, array(), WP_MOVIE_COLLECTOR_VERSION, 'all' );
+		wp_enqueue_style(
+			'wp-movie-collector-admin',
+			WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css',
+			array(),
+			WP_MOVIE_COLLECTOR_VERSION,
+			'all'
+		);
 	}
 
 	/**
@@ -49,14 +48,13 @@ class WP_Movie_Collector_Admin {
 		wp_enqueue_script( 'jquery-ui-sortable' );
 
 		// Custom admin script
-		$js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js';
-		if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
-			$built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/admin/js/wp-movie-collector-admin.min.js';
-			if ( file_exists( $built_path ) ) {
-				$js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/js/wp-movie-collector-admin.min.js';
-			}
-		}
-		wp_enqueue_script( 'wp-movie-collector-admin', $js_url, array( 'jquery', 'jquery-ui-sortable' ), WP_MOVIE_COLLECTOR_VERSION, false );
+		wp_enqueue_script(
+			'wp-movie-collector-admin',
+			WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js',
+			array( 'jquery', 'jquery-ui-sortable' ),
+			WP_MOVIE_COLLECTOR_VERSION,
+			false
+		);
 
 		// Localize the script with new data
 		$localize_data = array(
@@ -76,8 +74,9 @@ class WP_Movie_Collector_Admin {
 
 		// Add shared escHtml helper for safe HTML insertion (text and attribute
 		// contexts). Encodes &, <, >, " and ' so a value concatenated into a
-		// quoted attribute can't break out. Fallback for the unbuilt source
-		// path; the webpack bundle exposes the same implementation.
+		// quoted attribute can't break out. Mirrors the unit-tested
+		// implementation in src/utils/dom-safety.js (kept in sync by the
+		// dom-safety jest test).
 		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\'/g,"&#039;");}', 'before' );
 
 		// Add shared image-preview helper that builds the <img> via DOM APIs

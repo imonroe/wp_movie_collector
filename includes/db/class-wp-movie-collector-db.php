@@ -173,21 +173,52 @@ class WP_Movie_Collector_DB {
 			$this->run_schema_query( "ALTER TABLE `{$box_sets_table}` ADD INDEX title_year (title, release_year)" );
 		}
 
-		// Add composite index (format, release_year) to both tables. Format
-		// and release year are the two most commonly combined filters in the
-		// public collection display; a composite index lets MySQL/MariaDB
-		// satisfy "format = X AND release_year = Y" from a single index
-		// instead of scanning one single-column index and filtering the rest.
+		// Reconcile the format indexes on both tables in a single ALTER each.
+		//
+		// We add the composite format_year (format, release_year) and drop the
+		// redundant standalone format index. Format and release year are the two
+		// most commonly combined filters in the public collection display; the
+		// composite lets MySQL/MariaDB satisfy "format = X AND release_year = Y"
+		// from one index, and its leftmost prefix also covers format-only
+		// lookups, so the standalone format index is pure write/storage
+		// overhead.
+		//
+		// Both clauses are batched into one ALTER TABLE so the common upgrade
+		// path (composite missing, standalone present) rebuilds each table once
+		// instead of twice. Because ALTER TABLE is atomic, format-only queries
+		// remain covered throughout: the standalone index is only dropped in the
+		// same statement that adds (or alongside an already-present) composite.
 		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
-			$exists = $wpdb->get_results(
-				$wpdb->prepare(
-					"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
-					'format_year'
+			$composite_exists = ! empty(
+				$wpdb->get_results(
+					$wpdb->prepare(
+						"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+						'format_year'
+					)
+				)
+			);
+			$standalone_exists = ! empty(
+				$wpdb->get_results(
+					$wpdb->prepare(
+						"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+						'format'
+					)
 				)
 			);
 
-			if ( empty( $exists ) ) {
-				$this->run_schema_query( "ALTER TABLE `{$table}` ADD INDEX format_year (format, release_year)" );
+			$clauses = array();
+			if ( ! $composite_exists ) {
+				$clauses[] = 'ADD INDEX format_year (format, release_year)';
+			}
+			// Dropping the standalone index is always safe here: the composite
+			// either already exists or is added by the clause above in this same
+			// (atomic) statement, so format-only lookups stay covered throughout.
+			if ( $standalone_exists ) {
+				$clauses[] = 'DROP INDEX format';
+			}
+
+			if ( ! empty( $clauses ) ) {
+				$this->run_schema_query( "ALTER TABLE `{$table}` " . implode( ', ', $clauses ) );
 			}
 		}
 
@@ -280,7 +311,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY box_set_id (box_set_id),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
@@ -308,7 +338,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
             KEY format_year (format, release_year),

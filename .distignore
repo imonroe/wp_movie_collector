@@ -10,7 +10,6 @@
 # Dependencies (dev) and build tooling
 node_modules
 src
-webpack.config.js
 package.json
 package-lock.json
 composer.json
@@ -41,10 +40,8 @@ requirements.md
 .claude
 
 # Build artifacts and scratch
-# NOTE: dist/ is intentionally NOT excluded — it holds the webpack-built
-# minified assets that the runtime asset loaders prefer. The release
-# staging dir and ZIP are written to build/ instead.
 build
+dist
 *.map
 *.log
 .phpunit.result.cache

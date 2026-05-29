@@ -133,5 +133,72 @@ class PublicShortcodeTest extends TestCase {
 		$this->assertStringContainsString( 'name="search"', $html );
 		$this->assertStringContainsString( 'id="format-filter"', $html );
 		$this->assertStringContainsString( 'name="format"', $html );
+		// The studio filter control should be rendered (issue #90).
+		$this->assertStringContainsString( 'id="studio-filter"', $html );
+		$this->assertStringContainsString( 'name="studio"', $html );
+	}
+
+	/**
+	 * A movie_id query arg should render the single-movie detail view instead
+	 * of the collection grid.
+	 */
+	public function test_shortcode_renders_single_movie_for_movie_id_query_arg(): void {
+		$wpdb = $this->getMockBuilder( Stub_Wpdb::class )
+			->onlyMethods( array( 'prepare', 'get_row', 'get_results' ) )
+			->getMock();
+		$wpdb->method( 'prepare' )->willReturnArgument( 0 );
+		$wpdb->method( 'get_row' )->willReturn(
+			array(
+				'id'              => 5,
+				'title'           => 'Brazil',
+				'release_year'    => 1985,
+				'format'          => 'Blu-ray',
+				'region_code'     => 'B',
+				'cover_image_url' => '',
+			)
+		);
+		// No containing box sets.
+		$wpdb->method( 'get_results' )->willReturn( array() );
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$_GET['movie_id'] = '5';
+
+		$html = $this->render( array( 'type' => 'all' ) );
+
+		$this->assertStringContainsString( 'wp-movie-collector-single', $html );
+		$this->assertStringContainsString( 'Brazil', $html );
+		$this->assertStringNotContainsString( 'wp-movie-collector-grid', $html );
+	}
+
+	/**
+	 * A box_set_id query arg should render the single box-set detail view
+	 * instead of the collection grid.
+	 */
+	public function test_shortcode_renders_single_box_set_for_box_set_id_query_arg(): void {
+		$wpdb = $this->getMockBuilder( Stub_Wpdb::class )
+			->onlyMethods( array( 'prepare', 'get_row', 'get_results' ) )
+			->getMock();
+		$wpdb->method( 'prepare' )->willReturnArgument( 0 );
+		$wpdb->method( 'get_row' )->willReturn(
+			array(
+				'id'              => 9,
+				'title'           => 'Alien Anthology',
+				'release_year'    => 2010,
+				'format'          => 'Blu-ray',
+				'region_code'     => 'A',
+				'cover_image_url' => '',
+			)
+		);
+		// No movies in the set.
+		$wpdb->method( 'get_results' )->willReturn( array() );
+		$GLOBALS['wpdb'] = $wpdb;
+
+		$_GET['box_set_id'] = '9';
+
+		$html = $this->render( array( 'type' => 'all' ) );
+
+		$this->assertStringContainsString( 'wp-movie-collector-box-set', $html );
+		$this->assertStringContainsString( 'Alien Anthology', $html );
+		$this->assertStringNotContainsString( 'wp-movie-collector-grid', $html );
 	}
 }

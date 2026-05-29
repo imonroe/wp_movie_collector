@@ -45,7 +45,7 @@
                 imageUrlField.val(attachment.url);
                 
                 // Update preview
-                imagePreview.html('<img src="' + attachment.url + '" alt="" style="max-width:150px;max-height:150px;" />');
+                wpMovieCollectorSetImagePreview(imagePreview, attachment.url);
                 
                 // Show the remove button
                 button.siblings('.wp-movie-collector-remove-image-button').show();
@@ -85,7 +85,7 @@
 
         // Handle barcode scanner input - scanners typically append Enter key
         $('#wp-movie-collector-barcode').on('keypress', function(e) {
-            if (e.which === 13 && $(this).val().length > 0) {
+            if (e.key === 'Enter' && $(this).val().length > 0) {
                 e.preventDefault();
                 $('#wp-movie-collector-lookup-barcode').trigger('click');
             }
@@ -100,7 +100,7 @@
 
         // Movie title search auto-complete
         $('#wp-movie-collector-movie-search').on('keypress', function(e) {
-            if (e.which === 13) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 $('#wp-movie-collector-search-movie').trigger('click');
             }
@@ -228,7 +228,7 @@
         
         // Display cover image preview if URL exists
         if (movie.cover_image_url) {
-            $('#movie-cover-image-url').siblings('.image-preview').html('<img src="' + movie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#movie-cover-image-url').siblings('.image-preview'), movie.cover_image_url);
             $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         
@@ -246,7 +246,8 @@
      * Search TMDB for more details about the movie
      */
     function searchTMDBForMoreDetails(title, year) {
-        $('#wp-movie-collector-search-results').html('<p>Searching for additional movie details...</p>');
+        $('#wp-movie-collector-search-status').text('Searching for additional movie details...');
+        $('#wp-movie-collector-search-results').empty();
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -258,11 +259,11 @@
                 nonce: wp_movie_collector_admin.nonce
             },
             success: function(response) {
-                if (response.success && response.data.length > 0) {
+                if (response.success && Array.isArray(response.data) && response.data.length > 0) {
                     // Get details for the first match
                     var movieId = response.data[0].id;
                     
-                    $('#wp-movie-collector-search-results').html('<p>Found match, retrieving full details...</p>');
+                    $('#wp-movie-collector-search-status').text('Found match, retrieving full details...');
                     
                     $.ajax({
                         url: wp_movie_collector_admin.ajax_url,
@@ -282,30 +283,30 @@
                                 // Fill form with detailed movie info from TMDB
                                 fillMovieFormWithTMDBData(tmdbMovie, barcode);
                                 
-                                $('#wp-movie-collector-search-results').html(
-                                    '<p class="success">Successfully retrieved additional movie details from TMDB!</p>'
+                                $('#wp-movie-collector-search-status').html(
+                                    '<span class="success">Successfully retrieved additional movie details from TMDB!</span>'
                                 );
                             } else {
-                                $('#wp-movie-collector-search-results').html(
-                                    '<p class="error">Error retrieving full movie details.</p>'
+                                $('#wp-movie-collector-search-status').html(
+                                    '<span class="error">Error retrieving full movie details.</span>'
                                 );
                             }
                         },
                         error: function() {
-                            $('#wp-movie-collector-search-results').html(
-                                '<p class="error">Error connecting to server.</p>'
+                            $('#wp-movie-collector-search-status').html(
+                                '<span class="error">Error connecting to server.</span>'
                             );
                         }
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html(
-                        '<p class="error">No additional movie details found.</p>'
+                    $('#wp-movie-collector-search-status').html(
+                        '<span class="error">No additional movie details found.</span>'
                     );
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html(
-                    '<p class="error">Error searching for additional movie details.</p>'
+                $('#wp-movie-collector-search-status').html(
+                    '<span class="error">Error searching for additional movie details.</span>'
                 );
             }
         });
@@ -352,8 +353,7 @@
         // Handle cover image - prefer TMDB's higher quality images
         if (tmdbMovie.cover_image_url) {
             $('#movie-cover-image-url').val(tmdbMovie.cover_image_url);
-            $('#movie-cover-image-url').siblings('.image-preview')
-                .html('<img src="' + tmdbMovie.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#movie-cover-image-url').siblings('.image-preview'), tmdbMovie.cover_image_url);
             $('#movie-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         

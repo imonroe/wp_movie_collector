@@ -437,6 +437,48 @@ class DbTest extends TestCase {
 		$this->assertSame( array( 'box_set_id' => 8 ), $update_calls[0]['where'] );
 	}
 
+	/**
+	 * delete_box_set should ROLLBACK and return false if a step fails, so the
+	 * multi-statement delete stays atomic.
+	 */
+	public function test_delete_box_set_rolls_back_when_a_step_fails(): void {
+		// Relationship delete succeeds; the final box-set delete fails.
+		$this->wpdb->method( 'delete' )->willReturnOnConsecutiveCalls( 1, false );
+		$this->wpdb->method( 'update' )->willReturn( 1 );
+
+		$queries = array();
+		$this->wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+
+		$this->assertFalse( $this->db->delete_box_set( 8 ) );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * remove_movie_from_all_box_sets should ROLLBACK and return false if the
+	 * pointer-clearing update fails.
+	 */
+	public function test_remove_movie_from_all_box_sets_rolls_back_on_failure(): void {
+		$this->wpdb->method( 'delete' )->willReturn( 1 );
+		$this->wpdb->method( 'update' )->willReturn( false );
+
+		$queries = array();
+		$this->wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+
+		$this->assertFalse( $this->db->remove_movie_from_all_box_sets( 4 ) );
+		$this->assertContains( 'ROLLBACK', $queries );
+	}
+
 	// ------------------------------------------------------------------
 	// Box set relationships.
 	// ------------------------------------------------------------------
@@ -461,41 +503,57 @@ class DbTest extends TestCase {
 	 */
 	public function test_add_movie_to_box_set_creates_new_relationship(): void {
 		// First get_var returns null (no existing), second returns "3" (next order).
-		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
 		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '3' );
 
-		$captured_data = null;
+		// Capture the bound values passed to prepare() for the INSERT IGNORE.
+		$insert_args = null;
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$insert_args ) {
+				if ( false !== stripos( $sql, 'INSERT' ) ) {
+					$insert_args = $args;
+				}
+				return $sql;
+			}
+		);
 
-		$this->wpdb->expects( $this->once() )
-			->method( 'insert' )
-			->with(
-				$this->equalTo( 'wp_movie_box_set_relationships' ),
-				$this->callback(
-					function ( $data ) use ( &$captured_data ) {
-						$captured_data = $data;
-						return true;
-					}
-				)
-			)
-			->willReturn( 1 );
+		// The relationship is inserted via query() (INSERT IGNORE), not insert().
+		$this->wpdb->expects( $this->never() )->method( 'insert' );
+		$this->wpdb->expects( $this->once() )->method( 'query' )->willReturn( 1 );
 
 		$this->wpdb->insert_id = 101;
 
 		$this->assertSame( 101, $this->db->add_movie_to_box_set( 3, 5 ) );
-		$this->assertSame( 3, $captured_data['movie_id'] );
-		$this->assertSame( 5, $captured_data['box_set_id'] );
-		$this->assertSame( 3, $captured_data['display_order'] );
+		// movie_id, box_set_id, display_order.
+		$this->assertSame( array( 3, 5, 3 ), $insert_args );
 	}
 
 	/**
-	 * add_movie_to_box_set should return false if the insert fails.
+	 * add_movie_to_box_set should return false if the insert fails and no
+	 * concurrent row exists.
 	 */
 	public function test_add_movie_to_box_set_returns_false_on_insert_failure(): void {
 		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
-		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1' );
-		$this->wpdb->method( 'insert' )->willReturn( false );
+		// existing-check (null), next-order ('1'), post-failure fallback (null).
+		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1', null );
+		$this->wpdb->method( 'query' )->willReturn( false );
 
 		$this->assertFalse( $this->db->add_movie_to_box_set( 3, 5 ) );
+	}
+
+	/**
+	 * When INSERT IGNORE skips the row (query() returns 0 because a concurrent
+	 * request already inserted the same pairing), the method should look the
+	 * existing relationship up and return its id as an int.
+	 */
+	public function test_add_movie_to_box_set_returns_existing_id_when_insert_ignored(): void {
+		$this->wpdb->method( 'prepare' )->willReturn( 'SELECT prepared' );
+		// existing-check (null), next-order ('1'), post-skip fallback ('55').
+		$this->wpdb->method( 'get_var' )->willReturnOnConsecutiveCalls( null, '1', '55' );
+		// INSERT IGNORE skipped the duplicate row → 0 affected rows.
+		$this->wpdb->method( 'query' )->willReturn( 0 );
+
+		$result = $this->db->add_movie_to_box_set( 3, 5 );
+		$this->assertSame( 55, $result );
 	}
 
 	/**
@@ -653,6 +711,85 @@ class DbTest extends TestCase {
 			$args = $args[0];
 		}
 		$this->assertContains( '%Thing%', $args );
+	}
+
+	/**
+	 * Find a captured prepare() call whose SQL contains the given needle.
+	 *
+	 * @param array  $calls  Captured prepare() calls.
+	 * @param string $needle Substring to look for in the SQL.
+	 * @return array|null The matching call, or null.
+	 */
+	private function find_prepare_call( array $calls, string $needle ): ?array {
+		foreach ( $calls as $call ) {
+			if ( is_string( $call['sql'] ) && false !== stripos( $call['sql'], $needle ) ) {
+				return $call;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * A zero/negative page must not produce a negative OFFSET.
+	 */
+	public function test_search_movies_clamps_negative_page_offset(): void {
+		$prepare_args = array();
+
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$prepare_args ) {
+				$prepare_args[] = array(
+					'sql'  => $sql,
+					'args' => $args,
+				);
+				return $sql;
+			}
+		);
+		$this->wpdb->method( 'get_results' )->willReturn( array() );
+
+		$this->db->search_movies(
+			array(
+				'per_page' => 10,
+				'page'     => 0,
+			)
+		);
+
+		$limit_call = $this->find_prepare_call( $prepare_args, 'LIMIT %d OFFSET %d' );
+		$this->assertNotNull( $limit_call, 'Expected a prepare() call with the LIMIT/OFFSET clause.' );
+
+		$args = $limit_call['args'];
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = $args[0];
+		}
+		$this->assertSame( array( 10, 0 ), $args, 'Offset should be clamped to 0, not negative.' );
+	}
+
+	/**
+	 * A per_page with no page should still apply LIMIT (page defaults to 1).
+	 */
+	public function test_search_movies_applies_limit_with_only_per_page(): void {
+		$prepare_args = array();
+
+		$this->wpdb->method( 'prepare' )->willReturnCallback(
+			function ( $sql, ...$args ) use ( &$prepare_args ) {
+				$prepare_args[] = array(
+					'sql'  => $sql,
+					'args' => $args,
+				);
+				return $sql;
+			}
+		);
+		$this->wpdb->method( 'get_results' )->willReturn( array() );
+
+		$this->db->search_movies( array( 'per_page' => 5 ) );
+
+		$limit_call = $this->find_prepare_call( $prepare_args, 'LIMIT %d OFFSET %d' );
+		$this->assertNotNull( $limit_call, 'Expected LIMIT to be applied when only per_page is set.' );
+
+		$args = $limit_call['args'];
+		if ( 1 === count( $args ) && is_array( $args[0] ) ) {
+			$args = $args[0];
+		}
+		$this->assertSame( array( 5, 0 ), $args );
 	}
 
 	/**

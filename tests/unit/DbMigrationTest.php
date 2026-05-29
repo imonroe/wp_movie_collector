@@ -13,6 +13,8 @@
 
 namespace WP_Movie_Collector\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Stub_Wpdb;
 use WP_Movie_Collector_DB;
@@ -136,7 +138,27 @@ class DbMigrationTest extends TestCase {
 		return array_values(
 			array_filter(
 				$this->captured_queries,
-				static fn( string $q ): bool => str_contains( $q, "ALTER TABLE {$table} " )
+				static fn( string $q ): bool => str_contains( $q, "ALTER TABLE `{$table}` " )
+			)
+		);
+	}
+
+	/**
+	 * Get the captured created_at / acquisition_date ALTER queries for a table.
+	 *
+	 * Scopes assertions to the timestamp-index batching under test, ignoring
+	 * unrelated migrations (e.g. the redundant-`format`-index drop) that also
+	 * issue ALTER TABLE against the same table.
+	 *
+	 * @param string $table Table name to match.
+	 * @return array<int, string>
+	 */
+	private function timestamp_index_alters_for( string $table ): array {
+		return array_values(
+			array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool =>
+					str_contains( $q, 'created_at' ) || str_contains( $q, 'acquisition_date' )
 			)
 		);
 	}
@@ -183,8 +205,8 @@ class DbMigrationTest extends TestCase {
 		$db = new WP_Movie_Collector_DB();
 		$db->update_tables();
 
-		$movies   = $this->alter_queries_for( 'wp_movie_collection' );
-		$box_sets = $this->alter_queries_for( 'wp_movie_box_sets' );
+		$movies   = $this->timestamp_index_alters_for( 'wp_movie_collection' );
+		$box_sets = $this->timestamp_index_alters_for( 'wp_movie_box_sets' );
 
 		$this->assertCount( 1, $movies, 'Movies table should receive one ALTER TABLE.' );
 		$this->assertCount( 1, $box_sets, 'Box sets table should receive one ALTER TABLE.' );
@@ -209,10 +231,126 @@ class DbMigrationTest extends TestCase {
 		$db = new WP_Movie_Collector_DB();
 		$db->update_tables();
 
-		$movies = $this->alter_queries_for( 'wp_movie_collection' );
+		$movies = $this->timestamp_index_alters_for( 'wp_movie_collection' );
 
 		$this->assertCount( 1, $movies );
 		$this->assertStringContainsString( 'ADD INDEX acquisition_date (acquisition_date)', $movies[0] );
 		$this->assertStringNotContainsString( 'ADD INDEX created_at (created_at)', $movies[0] );
+	}
+
+	// ------------------------------------------------------------------
+	// Redundant standalone `format` index drop
+	// ------------------------------------------------------------------
+
+	/**
+	 * Get the format-index reconciliation ALTER for a table.
+	 *
+	 * The migration touches the format indexes in a single ALTER TABLE per
+	 * table (ADD format_year and/or DROP format), so this returns the one
+	 * statement that references either format index.
+	 *
+	 * @param string $table Table name to match.
+	 * @return array<int, string>
+	 */
+	private function format_index_alters_for( string $table ): array {
+		return array_values(
+			array_filter(
+				$this->alter_queries_for( $table ),
+				static fn( string $q ): bool =>
+					str_contains( $q, 'INDEX format_year' ) || str_contains( $q, 'INDEX format' )
+			)
+		);
+	}
+
+	/**
+	 * Test that when the composite format_year index already exists, the only
+	 * format-index work is dropping the redundant standalone index — in a
+	 * single ALTER that does not re-add the composite.
+	 */
+	public function test_update_tables_drops_redundant_format_index(): void {
+		// Nothing missing: both `format` and `format_year` exist on each table.
+		$this->install_wpdb_mock( array() );
+
+		$db = new WP_Movie_Collector_DB();
+		$db->update_tables();
+
+		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
+			$alters = $this->format_index_alters_for( $table );
+			$this->assertCount( 1, $alters, "{$table} should issue one format-index ALTER." );
+			$this->assertStringContainsString( 'DROP INDEX format', $alters[0] );
+			$this->assertStringNotContainsString( 'ADD INDEX format_year', $alters[0] );
+		}
+	}
+
+	/**
+	 * Test the common upgrade path (composite missing, standalone present):
+	 * the ADD format_year and DROP format are batched into a single ALTER per
+	 * table, so each table rebuilds once and — because ALTER TABLE is atomic —
+	 * format-only lookups stay covered by the newly-added composite throughout.
+	 */
+	public function test_update_tables_batches_format_year_add_and_format_drop(): void {
+		// format_year missing on both tables; the standalone `format` index
+		// still exists (it is not in the missing list).
+		$this->install_wpdb_mock( array( 'format_year' ) );
+
+		$db = new WP_Movie_Collector_DB();
+		$db->update_tables();
+
+		foreach ( array( 'wp_movie_collection', 'wp_movie_box_sets' ) as $table ) {
+			$alters = $this->format_index_alters_for( $table );
+			$this->assertCount( 1, $alters, "{$table} should batch format-index work into one ALTER." );
+			$this->assertStringContainsString( 'ADD INDEX format_year (format, release_year)', $alters[0] );
+			$this->assertStringContainsString( 'DROP INDEX format', $alters[0] );
+		}
+	}
+
+	// ------------------------------------------------------------------
+	// Failure logging
+	// ------------------------------------------------------------------
+
+	/**
+	 * Test that a failed migration query is logged (under WP_DEBUG) and the
+	 * failure result is returned rather than silently swallowed.
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	public function test_run_schema_query_logs_failure_when_debug_enabled(): void {
+		// Runs in a separate process so defining WP_DEBUG cannot leak into and
+		// reorder the rest of the suite.
+		if ( ! defined( 'WP_DEBUG' ) ) {
+			define( 'WP_DEBUG', true );
+		}
+		if ( ! WP_DEBUG ) {
+			$this->markTestSkipped( 'WP_DEBUG is disabled in this environment.' );
+		}
+
+		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+
+		$wpdb         = $this->createMock( Stub_Wpdb::class );
+		$wpdb->prefix = 'wp_';
+		$wpdb->method( 'query' )->willReturn( false );
+		$wpdb->last_error = 'boom: simulated ALTER failure';
+		$GLOBALS['wpdb']  = $wpdb;
+
+		$db = new WP_Movie_Collector_DB();
+
+		// Redirect error_log output to a temp file so we can assert on it.
+		$logfile  = tempnam( sys_get_temp_dir(), 'wpmc-schema-log-' );
+		$previous = ini_set( 'error_log', $logfile );
+
+		$method = new \ReflectionMethod( WP_Movie_Collector_DB::class, 'run_schema_query' );
+		$method->setAccessible( true );
+		$result = $method->invoke( $db, 'ALTER TABLE `wp_movie_collection` ADD INDEX x (x)' );
+
+		if ( false !== $previous ) {
+			ini_set( 'error_log', $previous );
+		}
+
+		$logged = (string) file_get_contents( $logfile );
+		@unlink( $logfile );
+
+		$this->assertFalse( $result, 'run_schema_query should return the failing query result.' );
+		$this->assertStringContainsString( 'Schema migration failed', $logged );
+		$this->assertStringContainsString( 'boom: simulated ALTER failure', $logged );
 	}
 }

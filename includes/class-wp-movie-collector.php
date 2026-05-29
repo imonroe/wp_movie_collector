@@ -29,7 +29,6 @@ class WP_Movie_Collector {
 	public function __construct() {
 		$this->load_dependencies();
 		$this->set_locale();
-		$this->maybe_update();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 		$this->define_post_types();
@@ -38,12 +37,22 @@ class WP_Movie_Collector {
 	}
 
 	/**
-	 * Check and perform plugin updates if needed.
+	 * Check and perform plugin schema migrations if needed.
+	 *
+	 * Hooked on admin_init (not run from the constructor) so it only fires in
+	 * the admin context, after authentication is established, and only for a
+	 * user who can manage options. Schema migrations (ALTER TABLE) are slow
+	 * and must never run on front-end or anonymous requests — including
+	 * unauthenticated admin-ajax.php / admin-post.php, where is_admin() alone
+	 * is true.
 	 *
 	 * @since    1.0.0
-	 * @access   private
 	 */
-	private function maybe_update() {
+	public function maybe_update() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		$current_version = get_option( 'wp_movie_collector_version', '0.0.0' );
 
 		if ( version_compare( $current_version, WP_MOVIE_COLLECTOR_VERSION, '<' ) ) {
@@ -126,6 +135,10 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'current_screen', $plugin_admin, 'add_help_tabs' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
 
+		// Run schema migrations only in the admin context, after auth, for an
+		// authorized user (see maybe_update()).
+		$this->loader->add_action( 'admin_init', $this, 'maybe_update' );
+
 		// Process form submissions
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'process_add_movie_form' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'process_edit_movie_form' );
@@ -149,7 +162,8 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_barcode_lookup', $plugin_admin, 'ajax_barcode_lookup' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_movie_search', $plugin_admin, 'ajax_movie_search' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_get_movie_details', $plugin_admin, 'ajax_get_movie_details' );
-		$this->loader->add_action( 'wp_ajax_wp_movie_collector_clear_api_cache', $plugin_admin, 'ajax_clear_api_cache' );
+		$this->loader->add_action( 'admin_post_wp_movie_collector_clear_api_cache', $plugin_admin, 'handle_clear_api_cache' );
+		$this->loader->add_action( 'admin_post_wp_movie_collector_repair_db', $plugin_admin, 'handle_repair_database' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_search_available_movies', $plugin_admin, 'ajax_search_available_movies' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_check_duplicate_movie', $plugin_admin, 'ajax_check_duplicate_movie' );
 		$this->loader->add_action( 'wp_ajax_wp_movie_collector_check_duplicate_box_set', $plugin_admin, 'ajax_check_duplicate_box_set' );
@@ -171,10 +185,6 @@ class WP_Movie_Collector {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_action( 'init', $plugin_public, 'register_shortcodes' );
-
-		// Register AJAX handlers for public-facing functionality
-		$this->loader->add_action( 'wp_ajax_wp_movie_collector_load_more', $plugin_public, 'ajax_load_more' );
-		$this->loader->add_action( 'wp_ajax_nopriv_wp_movie_collector_load_more', $plugin_public, 'ajax_load_more' );
 	}
 
 	/**

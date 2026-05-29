@@ -26,14 +26,13 @@ class WP_Movie_Collector_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		$css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css';
-		if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
-			$built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/admin/css/wp-movie-collector-admin.min.css';
-			if ( file_exists( $built_path ) ) {
-				$css_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/css/wp-movie-collector-admin.min.css';
-			}
-		}
-		wp_enqueue_style( 'wp-movie-collector-admin', $css_url, array(), WP_MOVIE_COLLECTOR_VERSION, 'all' );
+		wp_enqueue_style(
+			'wp-movie-collector-admin',
+			WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/css/wp-movie-collector-admin.css',
+			array(),
+			WP_MOVIE_COLLECTOR_VERSION,
+			'all'
+		);
 	}
 
 	/**
@@ -49,14 +48,13 @@ class WP_Movie_Collector_Admin {
 		wp_enqueue_script( 'jquery-ui-sortable' );
 
 		// Custom admin script
-		$js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js';
-		if ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) {
-			$built_path = WP_MOVIE_COLLECTOR_PLUGIN_DIR . 'dist/admin/js/wp-movie-collector-admin.min.js';
-			if ( file_exists( $built_path ) ) {
-				$js_url = WP_MOVIE_COLLECTOR_PLUGIN_URL . 'dist/admin/js/wp-movie-collector-admin.min.js';
-			}
-		}
-		wp_enqueue_script( 'wp-movie-collector-admin', $js_url, array( 'jquery', 'jquery-ui-sortable' ), WP_MOVIE_COLLECTOR_VERSION, false );
+		wp_enqueue_script(
+			'wp-movie-collector-admin',
+			WP_MOVIE_COLLECTOR_PLUGIN_URL . 'admin/js/wp-movie-collector-admin.js',
+			array( 'jquery', 'jquery-ui-sortable' ),
+			WP_MOVIE_COLLECTOR_VERSION,
+			false
+		);
 
 		// Localize the script with new data
 		$localize_data = array(
@@ -74,8 +72,17 @@ class WP_Movie_Collector_Admin {
 		);
 		wp_localize_script( 'wp-movie-collector-admin', 'wp_movie_collector_admin', $localize_data );
 
-		// Add shared escHtml helper for safe DOM text insertion
-		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s));return d.innerHTML;}', 'before' );
+		// Add shared escHtml helper for safe HTML insertion (text and attribute
+		// contexts). Encodes &, <, >, " and ' so a value concatenated into a
+		// quoted attribute can't break out. Mirrors the unit-tested
+		// implementation in src/utils/dom-safety.js (kept in sync by the
+		// dom-safety jest test).
+		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorEscHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\'/g,"&#039;");}', 'before' );
+
+		// Add shared image-preview helper that builds the <img> via DOM APIs
+		// and only accepts http(s) URLs, so untrusted cover_image_url values
+		// (from external APIs / imports) can't inject markup or javascript: URIs.
+		wp_add_inline_script( 'wp-movie-collector-admin', 'function wpMovieCollectorSetImagePreview($preview,url){$preview.empty();if(typeof url==="string"&&/^https?:\/\//i.test(url)){jQuery("<img>",{alt:""}).attr("src",url).css({"max-width":"150px","max-height":"150px"}).appendTo($preview);}}', 'before' );
 	}
 
 	/**
@@ -392,9 +399,9 @@ class WP_Movie_Collector_Admin {
 		);
 
 		add_settings_field(
-			'wp_movie_collector_upc_api_key',
+			'wp_movie_collector_barcode_api_key',
 			__( 'UPC Database API Key', 'wp-movie-collector' ),
-			array( $this, 'upc_api_key_callback' ),
+			array( $this, 'barcode_api_key_callback' ),
 			'wp_movie_collector_settings',
 			'wp_movie_collector_api_settings'
 		);
@@ -531,6 +538,12 @@ class WP_Movie_Collector_Admin {
 			exit;
 		}
 
+		// Ensure the movie payload exists and has the expected structure.
+		if ( ! isset( $_POST['movie'] ) || ! is_array( $_POST['movie'] ) ) {
+			wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+			exit;
+		}
+
 		// Validate and sanitize movie data
 		$movie = $this->validate_and_sanitize_movie_data( wp_unslash( $_POST['movie'] ), $movie_id );
 
@@ -639,6 +652,39 @@ class WP_Movie_Collector_Admin {
 	 * @return   array                 The validated and sanitized movie data.
 	 */
 	private function validate_and_sanitize_movie_data( $movie, $movie_id = 0 ) {
+		$result = $this->validate_movie_fields( $movie, $movie_id );
+
+		// Validation failure here redirects back to the form with the errors
+		// stored in a transient (the form-handler contract). Reusable callers
+		// should use validate_movie_fields() directly instead.
+		if ( ! empty( $result['errors'] ) ) {
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $result['errors'], 60 * 5 );
+			if ( $movie_id ) {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
+			} else {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-movie' ) ) );
+			}
+			exit;
+		}
+
+		return $result['data'];
+	}
+
+	/**
+	 * Validate and sanitize movie fields without redirecting.
+	 *
+	 * Returns the sanitized data plus any validation errors so callers can
+	 * decide how to handle failure (redirect, roll back, skip a row, etc.).
+	 * This makes the routine reusable from non-redirecting contexts such as
+	 * the CSV/JSON importer.
+	 *
+	 * @since 1.3.0
+	 * @param array $movie    Raw movie data.
+	 * @param int   $movie_id Optional movie ID for edit context (excludes the
+	 *                        row from its own duplicate check).
+	 * @return array{data: array, errors: array}
+	 */
+	private function validate_movie_fields( $movie, $movie_id = 0 ) {
 		$sanitized = array();
 		$errors    = array();
 
@@ -799,19 +845,10 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message.
-		if ( ! empty( $errors ) ) {
-			// Store errors in transient.
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
-			if ( $movie_id ) {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . $movie_id ) ) );
-			} else {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-movie' ) ) );
-			}
-			exit;
-		}
-
-		return $sanitized;
+		return array(
+			'data'   => $sanitized,
+			'errors' => $errors,
+		);
 	}
 
 	/**
@@ -823,6 +860,32 @@ class WP_Movie_Collector_Admin {
 	 * @return   array                   The validated and sanitized box set data.
 	 */
 	private function validate_and_sanitize_box_set_data( $box_set, $box_set_id = 0 ) {
+		$result = $this->validate_box_set_fields( $box_set, $box_set_id );
+
+		// Validation failure here redirects back to the form (the form-handler
+		// contract). Reusable callers should use validate_box_set_fields().
+		if ( ! empty( $result['errors'] ) ) {
+			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $result['errors'], 60 * 5 );
+			if ( $box_set_id ) {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
+			} else {
+				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-box-set' ) ) );
+			}
+			exit;
+		}
+
+		return $result['data'];
+	}
+
+	/**
+	 * Validate and sanitize box-set fields without redirecting.
+	 *
+	 * @since 1.3.0
+	 * @param array $box_set    Raw box-set data.
+	 * @param int   $box_set_id Optional box-set ID for edit context.
+	 * @return array{data: array, errors: array}
+	 */
+	private function validate_box_set_fields( $box_set, $box_set_id = 0 ) {
 		$sanitized = array();
 		$errors    = array();
 
@@ -959,18 +1022,10 @@ class WP_Movie_Collector_Admin {
 			}
 		}
 
-		// If there are validation errors, redirect back with error message.
-		if ( ! empty( $errors ) ) {
-			set_transient( 'wp_movie_collector_form_errors_' . get_current_user_id(), $errors, 60 * 5 );
-			if ( $box_set_id ) {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . $box_set_id ) ) );
-			} else {
-				wp_safe_redirect( add_query_arg( 'error', 'validation', admin_url( 'admin.php?page=wp-movie-collector-add-box-set' ) ) );
-			}
-			exit;
-		}
-
-		return $sanitized;
+		return array(
+			'data'   => $sanitized,
+			'errors' => $errors,
+		);
 	}
 
 	/**
@@ -979,7 +1034,7 @@ class WP_Movie_Collector_Admin {
 	 * @since    1.0.0
 	 */
 	public function settings_section_callback() {
-		echo '<p>' . __( 'Enter your API keys for movie data services.', 'wp-movie-collector' ) . '</p>';
+		echo '<p>' . esc_html__( 'Enter your API keys for movie data services.', 'wp-movie-collector' ) . '</p>';
 	}
 
 	/**
@@ -989,8 +1044,11 @@ class WP_Movie_Collector_Admin {
 	 */
 	public function tmdb_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_tmdb_api_key' );
-		echo '<input type="text" name="wp_movie_collector_tmdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . __( 'Get your API key from <a href="https://www.themoviedb.org/settings/api" target="_blank">TMDb</a>.', 'wp-movie-collector' ) . '</p>';
+		echo '<input type="password" autocomplete="off" id="wp_movie_collector_tmdb_api_key" name="wp_movie_collector_tmdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
+		$link = '<a href="' . esc_url( 'https://www.themoviedb.org/settings/api' ) . '" target="_blank" rel="noopener noreferrer">TMDb</a>';
+		/* translators: %s: link to the provider's API key page. */
+		$text = sprintf( __( 'Get your API key from %s.', 'wp-movie-collector' ), $link );
+		echo '<p class="description">' . wp_kses( $text, array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**
@@ -1000,8 +1058,11 @@ class WP_Movie_Collector_Admin {
 	 */
 	public function omdb_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_omdb_api_key' );
-		echo '<input type="text" name="wp_movie_collector_omdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . __( 'Get your API key from <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">OMDb</a>.', 'wp-movie-collector' ) . '</p>';
+		echo '<input type="password" autocomplete="off" id="wp_movie_collector_omdb_api_key" name="wp_movie_collector_omdb_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
+		$link = '<a href="' . esc_url( 'https://www.omdbapi.com/apikey.aspx' ) . '" target="_blank" rel="noopener noreferrer">OMDb</a>';
+		/* translators: %s: link to the provider's API key page. */
+		$text = sprintf( __( 'Get your API key from %s.', 'wp-movie-collector' ), $link );
+		echo '<p class="description">' . wp_kses( $text, array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**
@@ -1009,10 +1070,13 @@ class WP_Movie_Collector_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function upc_api_key_callback() {
+	public function barcode_api_key_callback() {
 		$api_key = get_option( 'wp_movie_collector_barcode_api_key' );
-		echo '<input type="text" name="wp_movie_collector_barcode_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
-		echo '<p class="description">' . __( 'Get your API key from <a href="https://barcodelookup.com/api" target="_blank">BarcodeLookup</a>.', 'wp-movie-collector' ) . '</p>';
+		echo '<input type="password" autocomplete="off" id="wp_movie_collector_barcode_api_key" name="wp_movie_collector_barcode_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text" />';
+		$link = '<a href="' . esc_url( 'https://barcodelookup.com/api' ) . '" target="_blank" rel="noopener noreferrer">BarcodeLookup</a>';
+		/* translators: %s: link to the provider's API key page. */
+		$text = sprintf( __( 'Get your API key from %s.', 'wp-movie-collector' ), $link );
+		echo '<p class="description">' . wp_kses( $text, array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) ) ) . '</p>';
 	}
 
 	/**
@@ -1291,14 +1355,31 @@ class WP_Movie_Collector_Admin {
 		$relationship_table = $db->get_relationships_table();
 		$success            = true;
 
+		// Build the set of movie IDs that are actually members of this box set,
+		// so a bogus or partially-bogus movie_order can't report success while
+		// silently reordering nothing ($wpdb->update returns 0 — not false — for
+		// rows that don't exist).
+		$member_ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare( "SELECT movie_id FROM $relationship_table WHERE box_set_id = %d", $box_set_id )
+			)
+		);
+
 		// Begin transaction
 		$wpdb->query( 'START TRANSACTION' );
 
 		try {
-			// Update the display order for each movie
+			// Update the display order for each movie.
 			foreach ( $_POST['movie_order'] as $order => $movie_id ) {
 				$movie_id = intval( $movie_id );
 				$order    = intval( $order ) + 1; // Make order 1-based instead of 0-based
+
+				// Reject IDs that aren't members of this box set.
+				if ( ! in_array( $movie_id, $member_ids, true ) ) {
+					$success = false;
+					break;
+				}
 
 				$result = $wpdb->update(
 					$relationship_table,
@@ -1511,8 +1592,8 @@ class WP_Movie_Collector_Admin {
 			wp_safe_redirect(
 				add_query_arg(
 					array(
-						'error'   => 'import_failed',
-						'message' => urlencode( $result->get_error_message() ),
+						'error'        => 'import_failed',
+						'error_detail' => rawurlencode( $result->get_error_message() ),
 					),
 					admin_url( 'admin.php?page=wp-movie-collector-import-export' )
 				)
@@ -1741,12 +1822,25 @@ class WP_Movie_Collector_Admin {
 
 		// Write header row if there's data
 		if ( ! empty( $data ) ) {
-			$headers = array_keys( $data[0] );
+			// For an "all" export, $data merges movie and box-set rows from two
+			// tables with different column sets. Build the union of all keys
+			// (not just the first row's) and write every row in that fixed
+			// order, filling missing keys with '', so box-set rows aren't
+			// written positionally under movie headers.
+			$headers = array();
+			foreach ( $data as $row ) {
+				$headers += $row;
+			}
+			$headers = array_keys( $headers );
 			fputcsv( $output, $headers );
 
-			// Write data rows
+			// Write data rows in the unified column order.
 			foreach ( $data as $row ) {
-				fputcsv( $output, $row );
+				$ordered = array();
+				foreach ( $headers as $key ) {
+					$ordered[] = isset( $row[ $key ] ) ? $row[ $key ] : '';
+				}
+				fputcsv( $output, $ordered );
 			}
 		} else {
 			// Just write headers for an empty file
@@ -1823,8 +1917,6 @@ class WP_Movie_Collector_Admin {
 	 * @return   int|WP_Error              Count of imported items or error.
 	 */
 	private function import_from_csv( $file_path, $import_type ) {
-		$db = new WP_Movie_Collector_DB();
-
 		// Open the file
 		$handle = fopen( $file_path, 'r' );
 		if ( ! $handle ) {
@@ -1841,16 +1933,9 @@ class WP_Movie_Collector_Admin {
 		// Clean empty cells from headers
 		$headers = array_map( 'trim', $headers );
 
-		// If replacing, truncate tables first
-		if ( $import_type === 'replace' ) {
-			global $wpdb;
-			$wpdb->query( "TRUNCATE TABLE {$db->get_relationships_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_movies_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_box_sets_table()}" );
-		}
-
-		// Process rows
-		$count    = 0;
+		// Stage every row before touching the database so that a parse error
+		// or a failed insert in replace mode can't destroy the existing
+		// collection (see persist_import()).
 		$movies   = array();
 		$box_sets = array();
 
@@ -1860,54 +1945,265 @@ class WP_Movie_Collector_Admin {
 				continue;
 			}
 
-			// Create an associative array from the row
+			// Create an associative array from the row. Skip blank header
+			// columns (e.g. a trailing delimiter / empty column) so they don't
+			// become an empty '' key that would fail $wpdb->insert() with an
+			// "Unknown column ''" error.
 			$item = array();
 			foreach ( $headers as $i => $header ) {
-				if ( isset( $row[ $i ] ) ) {
-					$item[ $header ] = $row[ $i ];
-				} else {
-					$item[ $header ] = '';
+				if ( '' === $header ) {
+					continue;
 				}
+				$item[ $header ] = isset( $row[ $i ] ) ? $row[ $i ] : '';
 			}
 
 			// Set timestamps
 			$item['created_at'] = current_time( 'mysql' );
 			$item['updated_at'] = current_time( 'mysql' );
 
-			// Determine if this is a movie or box set
-			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			// Determine if this is a movie or box set, then drop the
+			// non-column id/type fields.
+			$type      = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$source_id = isset( $item['id'] ) ? (int) $item['id'] : 0;
+			unset( $item['id'], $item['type'] );
 
-			// Remove ID and type fields if present
-			unset( $item['id'] );
-			unset( $item['type'] );
-
-			// Import the item (skip per-row cache invalidation during bulk import)
-			if ( $type === 'box_set' ) {
-				// Store box sets to process after movies
-				$box_sets[] = $item;
+			if ( 'box_set' === $type ) {
+				// Remember the exported id so movie box_set_id references can be
+				// remapped to the ids assigned on insert (see persist_import()).
+				$item['__source_id'] = $source_id;
+				$box_sets[]          = $item;
 			} else {
-				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item, true );
-				if ( $movie_id ) {
-					++$count;
-					$movies[ $item['title'] ] = $movie_id;
+				$movies[] = $item;
+			}
+		}
+
+		fclose( $handle );
+
+		return $this->persist_import( $movies, $box_sets, $import_type );
+	}
+
+	/**
+	 * Persist staged import rows, optionally replacing the existing collection.
+	 *
+	 * In replace mode the destructive delete and the inserts run inside a
+	 * single transaction using DELETE (not TRUNCATE, which implicitly commits
+	 * and cannot be rolled back); if any row fails to insert the whole import
+	 * is rolled back so the user's collection is never left partially wiped.
+	 *
+	 * @since 1.3.0
+	 * @param array  $movies      Staged movie rows.
+	 * @param array  $box_sets    Staged box-set rows.
+	 * @param string $import_type 'append' or 'replace'.
+	 * @return int|WP_Error Count of imported items, or WP_Error on failure.
+	 */
+	private function persist_import( array $movies, array $box_sets, $import_type ) {
+		global $wpdb;
+		$db      = new WP_Movie_Collector_DB();
+		$replace = ( 'replace' === $import_type );
+
+		if ( $replace ) {
+			// Never wipe the collection for an import that has nothing to insert
+			// (e.g. an empty file, or a payload with no valid rows). Without this
+			// guard replace mode would delete everything and commit an empty
+			// import.
+			if ( empty( $movies ) && empty( $box_sets ) ) {
+				return new WP_Error(
+					'import_empty',
+					__( 'The import file contained no valid rows; the existing collection was left unchanged.', 'wp-movie-collector' )
+				);
+			}
+
+			// Replace mode deletes the whole collection before re-inserting. That
+			// is only safe if a failed import can be rolled back, which requires a
+			// transactional engine — bail before deleting anything otherwise.
+			if ( ! $this->tables_support_transactions( $db ) ) {
+				return new WP_Error(
+					'import_no_transaction',
+					__( 'Replace-mode import requires transactional (InnoDB) database tables so a failed import can be rolled back. The plugin tables use a non-transactional engine; aborting to avoid data loss.', 'wp-movie-collector' )
+				);
+			}
+
+			if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+				return new WP_Error(
+					'import_failed',
+					__( 'Could not start a database transaction for the import; no changes were made.', 'wp-movie-collector' )
+				);
+			}
+			// Each DELETE must succeed; a failed clear (permissions, missing
+			// table) would otherwise leave old rows in place while new rows are
+			// appended and later committed. Roll back and bail on any failure.
+			$delete_tables = array(
+				$db->get_relationships_table(),
+				$db->get_movies_table(),
+				$db->get_box_sets_table(),
+			);
+			foreach ( $delete_tables as $delete_table ) {
+				if ( false === $wpdb->query( "DELETE FROM {$delete_table}" ) ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error(
+						'import_failed',
+						__( 'Could not clear the existing collection for the import; no changes were made.', 'wp-movie-collector' )
+					);
 				}
 			}
 		}
 
-		// Process box sets after movies (to handle relationships)
+		$count  = 0;
+		$failed = 0;
+
+		// Insert box sets first, building a map from each row's exported id to
+		// the id assigned on insert. Movie rows carry a denormalized box_set_id
+		// that must be translated to the new id: in replace mode the old ids were
+		// just deleted, and even in append mode AUTO_INCREMENT assigns fresh ids.
+		// Pass true to skip per-row cache invalidation during the bulk import.
+		//
+		// Each staged row is run through the shared field validator/sanitizer
+		// (issue #65) so imported CSV/JSON content is sanitized (no stored XSS)
+		// and integrity-checked (year range, format/region whitelist) exactly
+		// like the add/edit forms. The validator's output contains only real
+		// table columns, which also drops any movie-only fields a shared CSV
+		// header carries into a box-set row (avoiding "Unknown column" on
+		// insert). allow_duplicate skips the add-only duplicate check, which
+		// doesn't apply to a bulk import. Rows that fail validation are skipped
+		// (and counted as failures, which rolls back a replace-mode import).
+		$id_map = array();
 		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set, true );
-			if ( $box_set_id ) {
+			$source_id = isset( $box_set['__source_id'] ) ? (int) $box_set['__source_id'] : 0;
+			unset( $box_set['__source_id'] );
+
+			$box_set['allow_duplicate'] = true;
+			$validated                  = $this->validate_box_set_fields( $box_set );
+			if ( ! empty( $validated['errors'] ) ) {
+				++$failed;
+				continue;
+			}
+
+			$new_id = $db->insert_box_set( $validated['data'], true );
+			if ( $new_id ) {
 				++$count;
+				if ( $source_id > 0 ) {
+					$id_map[ $source_id ] = (int) $new_id;
+				}
+			} else {
+				++$failed;
+			}
+		}
+
+		foreach ( $movies as $movie ) {
+			// Resolve box-set membership separately from content validation: the
+			// movie validator rejects a box_set_id that doesn't exist, but on
+			// import the referenced set's id is remapped (replace mode just
+			// deleted the old ids). Validate the content without box_set_id, then
+			// re-apply the remapped id afterward.
+			$old = ! empty( $movie['box_set_id'] ) ? (int) $movie['box_set_id'] : 0;
+			unset( $movie['box_set_id'] );
+
+			$movie['allow_duplicate'] = true;
+			$validated                = $this->validate_movie_fields( $movie );
+			if ( ! empty( $validated['errors'] ) ) {
+				++$failed;
+				continue;
+			}
+			$row = $validated['data'];
+
+			// The relationships table (which most lookups use) is only repopulated
+			// for box sets imported alongside this movie; replace mode cleared it.
+			$linked_box_set_id = 0;
+			if ( $old ) {
+				if ( isset( $id_map[ $old ] ) ) {
+					$row['box_set_id'] = $id_map[ $old ];
+					$linked_box_set_id = $id_map[ $old ];
+				} elseif ( ! $replace ) {
+					// Append mode: keep the original reference (the set may exist).
+					$row['box_set_id'] = $old;
+				}
+				// Replace mode + unmapped: leave box_set_id unset; the old ids were wiped.
+			}
+
+			$new_movie_id = $db->insert_movie( $row, true );
+			if ( $new_movie_id ) {
+				++$count;
+				// Mirror the membership into the relationships table so box sets
+				// list their movies after import (replace mode wiped it).
+				if ( $linked_box_set_id && false === $db->add_movie_to_box_set( (int) $new_movie_id, $linked_box_set_id ) ) {
+					++$failed;
+				}
+			} else {
+				++$failed;
+			}
+		}
+
+		if ( $replace ) {
+			if ( $failed > 0 ) {
+				// Don't leave the collection destroyed by a partial import.
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_Error(
+					'import_failed',
+					sprintf(
+						/* translators: %d: number of rows that failed to import */
+						_n(
+							'%d row failed to import; no changes were made.',
+							'%d rows failed to import; no changes were made.',
+							$failed,
+							'wp-movie-collector'
+						),
+						$failed
+					)
+				);
+			}
+			if ( false === $wpdb->query( 'COMMIT' ) ) {
+				// A failed COMMIT means the import isn't durable; roll back and
+				// report failure rather than misreporting success.
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_Error(
+					'import_failed',
+					__( 'Could not commit the import to the database; no changes were made.', 'wp-movie-collector' )
+				);
 			}
 		}
 
 		// Invalidate stats cache once after all imports complete.
 		$db->invalidate_stats_cache();
 
-		fclose( $handle );
 		return $count;
+	}
+
+	/**
+	 * Whether the plugin's tables use a transactional storage engine.
+	 *
+	 * Replace-mode import relies on transactions/ROLLBACK to avoid wiping the
+	 * collection when an import fails. On a non-transactional engine (e.g.
+	 * MyISAM) ROLLBACK is a silent no-op, so we must detect that and refuse to
+	 * delete. An engine that can't be determined (null) is treated as
+	 * acceptable so imports aren't blocked when the lookup is unavailable.
+	 *
+	 * @since 1.3.0
+	 * @param WP_Movie_Collector_DB $db Database helper.
+	 * @return bool True if all plugin tables are transactional (or unknown).
+	 */
+	private function tables_support_transactions( $db ) {
+		global $wpdb;
+
+		$tables = array(
+			$db->get_movies_table(),
+			$db->get_box_sets_table(),
+			$db->get_relationships_table(),
+		);
+
+		foreach ( $tables as $table ) {
+			$engine = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s',
+					$table
+				)
+			);
+
+			if ( null !== $engine && 'innodb' !== strtolower( (string) $engine ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -1919,11 +2215,11 @@ class WP_Movie_Collector_Admin {
 	 * @return   int|WP_Error              Count of imported items or error.
 	 */
 	private function import_from_json( $file_path, $import_type ) {
-		$db = new WP_Movie_Collector_DB();
-
-		// Read the file content
+		// Read the file content. Use a strict false check so a valid-but-falsy
+		// payload (e.g. a file containing just "0") isn't treated as a read
+		// failure — JSON validation below handles the contents.
 		$json_data = file_get_contents( $file_path );
-		if ( ! $json_data ) {
+		if ( false === $json_data ) {
 			return new WP_Error( 'file_error', __( 'Could not read file for import.', 'wp-movie-collector' ) );
 		}
 
@@ -1933,22 +2229,21 @@ class WP_Movie_Collector_Admin {
 			return new WP_Error( 'json_error', __( 'Invalid JSON format.', 'wp-movie-collector' ) );
 		}
 
-		// If replacing, truncate tables first
-		if ( $import_type === 'replace' ) {
-			global $wpdb;
-			$wpdb->query( "TRUNCATE TABLE {$db->get_relationships_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_movies_table()}" );
-			$wpdb->query( "TRUNCATE TABLE {$db->get_box_sets_table()}" );
+		// A syntactically valid JSON scalar (e.g. "hello", 42, null) or object
+		// (e.g. {"items":[]}) passes the error check above; require a JSON list
+		// of items here, before any destructive operation, so a malformed file
+		// can't wipe the collection in replace mode.
+		if ( ! is_array( $data ) || ! array_is_list( $data ) ) {
+			return new WP_Error( 'json_error', __( 'Invalid JSON format: expected an array of items.', 'wp-movie-collector' ) );
 		}
 
-		// Process items
-		$count    = 0;
+		// Stage every row before touching the database (see persist_import()).
 		$movies   = array();
 		$box_sets = array();
 
 		foreach ( $data as $item ) {
-			// Skip empty items
-			if ( empty( $item['title'] ) ) {
+			// Skip empty or malformed items
+			if ( ! is_array( $item ) || empty( $item['title'] ) ) {
 				continue;
 			}
 
@@ -1956,39 +2251,23 @@ class WP_Movie_Collector_Admin {
 			$item['created_at'] = current_time( 'mysql' );
 			$item['updated_at'] = current_time( 'mysql' );
 
-			// Determine if this is a movie or box set
-			$type = isset( $item['type'] ) ? $item['type'] : 'movie';
+			// Determine if this is a movie or box set, then drop the
+			// non-column id/type fields.
+			$type      = isset( $item['type'] ) ? $item['type'] : 'movie';
+			$source_id = isset( $item['id'] ) ? (int) $item['id'] : 0;
+			unset( $item['id'], $item['type'] );
 
-			// Remove ID and type fields if present
-			unset( $item['id'] );
-			unset( $item['type'] );
-
-			// Import the item (skip per-row cache invalidation during bulk import)
-			if ( $type === 'box_set' ) {
-				// Store box sets to process after movies
-				$box_sets[] = $item;
+			if ( 'box_set' === $type ) {
+				// Remember the exported id so movie box_set_id references can be
+				// remapped to the ids assigned on insert (see persist_import()).
+				$item['__source_id'] = $source_id;
+				$box_sets[]          = $item;
 			} else {
-				// Assume it's a movie
-				$movie_id = $db->insert_movie( $item, true );
-				if ( $movie_id ) {
-					++$count;
-					$movies[ $item['title'] ] = $movie_id;
-				}
+				$movies[] = $item;
 			}
 		}
 
-		// Process box sets after movies (to handle relationships)
-		foreach ( $box_sets as $box_set ) {
-			$box_set_id = $db->insert_box_set( $box_set, true );
-			if ( $box_set_id ) {
-				++$count;
-			}
-		}
-
-		// Invalidate stats cache once after all imports complete.
-		$db->invalidate_stats_cache();
-
-		return $count;
+		return $this->persist_import( $movies, $box_sets, $import_type );
 	}
 
 	/**
@@ -2025,32 +2304,28 @@ class WP_Movie_Collector_Admin {
 		$movie   = $db->get_movie_by_barcode( $barcode );
 		$box_set = $db->get_box_set_by_barcode( $barcode );
 
-		// Prioritize the matching context, but return either if found.
+		// Enrich whichever records exist so the right one can be returned.
 		if ( $box_set ) {
-			$box_set['existing_in_db']  = true;
-			$box_set['existing_type']   = 'box_set';
-			$box_set['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
-			if ( 'box_set' === $context ) {
-				wp_send_json_success( $box_set );
-			}
+			$box_set['existing_in_db'] = true;
+			$box_set['existing_type']  = 'box_set';
+			$box_set['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-box-set&id=' . intval( $box_set['id'] ) );
 		}
-
 		if ( $movie ) {
-			$movie['existing_in_db']  = true;
-			$movie['existing_type']   = 'movie';
-			$movie['edit_url']        = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
-			if ( 'movie' === $context ) {
-				wp_send_json_success( $movie );
-			}
+			$movie['existing_in_db'] = true;
+			$movie['existing_type']  = 'movie';
+			$movie['edit_url']       = admin_url( 'admin.php?page=wp-movie-collector-edit-movie&id=' . intval( $movie['id'] ) );
 		}
 
-		// Return cross-type match if the barcode exists in the other table.
-		if ( $movie ) {
-			wp_send_json_success( $movie );
-		}
+		// Prefer the record matching the requested context, then fall back to a
+		// match in the other table, then fall through to the API lookup.
+		$context_match    = ( 'box_set' === $context ) ? $box_set : $movie;
+		$cross_type_match = ( 'box_set' === $context ) ? $movie : $box_set;
 
-		if ( $box_set ) {
-			wp_send_json_success( $box_set );
+		if ( $context_match ) {
+			wp_send_json_success( $context_match );
+		}
+		if ( $cross_type_match ) {
+			wp_send_json_success( $cross_type_match );
 		}
 
 		// If not in our database, try to look it up via API.
@@ -2232,11 +2507,14 @@ class WP_Movie_Collector_Admin {
 	}
 
 	/**
-	 * AJAX handler for clearing API cache.
+	 * admin-post handler for clearing the API cache.
+	 *
+	 * Handles the Clear API Cache form (admin-post.php) and redirects back
+	 * to the settings screen with a cache_cleared / cache_error notice.
 	 *
 	 * @since    1.0.0
 	 */
-	public function ajax_clear_api_cache() {
+	public function handle_clear_api_cache() {
 		$redirect_url = admin_url( 'admin.php?page=wp-movie-collector-settings' );
 
 		if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_clear_cache' ) ) {
@@ -2252,6 +2530,66 @@ class WP_Movie_Collector_Admin {
 		WP_Movie_Collector_API::clear_api_cache();
 
 		wp_safe_redirect( add_query_arg( 'cache_cleared', '1', $redirect_url ) );
+		exit;
+	}
+
+	/**
+	 * admin-post handler for repairing the database tables.
+	 *
+	 * Recreates any missing tables and applies pending schema updates, then
+	 * redirects back to the settings screen with a db_repaired /
+	 * db_repair_error notice. Runs as a POST action (not a GET link) so the
+	 * state change cannot be re-triggered by prefetchers or history.
+	 *
+	 * @since    1.0.0
+	 */
+	public function handle_repair_database() {
+		$redirect_url = admin_url( 'admin.php?page=wp-movie-collector-settings' );
+
+		if ( ! isset( $_POST['wp_movie_collector_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['wp_movie_collector_nonce'] ), 'wp_movie_collector_repair_db' ) ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', 'nonce', $redirect_url ) );
+			exit;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', 'permission', $redirect_url ) );
+			exit;
+		}
+
+		global $wpdb;
+
+		$db = new WP_Movie_Collector_DB();
+
+		// Capture the last DB error after each step (before the SHOW TABLES
+		// checks below overwrite it). create_tables()/update_tables() run many
+		// queries and return no status, so $wpdb->last_error only reflects the
+		// final query of each — a best-effort signal of a failed CREATE/ALTER.
+		$wpdb->last_error = '';
+		$db->create_tables();
+		$create_error = $wpdb->last_error;
+
+		$wpdb->last_error = '';
+		$db->update_tables();
+		$update_error = $wpdb->last_error;
+
+		// The authoritative success signal for a "repair" is that the expected
+		// tables now exist; verify all three. Combined with the per-step error
+		// capture above, a partial failure can't be reported as success.
+		$missing_table = false;
+		foreach ( array( $db->get_movies_table(), $db->get_box_sets_table(), $db->get_relationships_table() ) as $table ) {
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+			if ( $found !== $table ) {
+				$missing_table = true;
+				break;
+			}
+		}
+
+		if ( $missing_table || '' !== $create_error || '' !== $update_error ) {
+			wp_safe_redirect( add_query_arg( 'db_repair_error', $missing_table ? 'missing_table' : 'query', $redirect_url ) );
+			exit;
+		}
+
+		wp_safe_redirect( add_query_arg( 'db_repaired', '1', $redirect_url ) );
 		exit;
 	}
 

@@ -128,7 +128,7 @@ To produce a clean distribution ZIP (production dependencies and assets only, wi
 npm run build:release
 ```
 
-This runs `bin/build-release.sh`, which installs production dependencies, builds the minified assets into `dist/`, and writes `build/wp-movie-collector-<version>.zip` (the built `dist/` assets are included in the package). The version in the filename is read from the plugin header. Files excluded from the package are listed in `.distignore`.
+This runs `bin/build-release.sh`, which installs production PHP dependencies, stages the plugin files (honoring `.distignore`), and writes `build/wp-movie-collector-<version>.zip`. The hand-written CSS/JS under `admin/` and `public/` are the canonical assets and ship as-is — there is no separate bundling/minification step. The version in the filename is read from the plugin header.
 
 Pushing a `v*` tag (or running the **Release** workflow manually) builds the same ZIP in CI and attaches it to the GitHub Release.
 

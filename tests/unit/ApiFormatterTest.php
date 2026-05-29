@@ -223,6 +223,20 @@ class ApiFormatterTest extends TestCase {
 		$this->assertArrayNotHasKey( 'studio', $result );
 	}
 
+	/**
+	 * Test that a TMDb payload missing core keys yields empty strings
+	 * rather than emitting undefined-index warnings.
+	 */
+	public function test_format_movie_data_missing_core_fields(): void {
+		$result = $this->invoke( 'format_movie_data', array( array() ) );
+
+		$this->assertSame( '', $result['title'] );
+		$this->assertSame( '', $result['description'] );
+		$this->assertSame( '', $result['release_year'] );
+		$this->assertSame( '', $result['cover_image_url'] );
+		$this->assertSame( 'TMDb', $result['api_source'] );
+	}
+
 	// ------------------------------------------------------------------
 	// format_omdb_movie_data
 	// ------------------------------------------------------------------
@@ -292,6 +306,24 @@ class ApiFormatterTest extends TestCase {
 
 		$result = $this->invoke( 'format_omdb_movie_data', array( $data ) );
 
+		$this->assertArrayNotHasKey( 'studio', $result );
+	}
+
+	/**
+	 * Test that an OMDb payload missing mapped keys yields empty strings
+	 * (and still normalizes cover_image_url) rather than warning.
+	 */
+	public function test_format_omdb_movie_data_missing_fields(): void {
+		$result = $this->invoke( 'format_omdb_movie_data', array( array() ) );
+
+		$this->assertSame( '', $result['title'] );
+		$this->assertSame( '', $result['release_year'] );
+		$this->assertSame( '', $result['director'] );
+		$this->assertSame( '', $result['actors'] );
+		$this->assertSame( '', $result['description'] );
+		$this->assertSame( '', $result['genre'] );
+		$this->assertSame( '', $result['cover_image_url'] );
+		$this->assertSame( 'OMDb', $result['api_source'] );
 		$this->assertArrayNotHasKey( 'studio', $result );
 	}
 

@@ -88,13 +88,16 @@ class WP_Movie_Collector_DB {
 	 */
 	public function update_tables() {
 		global $wpdb;
+		// All migration DDL below runs through run_schema_query() so a failed
+		// ALTER (permissions, locked table, partial prior migration) is logged
+		// rather than silently swallowed.
 
 		// Check if cover_image_id column exists in movies table
 		$movies_table  = $this->get_movies_table();
 		$column_exists = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$movies_table}` WHERE Field = %s", 'cover_image_id' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $movies_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
+			$this->run_schema_query( "ALTER TABLE `{$movies_table}` ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
 		}
 
 		// Check if cover_image_id column exists in box sets table
@@ -102,7 +105,7 @@ class WP_Movie_Collector_DB {
 		$column_exists  = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$box_sets_table}` WHERE Field = %s", 'cover_image_id' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $box_sets_table ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
+			$this->run_schema_query( "ALTER TABLE `{$box_sets_table}` ADD COLUMN cover_image_id bigint(20) NULL AFTER cover_image_url, ADD INDEX (cover_image_id)" );
 		}
 
 		// Check if display_order column exists in relationships table
@@ -110,7 +113,7 @@ class WP_Movie_Collector_DB {
 		$column_exists       = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$relationships_table}` WHERE Field = %s", 'display_order' ) );
 
 		if ( empty( $column_exists ) ) {
-			$wpdb->query( "ALTER TABLE $relationships_table ADD COLUMN display_order int(11) NOT NULL DEFAULT 0" );
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD COLUMN display_order int(11) NOT NULL DEFAULT 0" );
 		}
 
 		// Add composite index (box_set_id, display_order) if missing.
@@ -122,7 +125,26 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $relationships_table ADD INDEX box_set_order (box_set_id, display_order)" );
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD INDEX box_set_order (box_set_id, display_order)" );
+		}
+
+		// Add a UNIQUE (movie_id, box_set_id) constraint so a movie can't be
+		// added to the same box set twice. Existing duplicates would block the
+		// index, so delete them first (keeping the lowest id of each pair).
+		$unique_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM `{$relationships_table}` WHERE Key_name = %s",
+				'movie_box'
+			)
+		);
+
+		if ( empty( $unique_exists ) ) {
+			$this->run_schema_query(
+				"DELETE r1 FROM `{$relationships_table}` r1
+				INNER JOIN `{$relationships_table}` r2
+				ON r1.movie_id = r2.movie_id AND r1.box_set_id = r2.box_set_id AND r1.id > r2.id"
+			);
+			$this->run_schema_query( "ALTER TABLE `{$relationships_table}` ADD UNIQUE KEY movie_box (movie_id, box_set_id)" );
 		}
 
 		// Add composite index (title, release_year) on movies table for duplicate detection.
@@ -135,7 +157,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $movies_table ADD INDEX title_year (title, release_year)" );
+			$this->run_schema_query( "ALTER TABLE `{$movies_table}` ADD INDEX title_year (title, release_year)" );
 		}
 
 		// Add composite index (title, release_year) on box sets table for duplicate detection.
@@ -148,24 +170,55 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( empty( $index_exists ) ) {
-			$wpdb->query( "ALTER TABLE $box_sets_table ADD INDEX title_year (title, release_year)" );
+			$this->run_schema_query( "ALTER TABLE `{$box_sets_table}` ADD INDEX title_year (title, release_year)" );
 		}
 
-		// Add composite index (format, release_year) to both tables. Format
-		// and release year are the two most commonly combined filters in the
-		// public collection display; a composite index lets MySQL/MariaDB
-		// satisfy "format = X AND release_year = Y" from a single index
-		// instead of scanning one single-column index and filtering the rest.
+		// Reconcile the format indexes on both tables in a single ALTER each.
+		//
+		// We add the composite format_year (format, release_year) and drop the
+		// redundant standalone format index. Format and release year are the two
+		// most commonly combined filters in the public collection display; the
+		// composite lets MySQL/MariaDB satisfy "format = X AND release_year = Y"
+		// from one index, and its leftmost prefix also covers format-only
+		// lookups, so the standalone format index is pure write/storage
+		// overhead.
+		//
+		// Both clauses are batched into one ALTER TABLE so the common upgrade
+		// path (composite missing, standalone present) rebuilds each table once
+		// instead of twice. Because ALTER TABLE is atomic, format-only queries
+		// remain covered throughout: the standalone index is only dropped in the
+		// same statement that adds (or alongside an already-present) composite.
 		foreach ( array( $this->get_movies_table(), $this->get_box_sets_table() ) as $table ) {
-			$exists = $wpdb->get_results(
-				$wpdb->prepare(
-					"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
-					'format_year'
+			$composite_exists = ! empty(
+				$wpdb->get_results(
+					$wpdb->prepare(
+						"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+						'format_year'
+					)
+				)
+			);
+			$standalone_exists = ! empty(
+				$wpdb->get_results(
+					$wpdb->prepare(
+						"SHOW INDEX FROM `{$table}` WHERE Key_name = %s",
+						'format'
+					)
 				)
 			);
 
-			if ( empty( $exists ) ) {
-				$wpdb->query( "ALTER TABLE {$table} ADD INDEX format_year (format, release_year)" );
+			$clauses = array();
+			if ( ! $composite_exists ) {
+				$clauses[] = 'ADD INDEX format_year (format, release_year)';
+			}
+			// Dropping the standalone index is always safe here: the composite
+			// either already exists or is added by the clause above in this same
+			// (atomic) statement, so format-only lookups stay covered throughout.
+			if ( $standalone_exists ) {
+				$clauses[] = 'DROP INDEX format';
+			}
+
+			if ( ! empty( $clauses ) ) {
+				$this->run_schema_query( "ALTER TABLE `{$table}` " . implode( ', ', $clauses ) );
 			}
 		}
 
@@ -193,9 +246,36 @@ class WP_Movie_Collector_DB {
 			}
 
 			if ( ! empty( $add_clauses ) ) {
-				$wpdb->query( "ALTER TABLE {$table} " . implode( ', ', $add_clauses ) );
+				$this->run_schema_query( "ALTER TABLE `{$table}` " . implode( ', ', $add_clauses ) );
 			}
 		}
+	}
+
+	/**
+	 * Run a schema-migration query, surfacing failures instead of swallowing them.
+	 *
+	 * The migration statements run during update_tables() previously ignored
+	 * $wpdb->query() return values, so a failed ALTER (or a data-cleanup DELETE
+	 * run as part of a migration, e.g. de-duplicating rows before adding a
+	 * UNIQUE key) left the schema in an unknown state with no signal. Log a
+	 * failure (when WP_DEBUG is on) so it can be diagnosed.
+	 *
+	 * @since 1.5.0
+	 * @param string $sql The schema-migration statement to run (DDL, or the
+	 *                     DML cleanup that accompanies a DDL change).
+	 * @return bool|int The $wpdb->query() result.
+	 */
+	private function run_schema_query( $sql ) {
+		global $wpdb;
+
+		$result = $wpdb->query( $sql );
+
+		if ( false === $result && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Surface failed schema migrations.
+			error_log( sprintf( '[WP Movie Collector] Schema migration failed: %s — %s', $sql, $wpdb->last_error ) );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -231,7 +311,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY box_set_id (box_set_id),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
@@ -259,7 +338,6 @@ class WP_Movie_Collector_DB {
             PRIMARY KEY  (id),
             KEY barcode (barcode),
             KEY release_year (release_year),
-            KEY format (format),
             KEY cover_image_id (cover_image_id),
             KEY title_year (title, release_year),
             KEY format_year (format, release_year),
@@ -273,6 +351,7 @@ class WP_Movie_Collector_DB {
             box_set_id bigint(20) NOT NULL,
             display_order int(11) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
+            UNIQUE KEY movie_box (movie_id, box_set_id),
             KEY movie_id (movie_id),
             KEY box_set_id (box_set_id),
             KEY box_set_order (box_set_id, display_order)
@@ -654,8 +733,13 @@ class WP_Movie_Collector_DB {
 	public function delete_box_set( $box_set_id ) {
 		global $wpdb;
 
-		// First delete any relationships
-		$wpdb->delete(
+		// Relationship deletion, pointer clearing, and the box-set delete must
+		// be atomic so a mid-sequence failure can't leave orphaned relationship
+		// rows or dangling box_set_id pointers.
+		$wpdb->query( 'START TRANSACTION' );
+
+		// First delete any relationships.
+		$rel_deleted = $wpdb->delete(
 			$this->relationships_table,
 			array( 'box_set_id' => $box_set_id )
 		);
@@ -669,24 +753,29 @@ class WP_Movie_Collector_DB {
 			array( 'box_set_id' => $box_set_id )
 		);
 
-		// Then delete the box set
+		// Then delete the box set.
 		$result = $wpdb->delete(
 			$this->box_sets_table,
 			array( 'id' => $box_set_id )
 		);
 
-		if ( $result !== false ) {
-			$this->invalidate_stats_cache();
-			/**
-			 * Fires after a box set is deleted from the custom table.
-			 *
-			 * @since 1.4.0
-			 * @param int $box_set_id The deleted box set ID.
-			 */
-			do_action( 'wp_movie_collector_box_set_deleted', (int) $box_set_id );
+		if ( false === $rel_deleted || false === $cleared || false === $result ) {
+			$wpdb->query( 'ROLLBACK' );
+			return false;
 		}
 
-		return $result !== false && $cleared !== false;
+		$wpdb->query( 'COMMIT' );
+
+		$this->invalidate_stats_cache();
+		/**
+		 * Fires after a box set is deleted from the custom table.
+		 *
+		 * @since 1.4.0
+		 * @param int $box_set_id The deleted box set ID.
+		 */
+		do_action( 'wp_movie_collector_box_set_deleted', (int) $box_set_id );
+
+		return true;
 	}
 
 	/**
@@ -700,7 +789,10 @@ class WP_Movie_Collector_DB {
 	public function add_movie_to_box_set( $movie_id, $box_set_id ) {
 		global $wpdb;
 
-		// Check if the relationship already exists
+		$movie_id   = (int) $movie_id;
+		$box_set_id = (int) $box_set_id;
+
+		// Return the existing relationship id if the pairing already exists.
 		$existing = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
@@ -710,7 +802,7 @@ class WP_Movie_Collector_DB {
 		);
 
 		if ( $existing ) {
-			return $existing;
+			return (int) $existing;
 		}
 
 		// Get the next display_order value for this box set.
@@ -721,21 +813,34 @@ class WP_Movie_Collector_DB {
 			)
 		);
 
-		// Add the relationship
-		$result = $wpdb->insert(
-			$this->relationships_table,
-			array(
-				'movie_id'      => $movie_id,
-				'box_set_id'    => $box_set_id,
-				'display_order' => $next_order,
+		// Insert the relationship. INSERT IGNORE relies on the UNIQUE
+		// (movie_id, box_set_id) key so a concurrent duplicate from a parallel
+		// request is silently skipped rather than creating a duplicate row,
+		// closing the check-then-insert race.
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO $this->relationships_table (movie_id, box_set_id, display_order) VALUES (%d, %d, %d)",
+				$movie_id,
+				$box_set_id,
+				$next_order
 			)
 		);
 
 		if ( $result ) {
-			return $wpdb->insert_id;
+			return (int) $wpdb->insert_id;
 		}
 
-		return false;
+		// INSERT IGNORE skipped a row a concurrent request just inserted —
+		// return that existing relationship's id.
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM $this->relationships_table WHERE movie_id = %d AND box_set_id = %d",
+				$movie_id,
+				$box_set_id
+			)
+		);
+
+		return $existing ? (int) $existing : false;
 	}
 
 	/**
@@ -770,6 +875,9 @@ class WP_Movie_Collector_DB {
 	public function remove_movie_from_all_box_sets( $movie_id ) {
 		global $wpdb;
 
+		// Relationship deletion and pointer clearing must be atomic.
+		$wpdb->query( 'START TRANSACTION' );
+
 		$result = $wpdb->delete(
 			$this->relationships_table,
 			array( 'movie_id' => $movie_id )
@@ -783,7 +891,14 @@ class WP_Movie_Collector_DB {
 			array( 'id' => $movie_id )
 		);
 
-		return $result !== false && $cleared !== false;
+		if ( false === $result || false === $cleared ) {
+			$wpdb->query( 'ROLLBACK' );
+			return false;
+		}
+
+		$wpdb->query( 'COMMIT' );
+
+		return true;
 	}
 
 	/**
@@ -857,19 +972,21 @@ class WP_Movie_Collector_DB {
 	}
 
 	/**
-	 * Search movies by criteria.
+	 * Build the WHERE predicates and bound values for a movie search/count.
 	 *
-	 * @since    1.0.0
-	 * @param    array $criteria    The search criteria.
-	 * @return   array                 The matching movies.
+	 * Shared by search_movies() and count_movies() so the filters can never
+	 * drift between them (which would make the paginated total disagree with
+	 * the returned rows).
+	 *
+	 * @since 1.5.0
+	 * @param array $criteria Search criteria.
+	 * @param array $values   Bound values, appended in placeholder order.
+	 * @return array List of "column OP %x" predicate strings.
 	 */
-	public function search_movies( $criteria ) {
+	private function build_movie_where( array $criteria, array &$values ) {
 		global $wpdb;
+		$where = array();
 
-		$where  = array();
-		$values = array();
-
-		// Build the WHERE clause based on criteria
 		if ( ! empty( $criteria['title'] ) ) {
 			$where[]  = 'title LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
@@ -905,6 +1022,55 @@ class WP_Movie_Collector_DB {
 			$values[] = '%' . $wpdb->esc_like( $criteria['studio'] ) . '%';
 		}
 
+		return $where;
+	}
+
+	/**
+	 * Build the WHERE predicates and bound values for a box-set search/count.
+	 *
+	 * Shared by search_box_sets() and count_box_sets(). Box sets only support
+	 * the title/year/format filters (the table has no director/genre/etc.).
+	 *
+	 * @since 1.5.0
+	 * @param array $criteria Search criteria.
+	 * @param array $values   Bound values, appended in placeholder order.
+	 * @return array List of "column OP %x" predicate strings.
+	 */
+	private function build_box_set_where( array $criteria, array &$values ) {
+		global $wpdb;
+		$where = array();
+
+		if ( ! empty( $criteria['title'] ) ) {
+			$where[]  = 'title LIKE %s';
+			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
+		}
+
+		if ( ! empty( $criteria['year'] ) ) {
+			$where[]  = 'release_year = %d';
+			$values[] = $criteria['year'];
+		}
+
+		if ( ! empty( $criteria['format'] ) ) {
+			$where[]  = 'format = %s';
+			$values[] = $criteria['format'];
+		}
+
+		return $where;
+	}
+
+	/**
+	 * Search movies by criteria.
+	 *
+	 * @since    1.0.0
+	 * @param    array $criteria    The search criteria.
+	 * @return   array                 The matching movies.
+	 */
+	public function search_movies( $criteria ) {
+		global $wpdb;
+
+		$values = array();
+		$where  = $this->build_movie_where( $criteria, $values );
+
 		// Whitelist allowed ORDER BY columns to prevent SQL injection
 		$allowed_orderby = array( 'id', 'title', 'release_year', 'format', 'director', 'studio', 'genre', 'created_at', 'updated_at', 'acquisition_date' );
 		$orderby         = ! empty( $criteria['orderby'] ) && in_array( $criteria['orderby'], $allowed_orderby, true ) ? $criteria['orderby'] : 'title';
@@ -920,14 +1086,22 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided
-		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
-			$per_page = intval( $criteria['per_page'] );
-			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
-			$sql     .= $wpdb->prepare( ' LIMIT %d OFFSET %d', $per_page, $offset );
+		// Apply pagination whenever a per_page is provided. Default page to 1
+		// and clamp both values so a missing/zero/negative page cannot produce
+		// a negative OFFSET (a SQL error that returns null) and per_page stays
+		// positive. Append raw placeholders and push the values so the whole
+		// statement is prepared exactly once below.
+		if ( isset( $criteria['per_page'] ) ) {
+			$per_page = max( 1, intval( $criteria['per_page'] ) );
+			$page     = isset( $criteria['page'] ) ? max( 1, intval( $criteria['page'] ) ) : 1;
+			$offset   = ( $page - 1 ) * $per_page;
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$values[] = $per_page;
+			$values[] = $offset;
 		}
 
-		// Prepare and execute the query
+		// Prepare and execute the query. Call prepare() once over all
+		// placeholders; run the bare SQL only when there are none.
 		if ( ! empty( $values ) ) {
 			$sql = $wpdb->prepare( $sql, $values );
 		}
@@ -947,43 +1121,8 @@ class WP_Movie_Collector_DB {
 	public function count_movies( $criteria = array() ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
-
-		if ( ! empty( $criteria['director'] ) ) {
-			$where[]  = 'director LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['director'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['actor'] ) ) {
-			$where[]  = 'actors LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['actor'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['genre'] ) ) {
-			$where[]  = 'genre LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['genre'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['studio'] ) ) {
-			$where[]  = 'studio LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['studio'] ) . '%';
-		}
+		$where  = $this->build_movie_where( $criteria, $values );
 
 		$sql = "SELECT COUNT(*) FROM $this->movies_table";
 
@@ -1008,23 +1147,8 @@ class WP_Movie_Collector_DB {
 	public function count_box_sets( $criteria = array() ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
+		$where  = $this->build_box_set_where( $criteria, $values );
 
 		$sql = "SELECT COUNT(*) FROM $this->box_sets_table";
 
@@ -1198,24 +1322,8 @@ class WP_Movie_Collector_DB {
 	public function search_box_sets( $criteria ) {
 		global $wpdb;
 
-		$where  = array();
 		$values = array();
-
-		// Build the WHERE clause based on criteria
-		if ( ! empty( $criteria['title'] ) ) {
-			$where[]  = 'title LIKE %s';
-			$values[] = '%' . $wpdb->esc_like( $criteria['title'] ) . '%';
-		}
-
-		if ( ! empty( $criteria['year'] ) ) {
-			$where[]  = 'release_year = %d';
-			$values[] = $criteria['year'];
-		}
-
-		if ( ! empty( $criteria['format'] ) ) {
-			$where[]  = 'format = %s';
-			$values[] = $criteria['format'];
-		}
+		$where  = $this->build_box_set_where( $criteria, $values );
 
 		// Whitelist allowed ORDER BY columns to prevent SQL injection
 		$allowed_orderby = array( 'id', 'title', 'release_year', 'format', 'created_at', 'updated_at', 'acquisition_date' );
@@ -1232,14 +1340,22 @@ class WP_Movie_Collector_DB {
 
 		$sql .= " ORDER BY $orderby $order";
 
-		// Apply pagination if provided
-		if ( isset( $criteria['per_page'] ) && isset( $criteria['page'] ) ) {
-			$per_page = intval( $criteria['per_page'] );
-			$offset   = intval( $criteria['page'] - 1 ) * $per_page;
-			$sql     .= $wpdb->prepare( ' LIMIT %d OFFSET %d', $per_page, $offset );
+		// Apply pagination whenever a per_page is provided. Default page to 1
+		// and clamp both values so a missing/zero/negative page cannot produce
+		// a negative OFFSET (a SQL error that returns null) and per_page stays
+		// positive. Append raw placeholders and push the values so the whole
+		// statement is prepared exactly once below.
+		if ( isset( $criteria['per_page'] ) ) {
+			$per_page = max( 1, intval( $criteria['per_page'] ) );
+			$page     = isset( $criteria['page'] ) ? max( 1, intval( $criteria['page'] ) ) : 1;
+			$offset   = ( $page - 1 ) * $per_page;
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$values[] = $per_page;
+			$values[] = $offset;
 		}
 
-		// Prepare and execute the query
+		// Prepare and execute the query. Call prepare() once over all
+		// placeholders; run the bare SQL only when there are none.
 		if ( ! empty( $values ) ) {
 			$sql = $wpdb->prepare( $sql, $values );
 		}

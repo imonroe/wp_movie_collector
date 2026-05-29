@@ -73,8 +73,8 @@ jobs:
       - name: Run unit tests
         run: composer run test
 
-  build:
-    name: JS Build
+  js:
+    name: JS Lint + Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -96,9 +96,6 @@ jobs:
         # in the lint-php job. Flip to blocking once the backlog clears.
         continue-on-error: true
         run: npm run lint:js
-
-      - name: Build assets
-        run: npm run build
 
       - name: Run JS tests
         run: npm test

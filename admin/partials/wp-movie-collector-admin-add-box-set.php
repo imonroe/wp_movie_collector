@@ -20,7 +20,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
             $errors = get_transient('wp_movie_collector_form_errors_' . get_current_user_id());
             if ($errors && is_array($errors)) {
                 echo '<div class="notice notice-error is-dismissible">';
-                echo '<p><strong>' . __('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
+                echo '<p><strong>' . esc_html__('Please fix the following errors:', 'wp-movie-collector') . '</strong></p>';
                 echo '<ul>';
                 foreach ($errors as $error) {
                     echo '<li>' . esc_html($error) . '</li>';
@@ -163,11 +163,6 @@ if ( ! current_user_can( 'manage_options' ) ) {
                 </button>
             </p>
         </form>
-        
-        <div id="wp-movie-collector-box-set-movies">
-            <h3><?php esc_html_e('Movies in this Box Set', 'wp-movie-collector'); ?></h3>
-            <p><?php esc_html_e('After saving the box set, you can add movies to it.', 'wp-movie-collector'); ?></p>
-        </div>
     </div>
 </div>
 
@@ -306,7 +301,7 @@ jQuery(document).ready(function($) {
         
         // Display cover image preview if URL exists
         if (box_set.cover_image_url) {
-            $('#box-set-cover-image-url').siblings('.image-preview').html('<img src="' + box_set.cover_image_url + '" alt="" style="max-width:150px;max-height:150px;" />');
+            wpMovieCollectorSetImagePreview($('#box-set-cover-image-url').siblings('.image-preview'), box_set.cover_image_url);
             $('#box-set-cover-image-url').siblings('.wp-movie-collector-remove-image-button').show();
         }
         

@@ -17,13 +17,48 @@
 namespace WP_Movie_Collector\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionMethod;
+use Stub_Wpdb;
 use WP_Movie_Collector_Admin;
 
 /**
  * Admin form/export unit tests.
  */
 class AdminFormTest extends TestCase {
+
+	/**
+	 * The $wpdb value that existed before a test replaced it (if any).
+	 *
+	 * @var mixed
+	 */
+	private mixed $previous_wpdb = null;
+
+	/**
+	 * Restore any global $wpdb a test swapped in.
+	 */
+	protected function tearDown(): void {
+		if ( null === $this->previous_wpdb ) {
+			unset( $GLOBALS['wpdb'] );
+		} else {
+			$GLOBALS['wpdb'] = $this->previous_wpdb;
+		}
+		$this->previous_wpdb = null;
+		parent::tearDown();
+	}
+
+	/**
+	 * Install a mocked $wpdb global and return it for configuration.
+	 *
+	 * @return Stub_Wpdb&MockObject
+	 */
+	private function install_wpdb_mock() {
+		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
+		$wpdb                = $this->createMock( Stub_Wpdb::class );
+		$wpdb->prefix        = 'wp_';
+		$GLOBALS['wpdb']     = $wpdb;
+		return $wpdb;
+	}
 
 	/**
 	 * Invoke a private/protected method on the admin object.
@@ -173,5 +208,345 @@ class AdminFormTest extends TestCase {
 		$result = $this->call_private( 'validate_and_sanitize_movie_data', array( $input, 5 ) );
 
 		$this->assertSame( '2022-03-15', $result['acquisition_date'] );
+	}
+
+	// ------------------------------------------------------------------
+	// Import safety (issue #62).
+	// ------------------------------------------------------------------
+
+	/**
+	 * A syntactically valid JSON scalar must be rejected before any DB write,
+	 * so a malformed file can't wipe the collection in replace mode.
+	 */
+	public function test_import_from_json_rejects_scalar_before_any_db_write(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// No destructive query and no insert may run for a rejected payload.
+		$wpdb->expects( $this->never() )->method( 'insert' );
+		$wpdb->expects( $this->never() )->method( 'query' );
+
+		$file = tempnam( sys_get_temp_dir(), 'wpmc' );
+		file_put_contents( $file, '42' );
+
+		$result = $this->call_private( 'import_from_json', array( $file, 'replace' ) );
+
+		unlink( $file );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'json_error', $result->get_error_code() );
+	}
+
+	/**
+	 * Replace-mode import must ROLLBACK and report an error (leaving the
+	 * collection intact) when a row fails to insert.
+	 */
+	public function test_persist_import_replace_rolls_back_on_insert_failure(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// Transactional engine so the replace path proceeds.
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return 1;
+			}
+		);
+		// Every row insert fails.
+		$wpdb->method( 'insert' )->willReturn( false );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'Doomed' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * Replace-mode import must abort before deleting anything when the tables
+	 * use a non-transactional engine (ROLLBACK would be a silent no-op).
+	 */
+	public function test_persist_import_replace_aborts_on_non_transactional_engine(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->method( 'get_var' )->willReturn( 'MyISAM' );
+		// Nothing destructive may run.
+		$wpdb->expects( $this->never() )->method( 'query' );
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'X' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_no_transaction', $result->get_error_code() );
+	}
+
+	/**
+	 * A movie's denormalized box_set_id must be remapped to the id assigned to
+	 * the box set imported alongside it.
+	 */
+	public function test_persist_import_remaps_box_set_id_references(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->insert_id = 200;
+
+		$captured_movie = null;
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured_movie ) {
+				if ( false !== strpos( $table, 'movie_collection' ) ) {
+					$captured_movie = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array(
+					array( 'title' => 'M', 'release_year' => '2000', 'format' => 'Blu-ray', 'region_code' => 'A', 'box_set_id' => 5 ),
+				),
+				array(
+					array( 'title' => 'BS', 'release_year' => '2001', 'format' => 'Blu-ray', 'region_code' => 'A', '__source_id' => 5 ),
+				),
+				'append',
+			)
+		);
+
+		$this->assertSame( 2, $count );
+		$this->assertNotNull( $captured_movie );
+		$this->assertSame( 200, $captured_movie['box_set_id'] );
+	}
+
+	/**
+	 * Replace-mode import must ROLLBACK and error if clearing the existing
+	 * collection fails, rather than appending onto stale rows.
+	 */
+	public function test_persist_import_replace_rolls_back_when_delete_fails(): void {
+		$wpdb = $this->install_wpdb_mock();
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				// The DELETE that clears the existing collection fails.
+				return ( false !== stripos( $sql, 'DELETE FROM' ) ) ? false : 1;
+			}
+		);
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'X' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+		$this->assertNotContains( 'COMMIT', $queries );
+	}
+
+	/**
+	 * A failed COMMIT must roll back and report failure rather than returning a
+	 * success count for an uncommitted import.
+	 */
+	public function test_persist_import_replace_rolls_back_when_commit_fails(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+		$wpdb->method( 'get_var' )->willReturn( 'InnoDB' );
+
+		$queries = array();
+		$wpdb->method( 'query' )->willReturnCallback(
+			function ( $sql ) use ( &$queries ) {
+				$queries[] = $sql;
+				return ( 'COMMIT' === $sql ) ? false : 1;
+			}
+		);
+		// All row inserts succeed.
+		$wpdb->method( 'insert' )->willReturn( 1 );
+
+		$result = $this->call_private(
+			'persist_import',
+			array( array( array( 'title' => 'Good' ) ), array(), 'replace' )
+		);
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_failed', $result->get_error_code() );
+		$this->assertContains( 'ROLLBACK', $queries );
+	}
+
+	/**
+	 * Replace mode must not wipe the collection when there are no rows to
+	 * import (e.g. an empty file or a payload with no valid rows).
+	 */
+	public function test_persist_import_replace_aborts_when_nothing_to_import(): void {
+		$wpdb = $this->install_wpdb_mock();
+		// No destructive query may run for an empty replace import.
+		$wpdb->expects( $this->never() )->method( 'query' );
+		$wpdb->expects( $this->never() )->method( 'insert' );
+
+		$result = $this->call_private( 'persist_import', array( array(), array(), 'replace' ) );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'import_empty', $result->get_error_code() );
+	}
+
+	/**
+	 * Box-set rows carrying movie-only columns (from a shared CSV header) must
+	 * be stripped to real box-set columns before insert, so insert_box_set()
+	 * doesn't hit an "Unknown column" error.
+	 */
+	public function test_persist_import_strips_movie_only_columns_from_box_sets(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+
+		$captured_box_set = null;
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured_box_set ) {
+				if ( false !== strpos( $table, 'movie_box_sets' ) ) {
+					$captured_box_set = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array(),
+				array(
+					array(
+						'title'        => 'Trilogy',
+						'release_year' => '2004',
+						'format'       => 'Blu-ray',
+						'region_code'  => 'A',
+						'director'     => 'Someone',
+						'genre'        => 'Sci-Fi',
+						'actors'       => 'A, B',
+						'box_set_id'   => 3,
+					),
+				),
+				'append',
+			)
+		);
+
+		$this->assertSame( 1, $count );
+		$this->assertNotNull( $captured_box_set );
+		$this->assertArrayHasKey( 'title', $captured_box_set );
+		$this->assertArrayNotHasKey( 'director', $captured_box_set );
+		$this->assertArrayNotHasKey( 'genre', $captured_box_set );
+		$this->assertArrayNotHasKey( 'actors', $captured_box_set );
+		$this->assertArrayNotHasKey( 'box_set_id', $captured_box_set );
+	}
+
+	/**
+	 * Imported rows must be sanitized and integrity-checked (issue #65): a
+	 * crafted text field is sanitized before insert, and a row that fails
+	 * validation (e.g. invalid format) is skipped rather than stored verbatim.
+	 */
+	public function test_persist_import_sanitizes_and_skips_invalid_movie_rows(): void {
+		$wpdb            = $this->install_wpdb_mock();
+		$wpdb->insert_id = 1;
+
+		$captured = array();
+		$wpdb->method( 'insert' )->willReturnCallback(
+			function ( $table, $data ) use ( &$captured ) {
+				if ( false !== strpos( $table, 'movie_collection' ) ) {
+					$captured[] = $data;
+				}
+				return 1;
+			}
+		);
+
+		$count = $this->call_private(
+			'persist_import',
+			array(
+				array(
+					// Valid row with a crafted description (stored-XSS attempt).
+					array(
+						'title'        => 'Clean',
+						'release_year' => '1999',
+						'format'       => 'DVD',
+						'region_code'  => 'R1',
+						'description'  => 'Nice<script>alert(1)</script>',
+					),
+					// Invalid row: format not in the whitelist -> must be skipped.
+					array(
+						'title'        => 'Bogus',
+						'release_year' => '1999',
+						'format'       => 'Betamax',
+						'region_code'  => 'R1',
+					),
+				),
+				array(),
+				'append',
+			)
+		);
+
+		// Only the valid row is inserted; the invalid one is skipped.
+		$this->assertSame( 1, $count );
+		$this->assertCount( 1, $captured );
+		$this->assertSame( 'Clean', $captured[0]['title'] );
+		$this->assertStringNotContainsString( '<script>', $captured[0]['description'] );
+	}
+
+	// ------------------------------------------------------------------
+	// Non-redirecting validator core (issue #77).
+	// ------------------------------------------------------------------
+
+	public function test_validate_movie_fields_returns_errors_without_redirecting(): void {
+		// Empty payload: required fields missing. The core must return errors
+		// rather than redirect/exit, so this call simply returns.
+		$result = $this->call_private( 'validate_movie_fields', array( array(), 0 ) );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'errors', $result );
+		$this->assertArrayHasKey( 'data', $result );
+		$this->assertNotEmpty( $result['errors'] );
+	}
+
+	public function test_validate_movie_fields_returns_sanitized_data_on_valid_input(): void {
+		$input = array(
+			'title'        => 'Solaris',
+			'release_year' => '1972',
+			'format'       => 'Blu-ray',
+			'region_code'  => 'B',
+		);
+
+		// Edit context (id=5) skips the DB-backed duplicate check.
+		$result = $this->call_private( 'validate_movie_fields', array( $input, 5 ) );
+
+		$this->assertEmpty( $result['errors'] );
+		$this->assertSame( 'Solaris', $result['data']['title'] );
+		$this->assertSame( 1972, $result['data']['release_year'] );
+	}
+
+	public function test_validate_box_set_fields_returns_errors_without_redirecting(): void {
+		$result = $this->call_private( 'validate_box_set_fields', array( array(), 0 ) );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'errors', $result );
+		$this->assertArrayHasKey( 'data', $result );
+		$this->assertNotEmpty( $result['errors'] );
+	}
+
+	public function test_validate_box_set_fields_returns_sanitized_data_on_valid_input(): void {
+		$input = array(
+			'title'        => 'The Apu Trilogy',
+			'release_year' => '1959',
+			'format'       => 'Blu-ray',
+			'region_code'  => 'A',
+		);
+
+		// Edit context (id=5) skips the DB-backed duplicate check.
+		$result = $this->call_private( 'validate_box_set_fields', array( $input, 5 ) );
+
+		$this->assertEmpty( $result['errors'] );
+		$this->assertSame( 'The Apu Trilogy', $result['data']['title'] );
+		$this->assertSame( 1959, $result['data']['release_year'] );
 	}
 }

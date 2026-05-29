@@ -1,9 +1,12 @@
 /**
- * Small DOM-safety helper shared by the admin scripts.
+ * Small DOM-safety helper — the canonical, unit-tested escHtml implementation.
  *
- * Mirrors the inline helper registered via wp_add_inline_script (which remains
- * as a fallback for the unbuilt source path); when the webpack bundle is loaded
- * this exported, unit-tested implementation is exposed on the window instead.
+ * The runtime admin and public bundles do not import this module; the inline
+ * `wpMovieCollectorEscHtml` registered via `wp_add_inline_script` in
+ * `WP_Movie_Collector_Admin::enqueue_scripts()` mirrors this implementation
+ * 1:1 and is what scripts actually call. This module exists so the algorithm
+ * can be exercised by the Jest suite (`tests/js/dom-safety.test.js`); keep
+ * the two in sync when changes are needed.
  */
 
 /**

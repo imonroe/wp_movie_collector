@@ -6,12 +6,6 @@
 composer install
 npm install
 
-# Build assets
-npm run build
-
-# Watch for changes during development
-npm run watch
-
 # Run PHP linting
 composer run lint
 
@@ -23,6 +17,9 @@ composer run test -- --filter=TestName
 
 # Run JS tests
 npm run test
+
+# Build the release ZIP (writes build/wp-movie-collector-<version>.zip)
+npm run build:release
 ```
 
 ## Code Style Guidelines

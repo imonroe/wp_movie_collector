@@ -22,10 +22,19 @@ STAGE_DIR="${OUTPUT_DIR}/${SLUG}"
 
 cd "${ROOT_DIR}"
 
-# Derive the version from the plugin header so the filename always matches.
-VERSION="$(grep -E "^[[:space:]]*\*[[:space:]]*Version:" "${ROOT_DIR}/${SLUG}.php" | head -n1 | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')"
+# Prefer an explicitly supplied version, then a CI tag ref, then the plugin
+# header. The tag wins over the header so a release tagged 0.2.1 ships a ZIP
+# named after the tag even if someone forgot to bump the header.
+VERSION="${RELEASE_VERSION:-}"
+if [[ -z "${VERSION}" && "${GITHUB_REF_TYPE:-}" == "tag" && -n "${GITHUB_REF_NAME:-}" ]]; then
+  # Strip an optional leading "v" so both v1.2.3 and 1.2.3 tags work.
+  VERSION="${GITHUB_REF_NAME#v}"
+fi
 if [[ -z "${VERSION}" ]]; then
-  echo "ERROR: could not determine plugin version from ${SLUG}.php" >&2
+  VERSION="$(grep -E "^[[:space:]]*\*[[:space:]]*Version:" "${ROOT_DIR}/${SLUG}.php" | head -n1 | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')"
+fi
+if [[ -z "${VERSION}" ]]; then
+  echo "ERROR: could not determine plugin version" >&2
   exit 1
 fi
 echo "Building ${SLUG} version ${VERSION}"

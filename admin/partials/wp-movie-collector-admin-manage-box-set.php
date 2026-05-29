@@ -461,7 +461,14 @@ jQuery(document).ready(function($) {
 			},
 			success: function(response) {
 				if (response.success && response.data.length > 0) {
-					$('#wp-movie-collector-search-status').empty();
+					// Announce the result count in the live region so screen
+					// readers get a completion cue, not just "Searching..." then
+					// silence.
+					var count = response.data.length;
+					var template = count === 1
+						? <?php echo wp_json_encode( esc_html__( '%d movie found.', 'wp-movie-collector' ) ); ?>
+						: <?php echo wp_json_encode( esc_html__( '%d movies found.', 'wp-movie-collector' ) ); ?>;
+					$('#wp-movie-collector-search-status').text(template.replace('%d', count));
 					var resultsHtml = '<h4>' + <?php echo wp_json_encode( esc_html__( 'Search Results', 'wp-movie-collector' ) ); ?> + '</h4>';
 					resultsHtml += '<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">';
 					resultsHtml += '<input type="hidden" name="action" value="wp_movie_collector_add_movies_to_box_set">';

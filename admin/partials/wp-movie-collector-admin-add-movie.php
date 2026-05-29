@@ -292,7 +292,14 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
-                    $('#wp-movie-collector-search-status').empty();
+                    // Announce the result count in the live region so screen
+                    // readers get a completion cue, not just "Searching..." then
+                    // silence.
+                    var count = response.data.length;
+                    var template = count === 1
+                        ? <?php echo wp_json_encode(esc_html__('%d result found.', 'wp-movie-collector')); ?>
+                        : <?php echo wp_json_encode(esc_html__('%d results found.', 'wp-movie-collector')); ?>;
+                    $('#wp-movie-collector-search-status').text(template.replace('%d', count));
                     var resultsHtml = '<div class="wp-movie-collector-search-results">';
                     resultsHtml += '<h4>' + <?php echo wp_json_encode(esc_html__('Search Results', 'wp-movie-collector')); ?> + '</h4>';
                     resultsHtml += '<ul>';
@@ -441,8 +448,9 @@ jQuery(document).ready(function($) {
      * Search TMDB for more details about the movie
      */
     function searchTMDBForMoreDetails(title, year) {
-        $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Searching for additional movie details...', 'wp-movie-collector') . '</p>'); ?>);
-        
+        $('#wp-movie-collector-search-status').text(<?php echo wp_json_encode(esc_html__('Searching for additional movie details...', 'wp-movie-collector')); ?>);
+        $('#wp-movie-collector-search-results').empty();
+
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
             type: 'POST',
@@ -456,9 +464,9 @@ jQuery(document).ready(function($) {
                 if (response.success && response.data.length > 0) {
                     // Get details for the first match
                     var movieId = response.data[0].id;
-                    
-                    $('#wp-movie-collector-search-results').html(<?php echo wp_json_encode('<p>' . esc_html__('Found match, retrieving full details...', 'wp-movie-collector') . '</p>'); ?>);
-                    
+
+                    $('#wp-movie-collector-search-status').text(<?php echo wp_json_encode(esc_html__('Found match, retrieving full details...', 'wp-movie-collector')); ?>);
+
                     $.ajax({
                         url: wp_movie_collector_admin.ajax_url,
                         type: 'POST',
@@ -470,37 +478,37 @@ jQuery(document).ready(function($) {
                         success: function(detailsResponse) {
                             if (detailsResponse.success) {
                                 var tmdbMovie = detailsResponse.data;
-                                
+
                                 // Preserve the barcode from the original data
                                 var barcode = $('#movie-barcode').val();
-                                
+
                                 // Fill form with detailed movie info from TMDB
                                 fillMovieFormWithTMDBData(tmdbMovie, barcode);
-                                
-                                $('#wp-movie-collector-search-results').html(
-                                    <?php echo wp_json_encode('<p class="success">' . esc_html__('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector') . '</p>'); ?>
+
+                                $('#wp-movie-collector-search-status').html(
+                                    <?php echo wp_json_encode('<span class="success">' . esc_html__('Successfully retrieved additional movie details from TMDB!', 'wp-movie-collector') . '</span>'); ?>
                                 );
                             } else {
-                                $('#wp-movie-collector-search-results').html(
-                                    <?php echo wp_json_encode('<p class="error">' . esc_html__('Error retrieving full movie details.', 'wp-movie-collector') . '</p>'); ?>
+                                $('#wp-movie-collector-search-status').html(
+                                    <?php echo wp_json_encode('<span class="error">' . esc_html__('Error retrieving full movie details.', 'wp-movie-collector') . '</span>'); ?>
                                 );
                             }
                         },
                         error: function() {
-                            $('#wp-movie-collector-search-results').html(
-                                <?php echo wp_json_encode('<p class="error">' . esc_html__('Error connecting to server.', 'wp-movie-collector') . '</p>'); ?>
+                            $('#wp-movie-collector-search-status').html(
+                                <?php echo wp_json_encode('<span class="error">' . esc_html__('Error connecting to server.', 'wp-movie-collector') . '</span>'); ?>
                             );
                         }
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html(
-                        <?php echo wp_json_encode('<p class="error">' . esc_html__('No additional movie details found.', 'wp-movie-collector') . '</p>'); ?>
+                    $('#wp-movie-collector-search-status').html(
+                        <?php echo wp_json_encode('<span class="error">' . esc_html__('No additional movie details found.', 'wp-movie-collector') . '</span>'); ?>
                     );
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html(
-                    <?php echo wp_json_encode('<p class="error">' . esc_html__('Error searching for additional movie details.', 'wp-movie-collector') . '</p>'); ?>
+                $('#wp-movie-collector-search-status').html(
+                    <?php echo wp_json_encode('<span class="error">' . esc_html__('Error searching for additional movie details.', 'wp-movie-collector') . '</span>'); ?>
                 );
             }
         });

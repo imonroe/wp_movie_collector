@@ -246,7 +246,8 @@
      * Search TMDB for more details about the movie
      */
     function searchTMDBForMoreDetails(title, year) {
-        $('#wp-movie-collector-search-results').html('<p>Searching for additional movie details...</p>');
+        $('#wp-movie-collector-search-status').text('Searching for additional movie details...');
+        $('#wp-movie-collector-search-results').empty();
         
         $.ajax({
             url: wp_movie_collector_admin.ajax_url,
@@ -262,7 +263,7 @@
                     // Get details for the first match
                     var movieId = response.data[0].id;
                     
-                    $('#wp-movie-collector-search-results').html('<p>Found match, retrieving full details...</p>');
+                    $('#wp-movie-collector-search-status').text('Found match, retrieving full details...');
                     
                     $.ajax({
                         url: wp_movie_collector_admin.ajax_url,
@@ -282,30 +283,30 @@
                                 // Fill form with detailed movie info from TMDB
                                 fillMovieFormWithTMDBData(tmdbMovie, barcode);
                                 
-                                $('#wp-movie-collector-search-results').html(
-                                    '<p class="success">Successfully retrieved additional movie details from TMDB!</p>'
+                                $('#wp-movie-collector-search-status').html(
+                                    '<span class="success">Successfully retrieved additional movie details from TMDB!</span>'
                                 );
                             } else {
-                                $('#wp-movie-collector-search-results').html(
-                                    '<p class="error">Error retrieving full movie details.</p>'
+                                $('#wp-movie-collector-search-status').html(
+                                    '<span class="error">Error retrieving full movie details.</span>'
                                 );
                             }
                         },
                         error: function() {
-                            $('#wp-movie-collector-search-results').html(
-                                '<p class="error">Error connecting to server.</p>'
+                            $('#wp-movie-collector-search-status').html(
+                                '<span class="error">Error connecting to server.</span>'
                             );
                         }
                     });
                 } else {
-                    $('#wp-movie-collector-search-results').html(
-                        '<p class="error">No additional movie details found.</p>'
+                    $('#wp-movie-collector-search-status').html(
+                        '<span class="error">No additional movie details found.</span>'
                     );
                 }
             },
             error: function() {
-                $('#wp-movie-collector-search-results').html(
-                    '<p class="error">Error searching for additional movie details.</p>'
+                $('#wp-movie-collector-search-status').html(
+                    '<span class="error">Error searching for additional movie details.</span>'
                 );
             }
         });
